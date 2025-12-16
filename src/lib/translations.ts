@@ -187,6 +187,8 @@ type TranslationContent = {
     bulkActions: string;
     bulkInvitesAdded: string;
     toAllMembers: string;
+    sendEmail: string;
+    emailMember: string;
   };
   common: {
     loading: string;
@@ -388,6 +390,8 @@ export const translations: Record<Language, TranslationContent> = {
       bulkActions: 'Bulk actions',
       bulkInvitesAdded: 'Invites added to all members',
       toAllMembers: 'to all',
+      sendEmail: 'Send Email',
+      emailMember: 'Email this member',
     },
     common: {
       loading: 'Loading...',
@@ -587,6 +591,8 @@ export const translations: Record<Language, TranslationContent> = {
       bulkActions: 'Bulk acties',
       bulkInvitesAdded: 'Uitnodigingen toegevoegd aan alle leden',
       toAllMembers: 'voor iedereen',
+      sendEmail: 'Email Sturen',
+      emailMember: 'Email dit lid',
     },
     common: {
       loading: 'Laden...',
