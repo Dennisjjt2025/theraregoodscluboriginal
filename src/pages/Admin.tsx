@@ -6,7 +6,7 @@ import { supabase } from '@/integrations/supabase/client';
 import { Header } from '@/components/Header';
 import { MemberDetailModal } from '@/components/admin/MemberDetailModal';
 import { EmailComposer } from '@/components/admin/EmailComposer';
-import { DropEditModal } from '@/components/admin/DropEditModal';
+import { DropEditor } from '@/components/admin/DropEditor';
 import { toast } from 'sonner';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { Plus, Users, Wine, Clock, Check, X, RotateCcw, Minus, FileText, Save, Eye, Mail, MailCheck, Gift, Send, Globe, Lock, Trash2, Pencil, Copy } from 'lucide-react';
@@ -539,9 +539,9 @@ export default function Admin() {
         />
       )}
 
-      {/* Drop Edit Modal */}
+      {/* Drop Editor */}
       {showDropModal && (
-        <DropEditModal
+        <DropEditor
           drop={selectedDropForEdit}
           onClose={() => {
             setShowDropModal(false);
