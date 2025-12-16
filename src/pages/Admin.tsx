@@ -448,6 +448,13 @@ export default function Admin() {
       toast.error('Please make the drop public first');
       return;
     }
+
+    // Check if there are eligible waitlist entries
+    const eligibleWaitlist = waitlist.filter(w => w.status === 'pending' || w.status === 'approved');
+    if (eligibleWaitlist.length === 0) {
+      toast.error('No eligible waitlist entries (only pending/approved status)');
+      return;
+    }
     
     try {
       const dropUrl = `${window.location.origin}/drop?public=${dropId}`;
@@ -462,9 +469,9 @@ export default function Admin() {
 
       if (response.error) throw response.error;
       toast.success(`Email sent to ${response.data?.sent || 0} waitlist members`);
-    } catch (error) {
+    } catch (error: any) {
       console.error('Email waitlist error:', error);
-      toast.error(t.common.error);
+      toast.error(error?.message || t.common.error);
     }
   };
 
@@ -1048,7 +1055,7 @@ export default function Admin() {
               <div className="bg-card border border-border p-6">
                 <div className="flex items-center justify-between mb-6">
                   <h2 className="font-serif text-xl">{t.admin.waitlist}</h2>
-                  {drops.filter(d => d.is_public).length > 0 && (
+                  {drops.filter(d => d.is_public).length > 0 && waitlist.filter(w => w.status === 'pending' || w.status === 'approved').length > 0 && (
                     <div className="flex items-center gap-2">
                       <select
                         className="input-luxury text-sm"
