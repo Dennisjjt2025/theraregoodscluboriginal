@@ -4,9 +4,10 @@ import { useLanguage } from '@/contexts/LanguageContext';
 import { useAuth } from '@/contexts/AuthContext';
 import { supabase } from '@/integrations/supabase/client';
 import { Header } from '@/components/Header';
+import { MemberDetailModal } from '@/components/admin/MemberDetailModal';
 import { toast } from 'sonner';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
-import { Plus, Users, Wine, Clock, Check, X, RotateCcw, Minus, FileText, Save } from 'lucide-react';
+import { Plus, Users, Wine, Clock, Check, X, RotateCcw, Minus, FileText, Save, Eye } from 'lucide-react';
 
 interface Drop {
   id: string;
@@ -75,6 +76,9 @@ export default function Admin() {
   // Notes editing state
   const [editingNotes, setEditingNotes] = useState<string | null>(null);
   const [notesValue, setNotesValue] = useState('');
+
+  // Member detail modal state
+  const [selectedMemberForDetail, setSelectedMemberForDetail] = useState<{ id: string; email: string } | null>(null);
 
   // Drop form state
   const [dropForm, setDropForm] = useState({
@@ -383,6 +387,17 @@ export default function Admin() {
   return (
     <div className="min-h-screen bg-background">
       <Header />
+      
+      {/* Member Detail Modal */}
+      {selectedMemberForDetail && (
+        <MemberDetailModal
+          memberId={selectedMemberForDetail.id}
+          memberEmail={selectedMemberForDetail.email}
+          onClose={() => setSelectedMemberForDetail(null)}
+          onUpdate={fetchData}
+        />
+      )}
+      
       <main className="pt-24 pb-12 px-4">
         <div className="container mx-auto max-w-6xl">
           <h1 className="font-serif text-3xl md:text-4xl mb-8">{t.admin.title}</h1>
@@ -651,6 +666,13 @@ export default function Admin() {
                           </td>
                           <td className="py-3 px-4 text-right">
                             <div className="flex items-center justify-end gap-1">
+                              <button
+                                onClick={() => setSelectedMemberForDetail({ id: member.id, email: memberEmails[member.id] || '' })}
+                                className="p-1 text-primary hover:text-primary/80"
+                                title={t.admin.viewDetails}
+                              >
+                                <Eye className="w-4 h-4" />
+                              </button>
                               <button
                                 onClick={() => addStrike(member.id, member.strike_count)}
                                 className="p-1 text-amber-500 hover:text-amber-600"

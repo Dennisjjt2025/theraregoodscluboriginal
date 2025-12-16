@@ -123,6 +123,18 @@ type TranslationContent = {
     notPurchased: string;
     purchaseStatus: string;
     noResults: string;
+    memberDetails: string;
+    notesSaved: string;
+    invitesRemaining: string;
+    memberSince: string;
+    communicationNotes: string;
+    notesPlaceholder: string;
+    noNotes: string;
+    participationHistory: string;
+    noParticipationHistory: string;
+    totalDrops: string;
+    missed: string;
+    viewDetails: string;
   };
   common: {
     loading: string;
@@ -260,6 +272,18 @@ export const translations: Record<Language, TranslationContent> = {
       notPurchased: 'Not Purchased',
       purchaseStatus: 'Purchase Status',
       noResults: 'No results found',
+      memberDetails: 'Member Details',
+      notesSaved: 'Notes saved',
+      invitesRemaining: 'Invites Remaining',
+      memberSince: 'Member Since',
+      communicationNotes: 'Communication Notes',
+      notesPlaceholder: 'Add notes about member communications, agreements, etc...',
+      noNotes: 'No notes yet',
+      participationHistory: 'Participation History',
+      noParticipationHistory: 'No drop participation history yet',
+      totalDrops: 'Total Drops',
+      missed: 'Missed',
+      viewDetails: 'View Details',
     },
     common: {
       loading: 'Loading...',
@@ -395,6 +419,18 @@ export const translations: Record<Language, TranslationContent> = {
       notPurchased: 'Niet Gekocht',
       purchaseStatus: 'Aankoopstatus',
       noResults: 'Geen resultaten gevonden',
+      memberDetails: 'Lid Details',
+      notesSaved: 'Notities opgeslagen',
+      invitesRemaining: 'Uitnodigingen Over',
+      memberSince: 'Lid Sinds',
+      communicationNotes: 'Communicatie Notities',
+      notesPlaceholder: 'Voeg notities toe over communicatie met lid, afspraken, etc...',
+      noNotes: 'Nog geen notities',
+      participationHistory: 'Deelname Geschiedenis',
+      noParticipationHistory: 'Nog geen drop deelname geschiedenis',
+      totalDrops: 'Totaal Drops',
+      missed: 'Gemist',
+      viewDetails: 'Details Bekijken',
     },
     common: {
       loading: 'Laden...',
