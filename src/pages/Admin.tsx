@@ -5,9 +5,10 @@ import { useAuth } from '@/contexts/AuthContext';
 import { supabase } from '@/integrations/supabase/client';
 import { Header } from '@/components/Header';
 import { MemberDetailModal } from '@/components/admin/MemberDetailModal';
+import { EmailComposer } from '@/components/admin/EmailComposer';
 import { toast } from 'sonner';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
-import { Plus, Users, Wine, Clock, Check, X, RotateCcw, Minus, FileText, Save, Eye, Mail, MailCheck, Gift } from 'lucide-react';
+import { Plus, Users, Wine, Clock, Check, X, RotateCcw, Minus, FileText, Save, Eye, Mail, MailCheck, Gift, Send } from 'lucide-react';
 
 interface Drop {
   id: string;
@@ -80,6 +81,10 @@ export default function Admin() {
 
   // Member detail modal state
   const [selectedMemberForDetail, setSelectedMemberForDetail] = useState<{ id: string; email: string } | null>(null);
+
+  // Email composer state
+  const [showEmailComposer, setShowEmailComposer] = useState(false);
+  const [emailComposerPreselect, setEmailComposerPreselect] = useState<{ email?: string; type?: 'strike_warning' | 'thank_you' | 'drop_update' | 'newsletter' | 'custom' } | null>(null);
 
   // Drop form state
   const [dropForm, setDropForm] = useState({
@@ -457,6 +462,18 @@ export default function Admin() {
           onUpdate={fetchData}
         />
       )}
+
+      {/* Email Composer Modal */}
+      {showEmailComposer && (
+        <EmailComposer
+          onClose={() => {
+            setShowEmailComposer(false);
+            setEmailComposerPreselect(null);
+          }}
+          preselectedEmail={emailComposerPreselect?.email}
+          preselectedType={emailComposerPreselect?.type}
+        />
+      )}
       
       <main className="pt-24 pb-12 px-4">
         <div className="container mx-auto max-w-6xl">
@@ -678,6 +695,16 @@ export default function Admin() {
                       <Gift className="w-3 h-3" />
                       +3 {t.admin.toAllMembers}
                     </button>
+                    <button
+                      onClick={() => {
+                        setEmailComposerPreselect(null);
+                        setShowEmailComposer(true);
+                      }}
+                      className="btn-luxury text-xs px-3 py-1 flex items-center gap-1"
+                    >
+                      <Send className="w-3 h-3" />
+                      {t.admin.sendEmail || 'Email'}
+                    </button>
                   </div>
                 </div>
                 <div className="overflow-x-auto">
@@ -787,6 +814,16 @@ export default function Admin() {
                                 title={t.admin.viewDetails}
                               >
                                 <Eye className="w-4 h-4" />
+                              </button>
+                              <button
+                                onClick={() => {
+                                  setEmailComposerPreselect({ email: memberEmails[member.id]?.email });
+                                  setShowEmailComposer(true);
+                                }}
+                                className="p-1 text-accent hover:text-accent/80"
+                                title={t.admin.emailMember}
+                              >
+                                <Send className="w-4 h-4" />
                               </button>
                               <button
                                 onClick={() => addStrike(member.id, member.strike_count)}
