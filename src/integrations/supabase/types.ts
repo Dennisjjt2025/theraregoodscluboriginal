@@ -182,6 +182,7 @@ export type Database = {
           id: string
           invited_by: string | null
           invites_remaining: number | null
+          notes: string | null
           status: Database["public"]["Enums"]["member_status"]
           strike_count: number | null
           updated_at: string | null
@@ -192,6 +193,7 @@ export type Database = {
           id?: string
           invited_by?: string | null
           invites_remaining?: number | null
+          notes?: string | null
           status?: Database["public"]["Enums"]["member_status"]
           strike_count?: number | null
           updated_at?: string | null
@@ -202,6 +204,7 @@ export type Database = {
           id?: string
           invited_by?: string | null
           invites_remaining?: number | null
+          notes?: string | null
           status?: Database["public"]["Enums"]["member_status"]
           strike_count?: number | null
           updated_at?: string | null
@@ -267,6 +270,26 @@ export type Database = {
       [_ in never]: never
     }
     Functions: {
+      get_drop_participation_report: {
+        Args: { drop_id_param: string }
+        Returns: {
+          email: string
+          member_id: string
+          notes: string
+          purchased: boolean
+          status: string
+          strike_count: number
+          user_id: string
+        }[]
+      }
+      get_member_emails: {
+        Args: never
+        Returns: {
+          email: string
+          member_id: string
+          user_id: string
+        }[]
+      }
       has_role: {
         Args: {
           _role: Database["public"]["Enums"]["app_role"]

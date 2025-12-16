@@ -103,11 +103,26 @@ type TranslationContent = {
     memberStatus: string;
     memberStrikes: string;
     memberActions: string;
+    memberNotes: string;
+    addNote: string;
     resetStrikes: string;
+    addStrike: string;
+    removeStrike: string;
     suspendMember: string;
     activateMember: string;
     approveWaitlist: string;
     rejectWaitlist: string;
+    dropReport: string;
+    selectDrop: string;
+    selectDropPrompt: string;
+    filterAll: string;
+    filterPurchased: string;
+    filterNotPurchased: string;
+    totalMembers: string;
+    purchased: string;
+    notPurchased: string;
+    purchaseStatus: string;
+    noResults: string;
   };
   common: {
     loading: string;
@@ -225,11 +240,26 @@ export const translations: Record<Language, TranslationContent> = {
       memberStatus: 'Status',
       memberStrikes: 'Strikes',
       memberActions: 'Actions',
+      memberNotes: 'Notes',
+      addNote: 'Click to add note...',
       resetStrikes: 'Reset Strikes',
+      addStrike: 'Add Strike',
+      removeStrike: 'Remove Strike',
       suspendMember: 'Suspend',
       activateMember: 'Activate',
       approveWaitlist: 'Approve',
       rejectWaitlist: 'Reject',
+      dropReport: 'Drop Report',
+      selectDrop: 'Select a drop...',
+      selectDropPrompt: 'Select a drop to view participation report',
+      filterAll: 'All',
+      filterPurchased: 'Purchased',
+      filterNotPurchased: 'Not Purchased',
+      totalMembers: 'Total Members',
+      purchased: 'Purchased',
+      notPurchased: 'Not Purchased',
+      purchaseStatus: 'Purchase Status',
+      noResults: 'No results found',
     },
     common: {
       loading: 'Loading...',
@@ -345,11 +375,26 @@ export const translations: Record<Language, TranslationContent> = {
       memberStatus: 'Status',
       memberStrikes: 'Strikes',
       memberActions: 'Acties',
+      memberNotes: 'Notities',
+      addNote: 'Klik om notitie toe te voegen...',
       resetStrikes: 'Strikes Resetten',
+      addStrike: 'Strike Toevoegen',
+      removeStrike: 'Strike Verwijderen',
       suspendMember: 'Opschorten',
       activateMember: 'Activeren',
       approveWaitlist: 'Goedkeuren',
       rejectWaitlist: 'Afwijzen',
+      dropReport: 'Drop Rapport',
+      selectDrop: 'Selecteer een drop...',
+      selectDropPrompt: 'Selecteer een drop om het deelnamerapport te bekijken',
+      filterAll: 'Alles',
+      filterPurchased: 'Gekocht',
+      filterNotPurchased: 'Niet Gekocht',
+      totalMembers: 'Totaal Leden',
+      purchased: 'Gekocht',
+      notPurchased: 'Niet Gekocht',
+      purchaseStatus: 'Aankoopstatus',
+      noResults: 'Geen resultaten gevonden',
     },
     common: {
       loading: 'Laden...',
