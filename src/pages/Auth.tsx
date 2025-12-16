@@ -6,6 +6,8 @@ import { Header } from '@/components/Header';
 import { toast } from 'sonner';
 import logo from '@/assets/logo.png';
 
+type AuthMode = 'choose' | 'login' | 'request-access' | 'invite';
+
 export default function Auth() {
   const { t } = useLanguage();
   const navigate = useNavigate();
@@ -14,7 +16,7 @@ export default function Auth() {
 
   const [email, setEmail] = useState('');
   const [inviteCode, setInviteCode] = useState(inviteCodeParam || '');
-  const [showInviteInput, setShowInviteInput] = useState(!!inviteCodeParam);
+  const [authMode, setAuthMode] = useState<AuthMode>(inviteCodeParam ? 'invite' : 'choose');
   const [loading, setLoading] = useState(false);
   const [emailSent, setEmailSent] = useState(false);
 
@@ -66,7 +68,7 @@ export default function Auth() {
 
       // Store invite code for after signup
       localStorage.setItem('pending_invite_code', inviteCode);
-      setShowInviteInput(false);
+      setAuthMode('login');
       toast.success('Valid invite code! Now enter your email to continue.');
     } catch (error) {
       console.error('Invite validation error:', error);
@@ -103,18 +105,107 @@ export default function Auth() {
     );
   }
 
-  return (
-    <div className="min-h-screen bg-background">
-      <Header />
-      <main className="pt-24 px-4">
-        <div className="max-w-md mx-auto py-16">
-          <div className="text-center mb-12">
-            <img src={logo} alt="The Rare Goods Club" className="w-24 h-24 mx-auto mb-6 opacity-90" />
-            <h1 className="font-serif text-3xl md:text-4xl mb-2">{t.auth.loginTitle}</h1>
-            <p className="text-muted-foreground">{t.auth.loginSubtitle}</p>
-          </div>
+  // Choose view - initial screen
+  if (authMode === 'choose') {
+    return (
+      <div className="min-h-screen bg-background">
+        <Header />
+        <main className="pt-24 px-4">
+          <div className="max-w-md mx-auto py-16">
+            <div className="text-center mb-12">
+              <img src={logo} alt="The Rare Goods Club" className="w-24 h-24 mx-auto mb-6 opacity-90" />
+              <h1 className="font-serif text-3xl md:text-4xl mb-2">{t.auth.chooseTitle}</h1>
+              <p className="text-muted-foreground">{t.auth.chooseSubtitle}</p>
+            </div>
 
-          {showInviteInput ? (
+            <div className="space-y-4">
+              <button
+                onClick={() => setAuthMode('login')}
+                className="w-full p-6 border border-border rounded-lg hover:border-secondary transition-colors text-left group"
+              >
+                <h3 className="font-serif text-xl mb-1 group-hover:text-secondary transition-colors">
+                  {t.auth.imAMember}
+                </h3>
+                <p className="text-muted-foreground text-sm">{t.auth.imAMemberDesc}</p>
+              </button>
+
+              <button
+                onClick={() => setAuthMode('request-access')}
+                className="w-full p-6 border border-border rounded-lg hover:border-secondary transition-colors text-left group"
+              >
+                <h3 className="font-serif text-xl mb-1 group-hover:text-secondary transition-colors">
+                  {t.auth.noAccessYet}
+                </h3>
+                <p className="text-muted-foreground text-sm">{t.auth.noAccessDesc}</p>
+              </button>
+            </div>
+          </div>
+        </main>
+      </div>
+    );
+  }
+
+  // Request access view - choose between invite code or waitlist
+  if (authMode === 'request-access') {
+    return (
+      <div className="min-h-screen bg-background">
+        <Header />
+        <main className="pt-24 px-4">
+          <div className="max-w-md mx-auto py-16">
+            <div className="text-center mb-12">
+              <img src={logo} alt="The Rare Goods Club" className="w-24 h-24 mx-auto mb-6 opacity-90" />
+              <h1 className="font-serif text-3xl md:text-4xl mb-2">{t.auth.noAccessYet}</h1>
+              <p className="text-muted-foreground">{t.auth.noAccessDesc}</p>
+            </div>
+
+            <div className="space-y-4">
+              <button
+                onClick={() => setAuthMode('invite')}
+                className="w-full p-6 border border-border rounded-lg hover:border-secondary transition-colors text-left group"
+              >
+                <h3 className="font-serif text-xl mb-1 group-hover:text-secondary transition-colors">
+                  {t.auth.haveInviteCode}
+                </h3>
+                <p className="text-muted-foreground text-sm">{t.auth.validateInvite}</p>
+              </button>
+
+              <button
+                onClick={() => navigate('/#waitlist')}
+                className="w-full p-6 border border-border rounded-lg hover:border-secondary transition-colors text-left group"
+              >
+                <h3 className="font-serif text-xl mb-1 group-hover:text-secondary transition-colors">
+                  {t.auth.joinWaitlist}
+                </h3>
+                <p className="text-muted-foreground text-sm">{t.landing.waitlistSubtitle}</p>
+              </button>
+            </div>
+
+            <button
+              type="button"
+              onClick={() => setAuthMode('choose')}
+              className="w-full mt-6 text-muted-foreground hover:text-foreground transition-colors text-sm"
+            >
+              {t.common.back}
+            </button>
+          </div>
+        </main>
+      </div>
+    );
+  }
+
+  // Invite code view
+  if (authMode === 'invite') {
+    return (
+      <div className="min-h-screen bg-background">
+        <Header />
+        <main className="pt-24 px-4">
+          <div className="max-w-md mx-auto py-16">
+            <div className="text-center mb-12">
+              <img src={logo} alt="The Rare Goods Club" className="w-24 h-24 mx-auto mb-6 opacity-90" />
+              <h1 className="font-serif text-3xl md:text-4xl mb-2">{t.auth.haveInviteCode}</h1>
+              <p className="text-muted-foreground">{t.auth.enterInviteCode}</p>
+            </div>
+
             <form onSubmit={handleInviteValidation} className="space-y-6">
               <div>
                 <input
@@ -135,40 +226,56 @@ export default function Auth() {
               </button>
               <button
                 type="button"
-                onClick={() => setShowInviteInput(false)}
+                onClick={() => setAuthMode('request-access')}
                 className="w-full text-muted-foreground hover:text-foreground transition-colors text-sm"
               >
-                {t.auth.backToLogin}
+                {t.common.back}
               </button>
             </form>
-          ) : (
-            <form onSubmit={handleMagicLink} className="space-y-6">
-              <div>
-                <input
-                  type="email"
-                  value={email}
-                  onChange={(e) => setEmail(e.target.value)}
-                  placeholder={t.landing.emailPlaceholder}
-                  required
-                  className="input-luxury w-full text-center"
-                />
-              </div>
-              <button
-                type="submit"
-                disabled={loading}
-                className="btn-luxury w-full disabled:opacity-50"
-              >
-                {loading ? t.common.loading : t.auth.sendMagicLink}
-              </button>
-              <button
-                type="button"
-                onClick={() => setShowInviteInput(true)}
-                className="w-full text-muted-foreground hover:text-foreground transition-colors text-sm"
-              >
-                {t.auth.inviteCode}
-              </button>
-            </form>
-          )}
+          </div>
+        </main>
+      </div>
+    );
+  }
+
+  // Login view (magic link)
+  return (
+    <div className="min-h-screen bg-background">
+      <Header />
+      <main className="pt-24 px-4">
+        <div className="max-w-md mx-auto py-16">
+          <div className="text-center mb-12">
+            <img src={logo} alt="The Rare Goods Club" className="w-24 h-24 mx-auto mb-6 opacity-90" />
+            <h1 className="font-serif text-3xl md:text-4xl mb-2">{t.auth.loginTitle}</h1>
+            <p className="text-muted-foreground">{t.auth.loginSubtitle}</p>
+          </div>
+
+          <form onSubmit={handleMagicLink} className="space-y-6">
+            <div>
+              <input
+                type="email"
+                value={email}
+                onChange={(e) => setEmail(e.target.value)}
+                placeholder={t.landing.emailPlaceholder}
+                required
+                className="input-luxury w-full text-center"
+              />
+            </div>
+            <button
+              type="submit"
+              disabled={loading}
+              className="btn-luxury w-full disabled:opacity-50"
+            >
+              {loading ? t.common.loading : t.auth.sendMagicLink}
+            </button>
+            <button
+              type="button"
+              onClick={() => setAuthMode('choose')}
+              className="w-full text-muted-foreground hover:text-foreground transition-colors text-sm"
+            >
+              {t.common.back}
+            </button>
+          </form>
         </div>
       </main>
     </div>

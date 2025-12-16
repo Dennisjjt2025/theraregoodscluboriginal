@@ -39,6 +39,14 @@ type TranslationContent = {
     validateInvite: string;
     invalidInvite: string;
     backToLogin: string;
+    chooseTitle: string;
+    chooseSubtitle: string;
+    imAMember: string;
+    imAMemberDesc: string;
+    noAccessYet: string;
+    noAccessDesc: string;
+    haveInviteCode: string;
+    joinWaitlist: string;
   };
   dashboard: {
     title: string;
@@ -188,6 +196,14 @@ export const translations: Record<Language, TranslationContent> = {
       validateInvite: 'Validate & Continue',
       invalidInvite: 'Invalid or expired invite code',
       backToLogin: 'Back to Login',
+      chooseTitle: 'Welcome',
+      chooseSubtitle: 'How would you like to continue?',
+      imAMember: "I'm a member",
+      imAMemberDesc: 'Login with your email',
+      noAccessYet: "I don't have access yet",
+      noAccessDesc: 'Request to join the club',
+      haveInviteCode: 'I have an invite code',
+      joinWaitlist: 'Join the waitlist',
     },
     dashboard: {
       title: 'Member Dashboard',
@@ -335,6 +351,14 @@ export const translations: Record<Language, TranslationContent> = {
       validateInvite: 'Valideren & Doorgaan',
       invalidInvite: 'Ongeldige of verlopen uitnodigingscode',
       backToLogin: 'Terug naar Login',
+      chooseTitle: 'Welkom',
+      chooseSubtitle: 'Hoe wil je verder?',
+      imAMember: 'Ik ben lid',
+      imAMemberDesc: 'Inloggen met je email',
+      noAccessYet: 'Ik heb nog geen toegang',
+      noAccessDesc: 'Vraag toegang aan tot de club',
+      haveInviteCode: 'Ik heb een uitnodigingscode',
+      joinWaitlist: 'Schrijf je in op de wachtlijst',
     },
     dashboard: {
       title: 'Leden Dashboard',
