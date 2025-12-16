@@ -49,6 +49,19 @@ type TranslationContent = {
     joinWaitlist: string;
     waitlistBenefit: string;
     alreadyOnWaitlist: string;
+    createAccount: string;
+    createAccountDesc: string;
+    firstName: string;
+    lastName: string;
+    password: string;
+    confirmPassword: string;
+    passwordMismatch: string;
+    passwordTooShort: string;
+    signUp: string;
+    loginWithPassword: string;
+    forgotPassword: string;
+    orUsePassword: string;
+    accountCreated: string;
   };
   dashboard: {
     title: string;
@@ -70,6 +83,16 @@ type TranslationContent = {
     viewDrop: string;
     purchaseHistory: string;
     noPurchases: string;
+    myProfile: string;
+    profileSettings: string;
+    phone: string;
+    streetAddress: string;
+    houseNumber: string;
+    postalCode: string;
+    city: string;
+    country: string;
+    profileSaved: string;
+    completeProfile: string;
   };
   drop: {
     currentDrop: string;
@@ -208,6 +231,19 @@ export const translations: Record<Language, TranslationContent> = {
       joinWaitlist: 'Join the waitlist',
       waitlistBenefit: "You'll also receive updates about available drops after launch!",
       alreadyOnWaitlist: 'This email is already on the waitlist',
+      createAccount: 'Create your account',
+      createAccountDesc: 'Fill in your details to complete registration',
+      firstName: 'First name',
+      lastName: 'Last name',
+      password: 'Password',
+      confirmPassword: 'Confirm password',
+      passwordMismatch: 'Passwords do not match',
+      passwordTooShort: 'Password must be at least 6 characters',
+      signUp: 'Create Account',
+      loginWithPassword: 'Login with email & password',
+      forgotPassword: 'Forgot password?',
+      orUsePassword: 'Or login with password',
+      accountCreated: 'Account created! You can now login.',
     },
     dashboard: {
       title: 'Member Dashboard',
@@ -229,6 +265,16 @@ export const translations: Record<Language, TranslationContent> = {
       viewDrop: 'View Drop',
       purchaseHistory: 'Purchase History',
       noPurchases: 'No purchases yet',
+      myProfile: 'My Profile',
+      profileSettings: 'Profile Settings',
+      phone: 'Phone number',
+      streetAddress: 'Street',
+      houseNumber: 'House number',
+      postalCode: 'Postal code',
+      city: 'City',
+      country: 'Country',
+      profileSaved: 'Profile saved',
+      completeProfile: 'Complete your profile to receive your orders',
     },
     drop: {
       currentDrop: 'Current Drop',
@@ -365,6 +411,19 @@ export const translations: Record<Language, TranslationContent> = {
       joinWaitlist: 'Schrijf je in op de wachtlijst',
       waitlistBenefit: 'Je ontvangt ook updates over beschikbare drops na livegang!',
       alreadyOnWaitlist: 'Dit e-mailadres staat al op de wachtlijst',
+      createAccount: 'Maak je account aan',
+      createAccountDesc: 'Vul je gegevens in om je registratie te voltooien',
+      firstName: 'Voornaam',
+      lastName: 'Achternaam',
+      password: 'Wachtwoord',
+      confirmPassword: 'Bevestig wachtwoord',
+      passwordMismatch: 'Wachtwoorden komen niet overeen',
+      passwordTooShort: 'Wachtwoord moet minimaal 6 tekens zijn',
+      signUp: 'Account Aanmaken',
+      loginWithPassword: 'Inloggen met email & wachtwoord',
+      forgotPassword: 'Wachtwoord vergeten?',
+      orUsePassword: 'Of inloggen met wachtwoord',
+      accountCreated: 'Account aangemaakt! Je kunt nu inloggen.',
     },
     dashboard: {
       title: 'Leden Dashboard',
@@ -386,6 +445,16 @@ export const translations: Record<Language, TranslationContent> = {
       viewDrop: 'Bekijk Drop',
       purchaseHistory: 'Aankoopgeschiedenis',
       noPurchases: 'Nog geen aankopen',
+      myProfile: 'Mijn Profiel',
+      profileSettings: 'Profiel Instellingen',
+      phone: 'Telefoonnummer',
+      streetAddress: 'Straat',
+      houseNumber: 'Huisnummer',
+      postalCode: 'Postcode',
+      city: 'Stad',
+      country: 'Land',
+      profileSaved: 'Profiel opgeslagen',
+      completeProfile: 'Vul je profiel aan om je bestellingen te ontvangen',
     },
     drop: {
       currentDrop: 'Huidige Drop',

@@ -220,6 +220,48 @@ export type Database = {
           },
         ]
       }
+      profiles: {
+        Row: {
+          city: string | null
+          country: string | null
+          created_at: string | null
+          first_name: string | null
+          house_number: string | null
+          id: string
+          last_name: string | null
+          phone: string | null
+          postal_code: string | null
+          street_address: string | null
+          updated_at: string | null
+        }
+        Insert: {
+          city?: string | null
+          country?: string | null
+          created_at?: string | null
+          first_name?: string | null
+          house_number?: string | null
+          id: string
+          last_name?: string | null
+          phone?: string | null
+          postal_code?: string | null
+          street_address?: string | null
+          updated_at?: string | null
+        }
+        Update: {
+          city?: string | null
+          country?: string | null
+          created_at?: string | null
+          first_name?: string | null
+          house_number?: string | null
+          id?: string
+          last_name?: string | null
+          phone?: string | null
+          postal_code?: string | null
+          street_address?: string | null
+          updated_at?: string | null
+        }
+        Relationships: []
+      }
       user_roles: {
         Row: {
           id: string
