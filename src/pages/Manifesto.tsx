@@ -17,6 +17,112 @@ const OrnamentalDivider = ({ className = '' }: { className?: string }) => (
   </div>
 );
 
+// Wax seal component
+const WaxSeal = ({ className = '' }: { className?: string }) => (
+  <div className={`relative ${className}`}>
+    <svg width="100" height="100" viewBox="0 0 100 100" className="drop-shadow-lg">
+      {/* Wax seal base with irregular edges */}
+      <defs>
+        <radialGradient id="sealGradient" cx="35%" cy="35%" r="65%">
+          <stop offset="0%" stopColor="hsl(var(--burgundy))" stopOpacity="1" />
+          <stop offset="50%" stopColor="hsl(var(--burgundy))" stopOpacity="0.9" />
+          <stop offset="100%" stopColor="hsl(var(--burgundy))" stopOpacity="0.7" />
+        </radialGradient>
+        <filter id="sealShadow" x="-20%" y="-20%" width="140%" height="140%">
+          <feDropShadow dx="2" dy="3" stdDeviation="3" floodOpacity="0.3"/>
+        </filter>
+      </defs>
+      
+      {/* Irregular wax seal shape */}
+      <path 
+        d="M50 5 
+           Q65 8, 72 15 
+           Q82 18, 88 28 
+           Q95 40, 93 50 
+           Q95 62, 88 72 
+           Q82 82, 72 85 
+           Q62 92, 50 95 
+           Q38 92, 28 85 
+           Q18 82, 12 72 
+           Q5 62, 7 50 
+           Q5 40, 12 28 
+           Q18 18, 28 15 
+           Q35 8, 50 5Z"
+        fill="url(#sealGradient)"
+        filter="url(#sealShadow)"
+      />
+      
+      {/* Inner circle border */}
+      <circle 
+        cx="50" 
+        cy="50" 
+        r="30" 
+        fill="none" 
+        stroke="hsl(var(--gold))" 
+        strokeWidth="1.5"
+        opacity="0.6"
+      />
+      
+      {/* Decorative inner ring */}
+      <circle 
+        cx="50" 
+        cy="50" 
+        r="25" 
+        fill="none" 
+        stroke="hsl(var(--gold))" 
+        strokeWidth="0.5"
+        opacity="0.4"
+        strokeDasharray="2 2"
+      />
+      
+      {/* Central monogram - TRG stylized */}
+      <text 
+        x="50" 
+        y="48" 
+        textAnchor="middle" 
+        dominantBaseline="middle"
+        fill="hsl(var(--gold))"
+        fontSize="14"
+        fontFamily="Cormorant Garamond, serif"
+        fontWeight="600"
+        letterSpacing="1"
+      >
+        TRG
+      </text>
+      
+      {/* Small decorative star below */}
+      <path 
+        d="M50 60 L51.5 63.5 L55 64 L52.5 66.5 L53 70 L50 68 L47 70 L47.5 66.5 L45 64 L48.5 63.5 Z"
+        fill="hsl(var(--gold))"
+        opacity="0.7"
+      />
+      
+      {/* Circular text - RARE GOODS CLUB */}
+      <path 
+        id="topArc"
+        d="M 20 50 A 30 30 0 0 1 80 50"
+        fill="none"
+      />
+      <text fontSize="5.5" fill="hsl(var(--gold))" opacity="0.5" letterSpacing="3">
+        <textPath href="#topArc" startOffset="50%" textAnchor="middle">
+          RARE GOODS
+        </textPath>
+      </text>
+      
+      <path 
+        id="bottomArc"
+        d="M 80 50 A 30 30 0 0 1 20 50"
+        fill="none"
+      />
+      <text fontSize="5.5" fill="hsl(var(--gold))" opacity="0.5" letterSpacing="3">
+        <textPath href="#bottomArc" startOffset="50%" textAnchor="middle">
+          • CLUB •
+        </textPath>
+      </text>
+    </svg>
+  </div>
+);
+
 export default function Manifesto() {
   const { language } = useLanguage();
 
@@ -122,10 +228,18 @@ export default function Manifesto() {
             {t.closing}
           </blockquote>
 
+          {/* Wax Seal */}
+          <div 
+            className="flex justify-center mb-12 animate-fade-in"
+            style={{ animationDelay: '0.85s' }}
+          >
+            <WaxSeal className="opacity-90 hover:opacity-100 transition-opacity duration-300" />
+          </div>
+
           {/* CTA */}
           <div 
-            className="flex justify-center mt-20 animate-fade-in"
-            style={{ animationDelay: '0.9s' }}
+            className="flex justify-center mt-8 animate-fade-in"
+            style={{ animationDelay: '0.95s' }}
           >
             <Link 
               to="/"
