@@ -24,8 +24,9 @@ interface Drop {
   quantity_available: number;
   quantity_sold: number;
   image_url: string | null;
+  video_url: string | null;
   shopify_product_id: string | null;
-  ends_at: string;
+  ends_at: string | null;
 }
 
 export default function Drop() {
@@ -51,12 +52,15 @@ export default function Drop() {
 
   const fetchDrop = async () => {
     try {
+      // Fetch active drops that have started
+      // Include drops with no end date OR end date in the future
+      const now = new Date().toISOString();
       const { data, error } = await supabase
         .from('drops')
         .select('*')
         .eq('is_active', true)
-        .gt('ends_at', new Date().toISOString())
-        .lt('starts_at', new Date().toISOString())
+        .lt('starts_at', now)
+        .or(`ends_at.is.null,ends_at.gt.${now}`)
         .maybeSingle();
 
       if (error) throw error;
@@ -174,13 +178,21 @@ export default function Drop() {
             )}
           </div>
 
-          {/* Countdown */}
-          <div className="bg-card border border-border p-6 mb-12">
-            <p className="font-sans text-sm uppercase tracking-widest text-muted-foreground mb-4 text-center">
-              {t.drop.endsIn}
-            </p>
-            <CountdownTimer targetDate={new Date(drop.ends_at)} />
-          </div>
+          {/* Countdown - only show if there's an end date */}
+          {drop.ends_at ? (
+            <div className="bg-card border border-border p-6 mb-12">
+              <p className="font-sans text-sm uppercase tracking-widest text-muted-foreground mb-4 text-center">
+                {t.drop.endsIn}
+              </p>
+              <CountdownTimer targetDate={new Date(drop.ends_at)} />
+            </div>
+          ) : (
+            <div className="bg-card border border-border p-6 mb-12 text-center">
+              <p className="font-sans text-sm uppercase tracking-widest text-muted-foreground">
+                {t.drop.whileSuppliesLast || 'While Supplies Last'}
+              </p>
+            </div>
+          )}
 
           {/* Story Section */}
           {story && (

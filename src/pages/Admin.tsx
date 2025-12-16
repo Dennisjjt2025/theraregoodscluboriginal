@@ -6,20 +6,34 @@ import { supabase } from '@/integrations/supabase/client';
 import { Header } from '@/components/Header';
 import { MemberDetailModal } from '@/components/admin/MemberDetailModal';
 import { EmailComposer } from '@/components/admin/EmailComposer';
+import { DropEditModal } from '@/components/admin/DropEditModal';
 import { toast } from 'sonner';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
-import { Plus, Users, Wine, Clock, Check, X, RotateCcw, Minus, FileText, Save, Eye, Mail, MailCheck, Gift, Send, Globe, Lock, Trash2 } from 'lucide-react';
+import { Plus, Users, Wine, Clock, Check, X, RotateCcw, Minus, FileText, Save, Eye, Mail, MailCheck, Gift, Send, Globe, Lock, Trash2, Pencil, Copy } from 'lucide-react';
 
 interface Drop {
   id: string;
   title_en: string;
   title_nl: string;
+  description_en?: string;
+  description_nl?: string;
+  story_en?: string;
+  story_nl?: string;
+  tasting_notes_en?: string;
+  tasting_notes_nl?: string;
+  origin?: string;
+  vintage?: string;
   price: number;
   quantity_available: number;
+  quantity_sold?: number;
+  image_url?: string;
+  video_url?: string;
+  shopify_product_id?: string;
   starts_at: string;
-  ends_at: string;
+  ends_at?: string;
   is_active: boolean;
   is_public: boolean;
+  is_draft?: boolean;
 }
 
 interface Member {
@@ -87,25 +101,10 @@ export default function Admin() {
   const [showEmailComposer, setShowEmailComposer] = useState(false);
   const [emailComposerPreselect, setEmailComposerPreselect] = useState<{ email?: string; type?: 'strike_warning' | 'thank_you' | 'drop_update' | 'newsletter' | 'custom' } | null>(null);
 
-  // Drop form state
-  const [dropForm, setDropForm] = useState({
-    title_en: '',
-    title_nl: '',
-    description_en: '',
-    description_nl: '',
-    story_en: '',
-    story_nl: '',
-    tasting_notes_en: '',
-    tasting_notes_nl: '',
-    origin: '',
-    vintage: '',
-    price: '',
-    quantity_available: '',
-    image_url: '',
-    shopify_product_id: '',
-    starts_at: '',
-    ends_at: '',
-  });
+  // Drop edit modal state
+  const [showDropModal, setShowDropModal] = useState(false);
+  const [selectedDropForEdit, setSelectedDropForEdit] = useState<Drop | null>(null);
+  const [dropModalMode, setDropModalMode] = useState<'create' | 'edit' | 'duplicate'>('create');
 
   useEffect(() => {
     if (!authLoading && !user) {
@@ -197,27 +196,26 @@ export default function Admin() {
     }
   }, [selectedDropForReport]);
 
-  const handleCreateDrop = async (e: React.FormEvent) => {
-    e.preventDefault();
+  const openDropModal = (mode: 'create' | 'edit' | 'duplicate', drop?: Drop) => {
+    setDropModalMode(mode);
+    setSelectedDropForEdit(drop || null);
+    setShowDropModal(true);
+  };
+
+  const deleteDrop = async (dropId: string) => {
+    if (!confirm('Are you sure you want to delete this drop?')) return;
+    
     try {
-      const { error } = await supabase.from('drops').insert({
-        ...dropForm,
-        price: parseFloat(dropForm.price),
-        quantity_available: parseInt(dropForm.quantity_available),
-      });
+      const { error } = await supabase
+        .from('drops')
+        .delete()
+        .eq('id', dropId);
 
       if (error) throw error;
-
-      toast.success('Drop created successfully');
-      setDropForm({
-        title_en: '', title_nl: '', description_en: '', description_nl: '',
-        story_en: '', story_nl: '', tasting_notes_en: '', tasting_notes_nl: '',
-        origin: '', vintage: '', price: '', quantity_available: '',
-        image_url: '', shopify_product_id: '', starts_at: '', ends_at: '',
-      });
+      toast.success('Drop deleted');
       fetchData();
     } catch (error) {
-      console.error('Create drop error:', error);
+      console.error('Delete drop error:', error);
       toast.error(t.common.error);
     }
   };
@@ -540,6 +538,19 @@ export default function Admin() {
           preselectedType={emailComposerPreselect?.type}
         />
       )}
+
+      {/* Drop Edit Modal */}
+      {showDropModal && (
+        <DropEditModal
+          drop={selectedDropForEdit}
+          onClose={() => {
+            setShowDropModal(false);
+            setSelectedDropForEdit(null);
+          }}
+          onSave={fetchData}
+          mode={dropModalMode}
+        />
+      )}
       
       <main className="pt-24 pb-12 px-4">
         <div className="container mx-auto max-w-6xl">
@@ -567,181 +578,134 @@ export default function Admin() {
 
             {/* Drops Tab */}
             <TabsContent value="drops" className="space-y-6">
-              {/* Create Drop Form */}
-              <div className="bg-card border border-border p-6">
-                <h2 className="font-serif text-xl mb-6 flex items-center gap-2">
-                  <Plus className="w-5 h-5" />
+              {/* Header with Create Button */}
+              <div className="flex items-center justify-between">
+                <h2 className="font-serif text-xl">{t.admin.manageDrop}</h2>
+                <button
+                  onClick={() => openDropModal('create')}
+                  className="btn-luxury flex items-center gap-2"
+                >
+                  <Plus className="w-4 h-4" />
                   {t.admin.createDrop}
-                </h2>
-                <form onSubmit={handleCreateDrop} className="grid md:grid-cols-2 gap-4">
-                  <input
-                    type="text"
-                    value={dropForm.title_en}
-                    onChange={(e) => setDropForm({ ...dropForm, title_en: e.target.value })}
-                    placeholder={t.admin.dropTitleEn}
-                    required
-                    className="input-luxury"
-                  />
-                  <input
-                    type="text"
-                    value={dropForm.title_nl}
-                    onChange={(e) => setDropForm({ ...dropForm, title_nl: e.target.value })}
-                    placeholder={t.admin.dropTitleNl}
-                    required
-                    className="input-luxury"
-                  />
-                  <textarea
-                    value={dropForm.description_en}
-                    onChange={(e) => setDropForm({ ...dropForm, description_en: e.target.value })}
-                    placeholder={t.admin.descriptionEn}
-                    rows={2}
-                    className="input-luxury"
-                  />
-                  <textarea
-                    value={dropForm.description_nl}
-                    onChange={(e) => setDropForm({ ...dropForm, description_nl: e.target.value })}
-                    placeholder={t.admin.descriptionNl}
-                    rows={2}
-                    className="input-luxury"
-                  />
-                  <textarea
-                    value={dropForm.story_en}
-                    onChange={(e) => setDropForm({ ...dropForm, story_en: e.target.value })}
-                    placeholder={t.admin.storyEn}
-                    rows={3}
-                    className="input-luxury"
-                  />
-                  <textarea
-                    value={dropForm.story_nl}
-                    onChange={(e) => setDropForm({ ...dropForm, story_nl: e.target.value })}
-                    placeholder={t.admin.storyNl}
-                    rows={3}
-                    className="input-luxury"
-                  />
-                  <textarea
-                    value={dropForm.tasting_notes_en}
-                    onChange={(e) => setDropForm({ ...dropForm, tasting_notes_en: e.target.value })}
-                    placeholder={t.admin.tastingNotesEn}
-                    rows={2}
-                    className="input-luxury"
-                  />
-                  <textarea
-                    value={dropForm.tasting_notes_nl}
-                    onChange={(e) => setDropForm({ ...dropForm, tasting_notes_nl: e.target.value })}
-                    placeholder={t.admin.tastingNotesNl}
-                    rows={2}
-                    className="input-luxury"
-                  />
-                  <input
-                    type="text"
-                    value={dropForm.origin}
-                    onChange={(e) => setDropForm({ ...dropForm, origin: e.target.value })}
-                    placeholder="Origin (e.g., Bordeaux, France)"
-                    className="input-luxury"
-                  />
-                  <input
-                    type="text"
-                    value={dropForm.vintage}
-                    onChange={(e) => setDropForm({ ...dropForm, vintage: e.target.value })}
-                    placeholder="Vintage (e.g., 2015)"
-                    className="input-luxury"
-                  />
-                  <input
-                    type="number"
-                    value={dropForm.price}
-                    onChange={(e) => setDropForm({ ...dropForm, price: e.target.value })}
-                    placeholder={t.admin.price}
-                    step="0.01"
-                    required
-                    className="input-luxury"
-                  />
-                  <input
-                    type="number"
-                    value={dropForm.quantity_available}
-                    onChange={(e) => setDropForm({ ...dropForm, quantity_available: e.target.value })}
-                    placeholder={t.admin.quantity}
-                    required
-                    className="input-luxury"
-                  />
-                  <input
-                    type="url"
-                    value={dropForm.image_url}
-                    onChange={(e) => setDropForm({ ...dropForm, image_url: e.target.value })}
-                    placeholder={t.admin.imageUrl}
-                    className="input-luxury"
-                  />
-                  <input
-                    type="text"
-                    value={dropForm.shopify_product_id}
-                    onChange={(e) => setDropForm({ ...dropForm, shopify_product_id: e.target.value })}
-                    placeholder={t.admin.shopifyProductId}
-                    className="input-luxury"
-                  />
-                  <div>
-                    <label className="text-sm text-muted-foreground">{t.admin.startDate}</label>
-                    <input
-                      type="datetime-local"
-                      value={dropForm.starts_at}
-                      onChange={(e) => setDropForm({ ...dropForm, starts_at: e.target.value })}
-                      required
-                      className="input-luxury w-full"
-                    />
-                  </div>
-                  <div>
-                    <label className="text-sm text-muted-foreground">{t.admin.endDate}</label>
-                    <input
-                      type="datetime-local"
-                      value={dropForm.ends_at}
-                      onChange={(e) => setDropForm({ ...dropForm, ends_at: e.target.value })}
-                      required
-                      className="input-luxury w-full"
-                    />
-                  </div>
-                  <div className="md:col-span-2">
-                    <button type="submit" className="btn-luxury">
-                      {t.admin.createDropBtn}
-                    </button>
-                  </div>
-                </form>
+                </button>
               </div>
 
               {/* Drops List */}
-              <div className="bg-card border border-border p-6">
-                <h2 className="font-serif text-xl mb-6">{t.admin.manageDrop}</h2>
-                <div className="space-y-4">
+              <div className="bg-card border border-border">
+                <div className="divide-y divide-border">
                   {drops.map((drop) => (
                     <div
                       key={drop.id}
-                      className="flex items-center justify-between p-4 bg-muted/30 border border-border"
+                      className="flex items-center gap-4 p-4 hover:bg-muted/30 transition-colors"
                     >
-                      <div>
-                        <h3 className="font-medium">{drop.title_en}</h3>
-                        <p className="text-sm text-muted-foreground">
-                          €{drop.price} · {drop.quantity_available} units
-                        </p>
+                      {/* Thumbnail */}
+                      <div className="w-16 h-16 flex-shrink-0 bg-muted rounded overflow-hidden">
+                        {drop.image_url ? (
+                          <img
+                            src={drop.image_url}
+                            alt={drop.title_en}
+                            className="w-full h-full object-cover"
+                          />
+                        ) : (
+                          <div className="w-full h-full flex items-center justify-center">
+                            <Wine className="w-6 h-6 text-muted-foreground" />
+                          </div>
+                        )}
                       </div>
+
+                      {/* Info */}
+                      <div className="flex-1 min-w-0">
+                        <div className="flex items-center gap-2 mb-1">
+                          <h3 className="font-medium truncate">{drop.title_en}</h3>
+                          {drop.is_draft && (
+                            <span className="px-2 py-0.5 text-xs bg-amber-500/20 text-amber-700 rounded">
+                              Draft
+                            </span>
+                          )}
+                        </div>
+                        <div className="flex items-center gap-3 text-sm text-muted-foreground">
+                          <span>€{drop.price}</span>
+                          <span>·</span>
+                          <span>{(drop.quantity_sold || 0)}/{drop.quantity_available} sold</span>
+                          {drop.ends_at ? (
+                            <>
+                              <span>·</span>
+                              <span>Ends {new Date(drop.ends_at).toLocaleDateString()}</span>
+                            </>
+                          ) : (
+                            <>
+                              <span>·</span>
+                              <span className="text-secondary">While supplies last</span>
+                            </>
+                          )}
+                        </div>
+                      </div>
+
+                      {/* Status Badges */}
                       <div className="flex items-center gap-2">
                         <span className={`px-2 py-1 text-xs ${drop.is_active ? 'bg-secondary text-secondary-foreground' : 'bg-muted text-muted-foreground'}`}>
                           {drop.is_active ? 'Active' : 'Inactive'}
                         </span>
                         <button
                           onClick={() => toggleDropPublic(drop.id, drop.is_public)}
-                          className={`p-2 text-xs ${drop.is_public ? 'bg-amber-500 text-white' : 'bg-muted text-muted-foreground'}`}
+                          className={`p-2 ${drop.is_public ? 'bg-amber-500 text-white' : 'bg-muted text-muted-foreground'}`}
                           title={drop.is_public ? 'Public for waitlist' : 'Members only'}
                         >
                           {drop.is_public ? <Globe className="w-4 h-4" /> : <Lock className="w-4 h-4" />}
                         </button>
+                      </div>
+
+                      {/* Actions */}
+                      <div className="flex items-center gap-1">
+                        <button
+                          onClick={() => openDropModal('edit', drop)}
+                          className="p-2 hover:bg-muted rounded"
+                          title="Edit"
+                        >
+                          <Pencil className="w-4 h-4" />
+                        </button>
+                        <button
+                          onClick={() => openDropModal('duplicate', drop)}
+                          className="p-2 hover:bg-muted rounded"
+                          title="Duplicate"
+                        >
+                          <Copy className="w-4 h-4" />
+                        </button>
+                        <button
+                          onClick={() => window.open(`/drop`, '_blank')}
+                          className="p-2 hover:bg-muted rounded"
+                          title="Preview"
+                        >
+                          <Eye className="w-4 h-4" />
+                        </button>
                         <button
                           onClick={() => toggleDropActive(drop.id, drop.is_active)}
-                          className="btn-outline-luxury text-xs px-3 py-1"
+                          className={`p-2 rounded ${drop.is_active ? 'hover:bg-destructive/10 text-destructive' : 'hover:bg-secondary/10 text-secondary'}`}
+                          title={drop.is_active ? 'Deactivate' : 'Activate'}
                         >
-                          {drop.is_active ? 'Deactivate' : 'Activate'}
+                          {drop.is_active ? <X className="w-4 h-4" /> : <Check className="w-4 h-4" />}
+                        </button>
+                        <button
+                          onClick={() => deleteDrop(drop.id)}
+                          className="p-2 hover:bg-destructive/10 text-destructive rounded"
+                          title="Delete"
+                        >
+                          <Trash2 className="w-4 h-4" />
                         </button>
                       </div>
                     </div>
                   ))}
                   {drops.length === 0 && (
-                    <p className="text-muted-foreground text-center py-8">No drops yet</p>
+                    <div className="p-12 text-center">
+                      <Wine className="w-12 h-12 mx-auto text-muted-foreground mb-4" />
+                      <p className="text-muted-foreground mb-4">No drops yet</p>
+                      <button
+                        onClick={() => openDropModal('create')}
+                        className="btn-outline-luxury"
+                      >
+                        Create your first drop
+                      </button>
+                    </div>
                   )}
                 </div>
               </div>
