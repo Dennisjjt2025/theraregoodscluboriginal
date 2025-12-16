@@ -5,7 +5,7 @@ import { useAuth } from '@/contexts/AuthContext';
 import { supabase } from '@/integrations/supabase/client';
 import { Header } from '@/components/Header';
 import { toast } from 'sonner';
-import { Wine, Copy, Check, AlertTriangle, ArrowRight, User } from 'lucide-react';
+import { Wine, Copy, Check, AlertTriangle, ArrowRight, User, Shield } from 'lucide-react';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 
 interface Member {
@@ -64,6 +64,7 @@ export default function Dashboard() {
   const [savingProfile, setSavingProfile] = useState(false);
   const [copiedCode, setCopiedCode] = useState<string | null>(null);
   const [generatingInvite, setGeneratingInvite] = useState(false);
+  const [isAdmin, setIsAdmin] = useState(false);
 
   useEffect(() => {
     if (!authLoading && !user) {
@@ -79,6 +80,16 @@ export default function Dashboard() {
 
   const fetchData = async () => {
     try {
+      // Check if user is admin
+      const { data: adminRole } = await supabase
+        .from('user_roles')
+        .select('role')
+        .eq('user_id', user?.id)
+        .eq('role', 'admin')
+        .maybeSingle();
+      
+      setIsAdmin(!!adminRole);
+
       // Fetch member data
       const { data: memberData, error: memberError } = await supabase
         .from('members')
@@ -236,11 +247,22 @@ export default function Dashboard() {
       <main className="pt-24 pb-12 px-4">
         <div className="container mx-auto max-w-4xl">
           {/* Welcome Header */}
-          <div className="mb-8">
-            <h1 className="font-serif text-3xl md:text-4xl mb-2">{t.dashboard.title}</h1>
-            <p className="text-muted-foreground">
-              {t.dashboard.welcome}, {profile.first_name || user?.email?.split('@')[0]}
-            </p>
+          <div className="mb-8 flex items-start justify-between">
+            <div>
+              <h1 className="font-serif text-3xl md:text-4xl mb-2">{t.dashboard.title}</h1>
+              <p className="text-muted-foreground">
+                {t.dashboard.welcome}, {profile.first_name || user?.email?.split('@')[0]}
+              </p>
+            </div>
+            {isAdmin && (
+              <Link
+                to="/admin"
+                className="btn-outline-luxury flex items-center gap-2 text-sm"
+              >
+                <Shield className="w-4 h-4" />
+                {t.nav.admin}
+              </Link>
+            )}
           </div>
 
           <Tabs defaultValue="overview" className="space-y-6">
