@@ -177,6 +177,9 @@ type TranslationContent = {
     totalDrops: string;
     missed: string;
     viewDetails: string;
+    emailVerifiedLabel: string;
+    emailVerifiedSuccess: string;
+    verifyEmailBtn: string;
   };
   common: {
     loading: string;
@@ -368,6 +371,9 @@ export const translations: Record<Language, TranslationContent> = {
       totalDrops: 'Total Drops',
       missed: 'Missed',
       viewDetails: 'View Details',
+      emailVerifiedLabel: 'Email verified',
+      emailVerifiedSuccess: 'Email verified successfully',
+      verifyEmailBtn: 'Verify email manually',
     },
     common: {
       loading: 'Loading...',
@@ -557,6 +563,9 @@ export const translations: Record<Language, TranslationContent> = {
       totalDrops: 'Totaal Drops',
       missed: 'Gemist',
       viewDetails: 'Details Bekijken',
+      emailVerifiedLabel: 'Email geverifieerd',
+      emailVerifiedSuccess: 'Email succesvol geverifieerd',
+      verifyEmailBtn: 'Email handmatig verifiëren',
     },
     common: {
       loading: 'Laden...',
