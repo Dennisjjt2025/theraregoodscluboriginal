@@ -9,16 +9,22 @@ import logo from '@/assets/logo.png';
 
 export function Header() {
   const [isMenuOpen, setIsMenuOpen] = useState(false);
-  const { t } = useLanguage();
+  const { t, language } = useLanguage();
   const { user, signOut } = useAuth();
   const location = useLocation();
 
   const isActive = (path: string) => location.pathname === path;
 
-  const navLinks = user ? [
+  const publicLinks = [
+    { href: '/manifesto', label: language === 'nl' ? 'Ons Verhaal' : 'Our Story' },
+  ];
+
+  const memberLinks = user ? [
     { href: '/drop', label: t.nav.currentDrop },
     { href: '/dashboard', label: t.nav.dashboard },
   ] : [];
+
+  const navLinks = [...publicLinks, ...memberLinks];
 
   return (
     <header className="fixed top-0 left-0 right-0 z-50 bg-background/95 backdrop-blur-sm border-b border-border">
