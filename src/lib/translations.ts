@@ -47,6 +47,8 @@ type TranslationContent = {
     noAccessDesc: string;
     haveInviteCode: string;
     joinWaitlist: string;
+    waitlistBenefit: string;
+    alreadyOnWaitlist: string;
   };
   dashboard: {
     title: string;
@@ -204,6 +206,8 @@ export const translations: Record<Language, TranslationContent> = {
       noAccessDesc: 'Request to join the club',
       haveInviteCode: 'I have an invite code',
       joinWaitlist: 'Join the waitlist',
+      waitlistBenefit: "You'll also receive updates about available drops after launch!",
+      alreadyOnWaitlist: 'This email is already on the waitlist',
     },
     dashboard: {
       title: 'Member Dashboard',
@@ -359,6 +363,8 @@ export const translations: Record<Language, TranslationContent> = {
       noAccessDesc: 'Vraag toegang aan tot de club',
       haveInviteCode: 'Ik heb een uitnodigingscode',
       joinWaitlist: 'Schrijf je in op de wachtlijst',
+      waitlistBenefit: 'Je ontvangt ook updates over beschikbare drops na livegang!',
+      alreadyOnWaitlist: 'Dit e-mailadres staat al op de wachtlijst',
     },
     dashboard: {
       title: 'Leden Dashboard',

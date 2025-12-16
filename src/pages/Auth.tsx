@@ -1,24 +1,25 @@
 import { useState } from 'react';
-import { useNavigate, useSearchParams } from 'react-router-dom';
+import { useSearchParams } from 'react-router-dom';
 import { useLanguage } from '@/contexts/LanguageContext';
 import { supabase } from '@/integrations/supabase/client';
 import { Header } from '@/components/Header';
 import { toast } from 'sonner';
 import logo from '@/assets/logo.png';
 
-type AuthMode = 'choose' | 'login' | 'request-access' | 'invite';
+type AuthMode = 'choose' | 'login' | 'request-access' | 'invite' | 'waitlist';
 
 export default function Auth() {
   const { t } = useLanguage();
-  const navigate = useNavigate();
   const [searchParams] = useSearchParams();
   const inviteCodeParam = searchParams.get('invite');
 
   const [email, setEmail] = useState('');
+  const [name, setName] = useState('');
   const [inviteCode, setInviteCode] = useState(inviteCodeParam || '');
   const [authMode, setAuthMode] = useState<AuthMode>(inviteCodeParam ? 'invite' : 'choose');
   const [loading, setLoading] = useState(false);
   const [emailSent, setEmailSent] = useState(false);
+  const [waitlistSubmitted, setWaitlistSubmitted] = useState(false);
 
   const handleMagicLink = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -72,6 +73,34 @@ export default function Auth() {
       toast.success('Valid invite code! Now enter your email to continue.');
     } catch (error) {
       console.error('Invite validation error:', error);
+      toast.error(t.common.error);
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  const handleWaitlistSubmit = async (e: React.FormEvent) => {
+    e.preventDefault();
+    if (!email || !name) return;
+
+    setLoading(true);
+    try {
+      const { error } = await supabase
+        .from('waitlist')
+        .insert({ email, name });
+
+      if (error) {
+        if (error.code === '23505') {
+          toast.error(t.auth.alreadyOnWaitlist);
+        } else {
+          throw error;
+        }
+      } else {
+        setWaitlistSubmitted(true);
+        toast.success(t.landing.waitlistSuccess);
+      }
+    } catch (error) {
+      console.error('Waitlist error:', error);
       toast.error(t.common.error);
     } finally {
       setLoading(false);
@@ -170,7 +199,7 @@ export default function Auth() {
               </button>
 
               <button
-                onClick={() => navigate('/#waitlist')}
+                onClick={() => setAuthMode('waitlist')}
                 className="w-full p-6 border border-border rounded-lg hover:border-secondary transition-colors text-left group"
               >
                 <h3 className="font-serif text-xl mb-1 group-hover:text-secondary transition-colors">
@@ -187,6 +216,89 @@ export default function Auth() {
             >
               {t.common.back}
             </button>
+          </div>
+        </main>
+      </div>
+    );
+  }
+
+  // Waitlist view
+  if (authMode === 'waitlist') {
+    if (waitlistSubmitted) {
+      return (
+        <div className="min-h-screen bg-background">
+          <Header />
+          <main className="pt-24 px-4">
+            <div className="max-w-md mx-auto text-center py-24">
+              <div className="w-20 h-20 mx-auto mb-8 flex items-center justify-center border-2 border-secondary rounded-full">
+                <svg className="w-10 h-10 text-secondary" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M5 13l4 4L19 7" />
+                </svg>
+              </div>
+              <h1 className="font-serif text-3xl mb-4">{t.landing.waitlistSuccess}</h1>
+              <p className="text-muted-foreground mb-8">
+                {t.auth.waitlistBenefit}
+              </p>
+              <button
+                onClick={() => setAuthMode('choose')}
+                className="btn-outline-luxury"
+              >
+                {t.common.back}
+              </button>
+            </div>
+          </main>
+        </div>
+      );
+    }
+
+    return (
+      <div className="min-h-screen bg-background">
+        <Header />
+        <main className="pt-24 px-4">
+          <div className="max-w-md mx-auto py-16">
+            <div className="text-center mb-12">
+              <img src={logo} alt="The Rare Goods Club" className="w-24 h-24 mx-auto mb-6 opacity-90" />
+              <h1 className="font-serif text-3xl md:text-4xl mb-2">{t.landing.waitlistTitle}</h1>
+              <p className="text-muted-foreground mb-4">{t.landing.waitlistSubtitle}</p>
+              <p className="text-secondary text-sm font-medium">{t.auth.waitlistBenefit}</p>
+            </div>
+
+            <form onSubmit={handleWaitlistSubmit} className="space-y-6">
+              <div>
+                <input
+                  type="text"
+                  value={name}
+                  onChange={(e) => setName(e.target.value)}
+                  placeholder={t.landing.namePlaceholder}
+                  required
+                  className="input-luxury w-full text-center"
+                />
+              </div>
+              <div>
+                <input
+                  type="email"
+                  value={email}
+                  onChange={(e) => setEmail(e.target.value)}
+                  placeholder={t.landing.emailPlaceholder}
+                  required
+                  className="input-luxury w-full text-center"
+                />
+              </div>
+              <button
+                type="submit"
+                disabled={loading}
+                className="btn-luxury w-full disabled:opacity-50"
+              >
+                {loading ? t.common.loading : t.landing.submit}
+              </button>
+              <button
+                type="button"
+                onClick={() => setAuthMode('request-access')}
+                className="w-full text-muted-foreground hover:text-foreground transition-colors text-sm"
+              >
+                {t.common.back}
+              </button>
+            </form>
           </div>
         </main>
       </div>
