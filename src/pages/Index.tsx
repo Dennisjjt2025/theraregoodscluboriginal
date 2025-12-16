@@ -151,7 +151,7 @@ export default function Index() {
                   targetDate={countdownDate} 
                   isLive={isLive}
                 />
-                {user && isLive && (
+                {isLive && (
                   <div className="mt-6">
                     <Link
                       to="/drop"
