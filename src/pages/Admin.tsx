@@ -6,7 +6,7 @@ import { supabase } from '@/integrations/supabase/client';
 import { Header } from '@/components/Header';
 import { toast } from 'sonner';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
-import { Plus, Users, Wine, Clock, Check, X, RotateCcw } from 'lucide-react';
+import { Plus, Users, Wine, Clock, Check, X, RotateCcw, Minus, FileText, Save } from 'lucide-react';
 
 interface Drop {
   id: string;
@@ -26,6 +26,8 @@ interface Member {
   strike_count: number;
   invites_remaining: number;
   created_at: string;
+  notes: string | null;
+  email?: string;
 }
 
 interface WaitlistEntry {
@@ -34,6 +36,22 @@ interface WaitlistEntry {
   name: string;
   status: string;
   created_at: string;
+}
+
+interface MemberEmail {
+  member_id: string;
+  user_id: string;
+  email: string;
+}
+
+interface DropParticipationReport {
+  member_id: string;
+  user_id: string;
+  email: string;
+  status: string;
+  strike_count: number;
+  purchased: boolean;
+  notes: string | null;
 }
 
 export default function Admin() {
@@ -46,6 +64,17 @@ export default function Admin() {
   const [drops, setDrops] = useState<Drop[]>([]);
   const [members, setMembers] = useState<Member[]>([]);
   const [waitlist, setWaitlist] = useState<WaitlistEntry[]>([]);
+  const [memberEmails, setMemberEmails] = useState<Record<string, string>>({});
+  
+  // Drop participation report state
+  const [selectedDropForReport, setSelectedDropForReport] = useState<string>('');
+  const [participationReport, setParticipationReport] = useState<DropParticipationReport[]>([]);
+  const [reportFilter, setReportFilter] = useState<'all' | 'purchased' | 'not_purchased'>('all');
+  const [loadingReport, setLoadingReport] = useState(false);
+
+  // Notes editing state
+  const [editingNotes, setEditingNotes] = useState<string | null>(null);
+  const [notesValue, setNotesValue] = useState('');
 
   // Drop form state
   const [dropForm, setDropForm] = useState({
@@ -103,21 +132,59 @@ export default function Admin() {
 
   const fetchData = async () => {
     try {
-      const [dropsRes, membersRes, waitlistRes] = await Promise.all([
+      const [dropsRes, membersRes, waitlistRes, emailsRes] = await Promise.all([
         supabase.from('drops').select('*').order('created_at', { ascending: false }),
         supabase.from('members').select('*').order('created_at', { ascending: false }),
         supabase.from('waitlist').select('*').order('created_at', { ascending: false }),
+        supabase.rpc('get_member_emails'),
       ]);
 
       setDrops(dropsRes.data || []);
       setMembers(membersRes.data || []);
       setWaitlist(waitlistRes.data || []);
+      
+      // Build email lookup map
+      const emailMap: Record<string, string> = {};
+      if (emailsRes.data) {
+        (emailsRes.data as MemberEmail[]).forEach((item) => {
+          emailMap[item.member_id] = item.email;
+        });
+      }
+      setMemberEmails(emailMap);
     } catch (error) {
       console.error('Fetch error:', error);
     } finally {
       setLoading(false);
     }
   };
+
+  const fetchDropParticipationReport = async (dropId: string) => {
+    if (!dropId) {
+      setParticipationReport([]);
+      return;
+    }
+    
+    setLoadingReport(true);
+    try {
+      const { data, error } = await supabase.rpc('get_drop_participation_report', {
+        drop_id_param: dropId
+      });
+      
+      if (error) throw error;
+      setParticipationReport((data as DropParticipationReport[]) || []);
+    } catch (error) {
+      console.error('Fetch report error:', error);
+      toast.error(t.common.error);
+    } finally {
+      setLoadingReport(false);
+    }
+  };
+
+  useEffect(() => {
+    if (selectedDropForReport) {
+      fetchDropParticipationReport(selectedDropForReport);
+    }
+  }, [selectedDropForReport]);
 
   const handleCreateDrop = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -176,6 +243,54 @@ export default function Admin() {
     }
   };
 
+  const addStrike = async (memberId: string, currentStrikes: number) => {
+    if (currentStrikes >= 3) {
+      toast.error('Member already has maximum strikes');
+      return;
+    }
+    try {
+      const newStrikes = currentStrikes + 1;
+      const updates: { strike_count: number; status?: 'suspended' } = { strike_count: newStrikes };
+      
+      // Auto-suspend at 3 strikes
+      if (newStrikes >= 3) {
+        updates.status = 'suspended';
+      }
+      
+      const { error } = await supabase
+        .from('members')
+        .update(updates)
+        .eq('id', memberId);
+
+      if (error) throw error;
+      toast.success(`Strike added (${newStrikes}/3)${newStrikes >= 3 ? ' - Member suspended' : ''}`);
+      fetchData();
+    } catch (error) {
+      console.error('Add strike error:', error);
+      toast.error(t.common.error);
+    }
+  };
+
+  const removeStrike = async (memberId: string, currentStrikes: number) => {
+    if (currentStrikes <= 0) {
+      toast.error('Member has no strikes to remove');
+      return;
+    }
+    try {
+      const { error } = await supabase
+        .from('members')
+        .update({ strike_count: currentStrikes - 1 })
+        .eq('id', memberId);
+
+      if (error) throw error;
+      toast.success(`Strike removed (${currentStrikes - 1}/3)`);
+      fetchData();
+    } catch (error) {
+      console.error('Remove strike error:', error);
+      toast.error(t.common.error);
+    }
+  };
+
   const resetStrikes = async (memberId: string) => {
     try {
       const { error } = await supabase
@@ -188,6 +303,23 @@ export default function Admin() {
       fetchData();
     } catch (error) {
       console.error('Reset strikes error:', error);
+      toast.error(t.common.error);
+    }
+  };
+
+  const saveNotes = async (memberId: string) => {
+    try {
+      const { error } = await supabase
+        .from('members')
+        .update({ notes: notesValue || null })
+        .eq('id', memberId);
+
+      if (error) throw error;
+      toast.success('Notes saved');
+      setEditingNotes(null);
+      fetchData();
+    } catch (error) {
+      console.error('Save notes error:', error);
       toast.error(t.common.error);
     }
   };
@@ -207,6 +339,34 @@ export default function Admin() {
       toast.error(t.common.error);
     }
   };
+
+  const getStrikeIndicator = (strikes: number) => {
+    return (
+      <div className="flex items-center gap-1">
+        {[0, 1, 2].map((i) => (
+          <div
+            key={i}
+            className={`w-3 h-3 rounded-full ${
+              i < strikes
+                ? strikes >= 3
+                  ? 'bg-destructive'
+                  : strikes >= 2
+                  ? 'bg-amber-500'
+                  : 'bg-amber-400'
+                : 'bg-muted border border-border'
+            }`}
+          />
+        ))}
+        <span className="ml-2 text-sm text-muted-foreground">{strikes}/3</span>
+      </div>
+    );
+  };
+
+  const filteredReport = participationReport.filter((item) => {
+    if (reportFilter === 'purchased') return item.purchased;
+    if (reportFilter === 'not_purchased') return !item.purchased;
+    return true;
+  });
 
   if (authLoading || loading) {
     return (
@@ -236,6 +396,10 @@ export default function Admin() {
               <TabsTrigger value="members" className="flex items-center gap-2">
                 <Users className="w-4 h-4" />
                 {t.admin.manageMembers}
+              </TabsTrigger>
+              <TabsTrigger value="report" className="flex items-center gap-2">
+                <FileText className="w-4 h-4" />
+                {t.admin.dropReport}
               </TabsTrigger>
               <TabsTrigger value="waitlist" className="flex items-center gap-2">
                 <Clock className="w-4 h-4" />
@@ -426,26 +590,81 @@ export default function Admin() {
                   <table className="w-full">
                     <thead>
                       <tr className="border-b border-border">
-                        <th className="text-left py-3 px-4 font-sans text-sm font-medium">ID</th>
+                        <th className="text-left py-3 px-4 font-sans text-sm font-medium">{t.admin.memberEmail}</th>
                         <th className="text-left py-3 px-4 font-sans text-sm font-medium">{t.admin.memberStatus}</th>
                         <th className="text-left py-3 px-4 font-sans text-sm font-medium">{t.admin.memberStrikes}</th>
-                        <th className="text-left py-3 px-4 font-sans text-sm font-medium">Invites</th>
+                        <th className="text-left py-3 px-4 font-sans text-sm font-medium">{t.admin.memberNotes}</th>
                         <th className="text-right py-3 px-4 font-sans text-sm font-medium">{t.admin.memberActions}</th>
                       </tr>
                     </thead>
                     <tbody>
                       {members.map((member) => (
                         <tr key={member.id} className="border-b border-border/50">
-                          <td className="py-3 px-4 text-sm font-mono">{member.user_id.slice(0, 8)}...</td>
+                          <td className="py-3 px-4">
+                            <div>
+                              <p className="text-sm">{memberEmails[member.id] || 'Loading...'}</p>
+                              <p className="text-xs text-muted-foreground font-mono">{member.user_id.slice(0, 8)}...</p>
+                            </div>
+                          </td>
                           <td className="py-3 px-4">
                             <span className={`px-2 py-1 text-xs ${member.status === 'active' ? 'bg-secondary text-secondary-foreground' : 'bg-destructive text-destructive-foreground'}`}>
                               {member.status}
                             </span>
                           </td>
-                          <td className="py-3 px-4 text-sm">{member.strike_count}/3</td>
-                          <td className="py-3 px-4 text-sm">{member.invites_remaining}</td>
+                          <td className="py-3 px-4">{getStrikeIndicator(member.strike_count)}</td>
+                          <td className="py-3 px-4 max-w-xs">
+                            {editingNotes === member.id ? (
+                              <div className="flex items-center gap-2">
+                                <textarea
+                                  value={notesValue}
+                                  onChange={(e) => setNotesValue(e.target.value)}
+                                  className="input-luxury text-sm flex-1"
+                                  rows={2}
+                                  placeholder={t.admin.addNote}
+                                />
+                                <button
+                                  onClick={() => saveNotes(member.id)}
+                                  className="p-1 text-secondary hover:text-secondary/80"
+                                  title={t.common.save}
+                                >
+                                  <Save className="w-4 h-4" />
+                                </button>
+                                <button
+                                  onClick={() => setEditingNotes(null)}
+                                  className="p-1 text-muted-foreground hover:text-foreground"
+                                  title={t.common.cancel}
+                                >
+                                  <X className="w-4 h-4" />
+                                </button>
+                              </div>
+                            ) : (
+                              <button
+                                onClick={() => {
+                                  setEditingNotes(member.id);
+                                  setNotesValue(member.notes || '');
+                                }}
+                                className="text-left text-sm text-muted-foreground hover:text-foreground truncate block w-full"
+                              >
+                                {member.notes || t.admin.addNote}
+                              </button>
+                            )}
+                          </td>
                           <td className="py-3 px-4 text-right">
-                            <div className="flex items-center justify-end gap-2">
+                            <div className="flex items-center justify-end gap-1">
+                              <button
+                                onClick={() => addStrike(member.id, member.strike_count)}
+                                className="p-1 text-amber-500 hover:text-amber-600"
+                                title={t.admin.addStrike}
+                              >
+                                <Plus className="w-4 h-4" />
+                              </button>
+                              <button
+                                onClick={() => removeStrike(member.id, member.strike_count)}
+                                className="p-1 text-secondary hover:text-secondary/80"
+                                title={t.admin.removeStrike}
+                              >
+                                <Minus className="w-4 h-4" />
+                              </button>
                               <button
                                 onClick={() => resetStrikes(member.id)}
                                 className="p-1 text-muted-foreground hover:text-foreground"
@@ -480,6 +699,107 @@ export default function Admin() {
                     <p className="text-muted-foreground text-center py-8">No members yet</p>
                   )}
                 </div>
+              </div>
+            </TabsContent>
+
+            {/* Drop Participation Report Tab */}
+            <TabsContent value="report">
+              <div className="bg-card border border-border p-6">
+                <h2 className="font-serif text-xl mb-6">{t.admin.dropReport}</h2>
+                
+                {/* Drop Selection & Filters */}
+                <div className="flex flex-col md:flex-row gap-4 mb-6">
+                  <select
+                    value={selectedDropForReport}
+                    onChange={(e) => setSelectedDropForReport(e.target.value)}
+                    className="input-luxury flex-1"
+                  >
+                    <option value="">{t.admin.selectDrop}</option>
+                    {drops.map((drop) => (
+                      <option key={drop.id} value={drop.id}>
+                        {drop.title_en} ({new Date(drop.starts_at).toLocaleDateString()} - {new Date(drop.ends_at).toLocaleDateString()})
+                      </option>
+                    ))}
+                  </select>
+                  
+                  <div className="flex gap-2">
+                    <button
+                      onClick={() => setReportFilter('all')}
+                      className={`px-3 py-2 text-sm ${reportFilter === 'all' ? 'bg-primary text-primary-foreground' : 'bg-muted text-muted-foreground hover:bg-muted/80'}`}
+                    >
+                      {t.admin.filterAll}
+                    </button>
+                    <button
+                      onClick={() => setReportFilter('purchased')}
+                      className={`px-3 py-2 text-sm ${reportFilter === 'purchased' ? 'bg-secondary text-secondary-foreground' : 'bg-muted text-muted-foreground hover:bg-muted/80'}`}
+                    >
+                      {t.admin.filterPurchased}
+                    </button>
+                    <button
+                      onClick={() => setReportFilter('not_purchased')}
+                      className={`px-3 py-2 text-sm ${reportFilter === 'not_purchased' ? 'bg-amber-500 text-white' : 'bg-muted text-muted-foreground hover:bg-muted/80'}`}
+                    >
+                      {t.admin.filterNotPurchased}
+                    </button>
+                  </div>
+                </div>
+
+                {/* Report Stats */}
+                {selectedDropForReport && participationReport.length > 0 && (
+                  <div className="grid grid-cols-3 gap-4 mb-6">
+                    <div className="bg-muted/30 border border-border p-4 text-center">
+                      <p className="text-2xl font-serif">{participationReport.length}</p>
+                      <p className="text-sm text-muted-foreground">{t.admin.totalMembers}</p>
+                    </div>
+                    <div className="bg-secondary/10 border border-secondary/30 p-4 text-center">
+                      <p className="text-2xl font-serif text-secondary">{participationReport.filter(r => r.purchased).length}</p>
+                      <p className="text-sm text-muted-foreground">{t.admin.purchased}</p>
+                    </div>
+                    <div className="bg-amber-500/10 border border-amber-500/30 p-4 text-center">
+                      <p className="text-2xl font-serif text-amber-600">{participationReport.filter(r => !r.purchased).length}</p>
+                      <p className="text-sm text-muted-foreground">{t.admin.notPurchased}</p>
+                    </div>
+                  </div>
+                )}
+
+                {/* Report Table */}
+                {loadingReport ? (
+                  <p className="text-center py-8 text-muted-foreground">{t.common.loading}</p>
+                ) : selectedDropForReport ? (
+                  <div className="overflow-x-auto">
+                    <table className="w-full">
+                      <thead>
+                        <tr className="border-b border-border">
+                          <th className="text-left py-3 px-4 font-sans text-sm font-medium">{t.admin.memberEmail}</th>
+                          <th className="text-left py-3 px-4 font-sans text-sm font-medium">{t.admin.purchaseStatus}</th>
+                          <th className="text-left py-3 px-4 font-sans text-sm font-medium">{t.admin.memberStrikes}</th>
+                          <th className="text-left py-3 px-4 font-sans text-sm font-medium">{t.admin.memberNotes}</th>
+                        </tr>
+                      </thead>
+                      <tbody>
+                        {filteredReport.map((item) => (
+                          <tr key={item.member_id} className="border-b border-border/50">
+                            <td className="py-3 px-4 text-sm">{item.email}</td>
+                            <td className="py-3 px-4">
+                              <span className={`px-2 py-1 text-xs ${item.purchased ? 'bg-secondary text-secondary-foreground' : 'bg-amber-500/20 text-amber-700'}`}>
+                                {item.purchased ? t.admin.purchased : t.admin.notPurchased}
+                              </span>
+                            </td>
+                            <td className="py-3 px-4">{getStrikeIndicator(item.strike_count)}</td>
+                            <td className="py-3 px-4 text-sm text-muted-foreground max-w-xs truncate">
+                              {item.notes || '-'}
+                            </td>
+                          </tr>
+                        ))}
+                      </tbody>
+                    </table>
+                    {filteredReport.length === 0 && (
+                      <p className="text-muted-foreground text-center py-8">{t.admin.noResults}</p>
+                    )}
+                  </div>
+                ) : (
+                  <p className="text-muted-foreground text-center py-8">{t.admin.selectDropPrompt}</p>
+                )}
               </div>
             </TabsContent>
 
