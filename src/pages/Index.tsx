@@ -33,7 +33,7 @@ export default function Index() {
   const fetchDrops = async () => {
     try {
       const now = new Date().toISOString();
-      
+
       // First, check for active drops (started and not ended)
       const { data: activeData, error: activeError } = await supabase
         .from('drops')
@@ -48,30 +48,38 @@ export default function Index() {
       }
 
       // Filter for drops that haven't ended yet (ends_at is null or in future)
-      const currentlyActive = activeData?.find(drop => 
+      const currentlyActive = activeData?.find((drop) =>
         !drop.ends_at || new Date(drop.ends_at) > new Date()
       );
 
       if (currentlyActive) {
         setActiveDrop(currentlyActive);
+        setNextDrop(null);
+        return;
+      }
+
+      // No active drop, look for upcoming drops
+      const { data: upcomingData, error: upcomingError } = await supabase
+        .from('drops')
+        .select('id, title_en, title_nl, starts_at, ends_at, is_active')
+        .gt('starts_at', now)
+        .eq('is_active', true)
+        .order('starts_at', { ascending: true })
+        .limit(1)
+        .maybeSingle();
+
+      if (upcomingError) {
+        console.error('Error fetching upcoming drops:', upcomingError);
+      }
+
+      
+
+      if (upcomingData) {
+        setNextDrop(upcomingData);
+        setActiveDrop(null);
       } else {
-        // No active drop, look for upcoming drops
-        const { data: upcomingData, error: upcomingError } = await supabase
-          .from('drops')
-          .select('id, title_en, title_nl, starts_at, ends_at, is_active')
-          .gt('starts_at', now)
-          .eq('is_active', true)
-          .order('starts_at', { ascending: true })
-          .limit(1)
-          .maybeSingle();
-
-        if (upcomingError) {
-          console.error('Error fetching upcoming drops:', upcomingError);
-        }
-
-        if (upcomingData) {
-          setNextDrop(upcomingData);
-        }
+        setNextDrop(null);
+        setActiveDrop(null);
       }
     } catch (error) {
       console.error('Error fetching drops:', error);
@@ -84,10 +92,12 @@ export default function Index() {
   const isLive = !!activeDrop;
   const dropToShow = activeDrop || nextDrop;
   
-  // For countdown: if active drop has end date, count down to end. If upcoming, count down to start.
-  const countdownDate = activeDrop?.ends_at 
-    ? new Date(activeDrop.ends_at)
-    : nextDrop?.starts_at 
+  // For countdown: if active drop has end date, count down to end.
+  // If active drop has no end date, still render timer area and show L-I-V-E.
+  // If upcoming, count down to start.
+  const countdownDate = activeDrop
+    ? new Date(activeDrop.ends_at ?? activeDrop.starts_at)
+    : nextDrop?.starts_at
       ? new Date(nextDrop.starts_at)
       : null;
 
