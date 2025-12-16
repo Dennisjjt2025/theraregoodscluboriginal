@@ -5,7 +5,8 @@ import { useAuth } from '@/contexts/AuthContext';
 import { supabase } from '@/integrations/supabase/client';
 import { Header } from '@/components/Header';
 import { toast } from 'sonner';
-import { Wine, Copy, Check, AlertTriangle, ArrowRight } from 'lucide-react';
+import { Wine, Copy, Check, AlertTriangle, ArrowRight, User } from 'lucide-react';
+import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 
 interface Member {
   id: string;
@@ -30,6 +31,17 @@ interface Drop {
   price: number;
 }
 
+interface Profile {
+  first_name: string | null;
+  last_name: string | null;
+  phone: string | null;
+  street_address: string | null;
+  house_number: string | null;
+  postal_code: string | null;
+  city: string | null;
+  country: string | null;
+}
+
 export default function Dashboard() {
   const { t, language } = useLanguage();
   const { user, loading: authLoading } = useAuth();
@@ -38,7 +50,18 @@ export default function Dashboard() {
   const [member, setMember] = useState<Member | null>(null);
   const [inviteCodes, setInviteCodes] = useState<InviteCode[]>([]);
   const [currentDrop, setCurrentDrop] = useState<Drop | null>(null);
+  const [profile, setProfile] = useState<Profile>({
+    first_name: '',
+    last_name: '',
+    phone: '',
+    street_address: '',
+    house_number: '',
+    postal_code: '',
+    city: '',
+    country: 'Nederland',
+  });
   const [loading, setLoading] = useState(true);
+  const [savingProfile, setSavingProfile] = useState(false);
   const [copiedCode, setCopiedCode] = useState<string | null>(null);
   const [generatingInvite, setGeneratingInvite] = useState(false);
 
@@ -66,6 +89,26 @@ export default function Dashboard() {
       if (memberError) throw memberError;
       setMember(memberData);
 
+      // Fetch profile data
+      const { data: profileData } = await supabase
+        .from('profiles')
+        .select('*')
+        .eq('id', user?.id)
+        .maybeSingle();
+
+      if (profileData) {
+        setProfile({
+          first_name: profileData.first_name || '',
+          last_name: profileData.last_name || '',
+          phone: profileData.phone || '',
+          street_address: profileData.street_address || '',
+          house_number: profileData.house_number || '',
+          postal_code: profileData.postal_code || '',
+          city: profileData.city || '',
+          country: profileData.country || 'Nederland',
+        });
+      }
+
       if (memberData) {
         // Fetch invite codes
         const { data: codes } = await supabase
@@ -91,6 +134,29 @@ export default function Dashboard() {
       console.error('Error fetching data:', error);
     } finally {
       setLoading(false);
+    }
+  };
+
+  const handleProfileSave = async () => {
+    if (!user) return;
+
+    setSavingProfile(true);
+    try {
+      const { error } = await supabase
+        .from('profiles')
+        .upsert({
+          id: user.id,
+          ...profile,
+          updated_at: new Date().toISOString(),
+        });
+
+      if (error) throw error;
+      toast.success(t.dashboard.profileSaved);
+    } catch (error) {
+      console.error('Error saving profile:', error);
+      toast.error(t.common.error);
+    } finally {
+      setSavingProfile(false);
     }
   };
 
@@ -162,6 +228,7 @@ export default function Dashboard() {
   }
 
   const strikesRemaining = 3 - member.strike_count;
+  const isProfileIncomplete = !profile.street_address || !profile.postal_code || !profile.city;
 
   return (
     <div className="min-h-screen bg-background">
@@ -169,116 +236,242 @@ export default function Dashboard() {
       <main className="pt-24 pb-12 px-4">
         <div className="container mx-auto max-w-4xl">
           {/* Welcome Header */}
-          <div className="mb-12">
+          <div className="mb-8">
             <h1 className="font-serif text-3xl md:text-4xl mb-2">{t.dashboard.title}</h1>
             <p className="text-muted-foreground">
-              {t.dashboard.welcome}, {user?.email?.split('@')[0]}
+              {t.dashboard.welcome}, {profile.first_name || user?.email?.split('@')[0]}
             </p>
           </div>
 
-          <div className="grid md:grid-cols-2 gap-6">
-            {/* Member Status Card */}
-            <div className="bg-card border border-border p-6">
-              <h2 className="font-serif text-xl mb-4">{t.dashboard.memberStatus}</h2>
-              <div className="flex items-center gap-3">
-                <div className={`w-3 h-3 rounded-full ${member.status === 'active' ? 'bg-secondary' : 'bg-destructive'}`} />
-                <span className="font-sans font-medium">
-                  {member.status === 'active' ? t.dashboard.active : t.dashboard.suspended}
-                </span>
-              </div>
-            </div>
+          <Tabs defaultValue="overview" className="space-y-6">
+            <TabsList className="grid w-full grid-cols-2 max-w-md">
+              <TabsTrigger value="overview">Overview</TabsTrigger>
+              <TabsTrigger value="profile" className="flex items-center gap-2">
+                <User className="w-4 h-4" />
+                {t.dashboard.myProfile}
+                {isProfileIncomplete && (
+                  <span className="w-2 h-2 bg-secondary rounded-full" />
+                )}
+              </TabsTrigger>
+            </TabsList>
 
-            {/* Strike Tracker Card */}
-            <div className="bg-card border border-border p-6">
-              <h2 className="font-serif text-xl mb-4">{t.dashboard.strikeTracker}</h2>
-              <div className="flex items-center gap-2 mb-3">
-                {[0, 1, 2].map((i) => (
-                  <Wine
-                    key={i}
-                    className={`w-8 h-8 ${i < member.strike_count ? 'text-destructive' : 'text-muted-foreground/30'}`}
-                    fill={i < member.strike_count ? 'currentColor' : 'none'}
-                  />
-                ))}
-              </div>
-              <p className="text-sm text-muted-foreground">
-                {strikesRemaining} {t.dashboard.strikesRemaining}
-              </p>
-              {member.strike_count === 2 && (
-                <div className="mt-3 flex items-center gap-2 text-sm text-destructive">
-                  <AlertTriangle className="w-4 h-4" />
-                  <span>{t.dashboard.strikeWarning}</span>
+            <TabsContent value="overview" className="space-y-6">
+              {isProfileIncomplete && (
+                <div className="bg-secondary/10 border border-secondary/30 p-4 rounded-lg">
+                  <p className="text-sm text-secondary font-medium">{t.dashboard.completeProfile}</p>
                 </div>
               )}
-            </div>
 
-            {/* Current Drop Card */}
-            <div className="bg-card border border-border p-6">
-              <h2 className="font-serif text-xl mb-4">{t.dashboard.currentDrop}</h2>
-              {currentDrop ? (
-                <div className="space-y-4">
-                  {currentDrop.image_url && (
-                    <img
-                      src={currentDrop.image_url}
-                      alt={language === 'nl' ? currentDrop.title_nl : currentDrop.title_en}
-                      className="w-full h-40 object-cover"
-                    />
-                  )}
-                  <h3 className="font-serif text-lg">
-                    {language === 'nl' ? currentDrop.title_nl : currentDrop.title_en}
-                  </h3>
-                  <Link to="/drop" className="btn-luxury inline-flex items-center gap-2">
-                    {t.dashboard.viewDrop}
-                    <ArrowRight className="w-4 h-4" />
-                  </Link>
-                </div>
-              ) : (
-                <p className="text-muted-foreground">{t.dashboard.noDrop}</p>
-              )}
-            </div>
-
-            {/* Invites Card */}
-            <div className="bg-card border border-border p-6">
-              <h2 className="font-serif text-xl mb-4">{t.dashboard.invites}</h2>
-              <p className="text-sm text-muted-foreground mb-4">
-                {member.invites_remaining} {t.dashboard.invitesRemaining}
-              </p>
-
-              {member.invites_remaining > 0 && (
-                <button
-                  onClick={generateInviteCode}
-                  disabled={generatingInvite}
-                  className="btn-outline-luxury text-sm mb-4 disabled:opacity-50"
-                >
-                  {generatingInvite ? t.common.loading : t.dashboard.generateInvite}
-                </button>
-              )}
-
-              <div className="space-y-2 max-h-40 overflow-y-auto">
-                {inviteCodes.filter(c => !c.used_by).map((code) => (
-                  <div
-                    key={code.id}
-                    className="flex items-center justify-between bg-muted/50 px-3 py-2 text-sm"
-                  >
-                    <code className="font-mono">{code.code}</code>
-                    <button
-                      onClick={() => copyToClipboard(code.code)}
-                      className="text-muted-foreground hover:text-foreground transition-colors"
-                    >
-                      {copiedCode === code.code ? (
-                        <Check className="w-4 h-4 text-secondary" />
-                      ) : (
-                        <Copy className="w-4 h-4" />
-                      )}
-                    </button>
+              <div className="grid md:grid-cols-2 gap-6">
+                {/* Member Status Card */}
+                <div className="bg-card border border-border p-6">
+                  <h2 className="font-serif text-xl mb-4">{t.dashboard.memberStatus}</h2>
+                  <div className="flex items-center gap-3">
+                    <div className={`w-3 h-3 rounded-full ${member.status === 'active' ? 'bg-secondary' : 'bg-destructive'}`} />
+                    <span className="font-sans font-medium">
+                      {member.status === 'active' ? t.dashboard.active : t.dashboard.suspended}
+                    </span>
                   </div>
-                ))}
-              </div>
+                </div>
 
-              {member.invites_remaining === 0 && inviteCodes.length === 0 && (
-                <p className="text-sm text-muted-foreground">{t.dashboard.noInvites}</p>
-              )}
-            </div>
-          </div>
+                {/* Strike Tracker Card */}
+                <div className="bg-card border border-border p-6">
+                  <h2 className="font-serif text-xl mb-4">{t.dashboard.strikeTracker}</h2>
+                  <div className="flex items-center gap-2 mb-3">
+                    {[0, 1, 2].map((i) => (
+                      <Wine
+                        key={i}
+                        className={`w-8 h-8 ${i < member.strike_count ? 'text-destructive' : 'text-muted-foreground/30'}`}
+                        fill={i < member.strike_count ? 'currentColor' : 'none'}
+                      />
+                    ))}
+                  </div>
+                  <p className="text-sm text-muted-foreground">
+                    {strikesRemaining} {t.dashboard.strikesRemaining}
+                  </p>
+                  {member.strike_count === 2 && (
+                    <div className="mt-3 flex items-center gap-2 text-sm text-destructive">
+                      <AlertTriangle className="w-4 h-4" />
+                      <span>{t.dashboard.strikeWarning}</span>
+                    </div>
+                  )}
+                </div>
+
+                {/* Current Drop Card */}
+                <div className="bg-card border border-border p-6">
+                  <h2 className="font-serif text-xl mb-4">{t.dashboard.currentDrop}</h2>
+                  {currentDrop ? (
+                    <div className="space-y-4">
+                      {currentDrop.image_url && (
+                        <img
+                          src={currentDrop.image_url}
+                          alt={language === 'nl' ? currentDrop.title_nl : currentDrop.title_en}
+                          className="w-full h-40 object-cover"
+                        />
+                      )}
+                      <h3 className="font-serif text-lg">
+                        {language === 'nl' ? currentDrop.title_nl : currentDrop.title_en}
+                      </h3>
+                      <Link to="/drop" className="btn-luxury inline-flex items-center gap-2">
+                        {t.dashboard.viewDrop}
+                        <ArrowRight className="w-4 h-4" />
+                      </Link>
+                    </div>
+                  ) : (
+                    <p className="text-muted-foreground">{t.dashboard.noDrop}</p>
+                  )}
+                </div>
+
+                {/* Invites Card */}
+                <div className="bg-card border border-border p-6">
+                  <h2 className="font-serif text-xl mb-4">{t.dashboard.invites}</h2>
+                  <p className="text-sm text-muted-foreground mb-4">
+                    {member.invites_remaining} {t.dashboard.invitesRemaining}
+                  </p>
+
+                  {member.invites_remaining > 0 && (
+                    <button
+                      onClick={generateInviteCode}
+                      disabled={generatingInvite}
+                      className="btn-outline-luxury text-sm mb-4 disabled:opacity-50"
+                    >
+                      {generatingInvite ? t.common.loading : t.dashboard.generateInvite}
+                    </button>
+                  )}
+
+                  <div className="space-y-2 max-h-40 overflow-y-auto">
+                    {inviteCodes.filter(c => !c.used_by).map((code) => (
+                      <div
+                        key={code.id}
+                        className="flex items-center justify-between bg-muted/50 px-3 py-2 text-sm"
+                      >
+                        <code className="font-mono">{code.code}</code>
+                        <button
+                          onClick={() => copyToClipboard(code.code)}
+                          className="text-muted-foreground hover:text-foreground transition-colors"
+                        >
+                          {copiedCode === code.code ? (
+                            <Check className="w-4 h-4 text-secondary" />
+                          ) : (
+                            <Copy className="w-4 h-4" />
+                          )}
+                        </button>
+                      </div>
+                    ))}
+                  </div>
+
+                  {member.invites_remaining === 0 && inviteCodes.length === 0 && (
+                    <p className="text-sm text-muted-foreground">{t.dashboard.noInvites}</p>
+                  )}
+                </div>
+              </div>
+            </TabsContent>
+
+            <TabsContent value="profile" className="space-y-6">
+              <div className="bg-card border border-border p-6">
+                <h2 className="font-serif text-xl mb-6">{t.dashboard.profileSettings}</h2>
+                
+                <div className="space-y-4 max-w-lg">
+                  <div className="grid grid-cols-2 gap-4">
+                    <div>
+                      <label className="block text-sm font-medium mb-2">{t.auth.firstName}</label>
+                      <input
+                        type="text"
+                        value={profile.first_name || ''}
+                        onChange={(e) => setProfile({ ...profile, first_name: e.target.value })}
+                        className="input-luxury w-full"
+                      />
+                    </div>
+                    <div>
+                      <label className="block text-sm font-medium mb-2">{t.auth.lastName}</label>
+                      <input
+                        type="text"
+                        value={profile.last_name || ''}
+                        onChange={(e) => setProfile({ ...profile, last_name: e.target.value })}
+                        className="input-luxury w-full"
+                      />
+                    </div>
+                  </div>
+
+                  <div>
+                    <label className="block text-sm font-medium mb-2">{t.dashboard.phone}</label>
+                    <input
+                      type="tel"
+                      value={profile.phone || ''}
+                      onChange={(e) => setProfile({ ...profile, phone: e.target.value })}
+                      placeholder="+31 6 12345678"
+                      className="input-luxury w-full"
+                    />
+                  </div>
+
+                  <div className="border-t border-border pt-4 mt-6">
+                    <h3 className="font-serif text-lg mb-4">Adres</h3>
+                    
+                    <div className="grid grid-cols-3 gap-4">
+                      <div className="col-span-2">
+                        <label className="block text-sm font-medium mb-2">{t.dashboard.streetAddress}</label>
+                        <input
+                          type="text"
+                          value={profile.street_address || ''}
+                          onChange={(e) => setProfile({ ...profile, street_address: e.target.value })}
+                          className="input-luxury w-full"
+                        />
+                      </div>
+                      <div>
+                        <label className="block text-sm font-medium mb-2">{t.dashboard.houseNumber}</label>
+                        <input
+                          type="text"
+                          value={profile.house_number || ''}
+                          onChange={(e) => setProfile({ ...profile, house_number: e.target.value })}
+                          className="input-luxury w-full"
+                        />
+                      </div>
+                    </div>
+
+                    <div className="grid grid-cols-2 gap-4 mt-4">
+                      <div>
+                        <label className="block text-sm font-medium mb-2">{t.dashboard.postalCode}</label>
+                        <input
+                          type="text"
+                          value={profile.postal_code || ''}
+                          onChange={(e) => setProfile({ ...profile, postal_code: e.target.value })}
+                          placeholder="1234 AB"
+                          className="input-luxury w-full"
+                        />
+                      </div>
+                      <div>
+                        <label className="block text-sm font-medium mb-2">{t.dashboard.city}</label>
+                        <input
+                          type="text"
+                          value={profile.city || ''}
+                          onChange={(e) => setProfile({ ...profile, city: e.target.value })}
+                          className="input-luxury w-full"
+                        />
+                      </div>
+                    </div>
+
+                    <div className="mt-4">
+                      <label className="block text-sm font-medium mb-2">{t.dashboard.country}</label>
+                      <input
+                        type="text"
+                        value={profile.country || ''}
+                        onChange={(e) => setProfile({ ...profile, country: e.target.value })}
+                        className="input-luxury w-full"
+                      />
+                    </div>
+                  </div>
+
+                  <button
+                    onClick={handleProfileSave}
+                    disabled={savingProfile}
+                    className="btn-luxury mt-6 disabled:opacity-50"
+                  >
+                    {savingProfile ? t.common.loading : t.common.save}
+                  </button>
+                </div>
+              </div>
+            </TabsContent>
+          </Tabs>
         </div>
       </main>
     </div>

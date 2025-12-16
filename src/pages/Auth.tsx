@@ -1,25 +1,40 @@
-import { useState } from 'react';
-import { useSearchParams } from 'react-router-dom';
+import { useState, useEffect } from 'react';
+import { useSearchParams, useNavigate } from 'react-router-dom';
 import { useLanguage } from '@/contexts/LanguageContext';
+import { useAuth } from '@/contexts/AuthContext';
 import { supabase } from '@/integrations/supabase/client';
 import { Header } from '@/components/Header';
 import { toast } from 'sonner';
 import logo from '@/assets/logo.png';
 
-type AuthMode = 'choose' | 'login' | 'request-access' | 'invite' | 'waitlist';
+type AuthMode = 'choose' | 'login' | 'login-password' | 'request-access' | 'invite' | 'waitlist' | 'signup';
 
 export default function Auth() {
   const { t } = useLanguage();
+  const { user } = useAuth();
+  const navigate = useNavigate();
   const [searchParams] = useSearchParams();
   const inviteCodeParam = searchParams.get('invite');
 
   const [email, setEmail] = useState('');
+  const [password, setPassword] = useState('');
+  const [confirmPassword, setConfirmPassword] = useState('');
+  const [firstName, setFirstName] = useState('');
+  const [lastName, setLastName] = useState('');
   const [name, setName] = useState('');
   const [inviteCode, setInviteCode] = useState(inviteCodeParam || '');
   const [authMode, setAuthMode] = useState<AuthMode>(inviteCodeParam ? 'invite' : 'choose');
   const [loading, setLoading] = useState(false);
   const [emailSent, setEmailSent] = useState(false);
   const [waitlistSubmitted, setWaitlistSubmitted] = useState(false);
+  const [validatedInviteCode, setValidatedInviteCode] = useState<string | null>(null);
+
+  // Redirect if already logged in
+  useEffect(() => {
+    if (user) {
+      navigate('/dashboard');
+    }
+  }, [user, navigate]);
 
   const handleMagicLink = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -48,6 +63,28 @@ export default function Auth() {
     }
   };
 
+  const handlePasswordLogin = async (e: React.FormEvent) => {
+    e.preventDefault();
+    if (!email || !password) return;
+
+    setLoading(true);
+    try {
+      const { error } = await supabase.auth.signInWithPassword({
+        email,
+        password,
+      });
+
+      if (error) throw error;
+      
+      navigate('/dashboard');
+    } catch (error: any) {
+      console.error('Login error:', error);
+      toast.error(error.message || t.common.error);
+    } finally {
+      setLoading(false);
+    }
+  };
+
   const handleInviteValidation = async (e: React.FormEvent) => {
     e.preventDefault();
     if (!inviteCode) return;
@@ -67,13 +104,69 @@ export default function Auth() {
         return;
       }
 
-      // Store invite code for after signup
-      localStorage.setItem('pending_invite_code', inviteCode);
-      setAuthMode('login');
-      toast.success('Valid invite code! Now enter your email to continue.');
+      // Store validated invite code and move to signup
+      setValidatedInviteCode(inviteCode);
+      setAuthMode('signup');
+      toast.success('Valid invite code! Now create your account.');
     } catch (error) {
       console.error('Invite validation error:', error);
       toast.error(t.common.error);
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  const handleSignUp = async (e: React.FormEvent) => {
+    e.preventDefault();
+    if (!email || !password || !firstName || !lastName) return;
+
+    if (password.length < 6) {
+      toast.error(t.auth.passwordTooShort);
+      return;
+    }
+
+    if (password !== confirmPassword) {
+      toast.error(t.auth.passwordMismatch);
+      return;
+    }
+
+    setLoading(true);
+    try {
+      const redirectUrl = `${window.location.origin}/`;
+      
+      const { data: signUpData, error: signUpError } = await supabase.auth.signUp({
+        email,
+        password,
+        options: {
+          emailRedirectTo: redirectUrl,
+          data: {
+            first_name: firstName,
+            last_name: lastName,
+          },
+        },
+      });
+
+      if (signUpError) throw signUpError;
+
+      // If we have a validated invite code, mark it as used
+      if (validatedInviteCode && signUpData.user) {
+        await supabase
+          .from('invite_codes')
+          .update({
+            used_by: signUpData.user.id,
+            used_at: new Date().toISOString(),
+          })
+          .eq('code', validatedInviteCode);
+      }
+
+      toast.success(t.auth.accountCreated);
+      // Navigate to login with password
+      setAuthMode('login-password');
+      setPassword('');
+      setConfirmPassword('');
+    } catch (error: any) {
+      console.error('Signup error:', error);
+      toast.error(error.message || t.common.error);
     } finally {
       setLoading(false);
     }
@@ -350,7 +443,146 @@ export default function Auth() {
     );
   }
 
-  // Login view (magic link)
+  // Signup view (after invite validation)
+  if (authMode === 'signup') {
+    return (
+      <div className="min-h-screen bg-background">
+        <Header />
+        <main className="pt-24 px-4">
+          <div className="max-w-md mx-auto py-16">
+            <div className="text-center mb-12">
+              <img src={logo} alt="The Rare Goods Club" className="w-24 h-24 mx-auto mb-6 opacity-90" />
+              <h1 className="font-serif text-3xl md:text-4xl mb-2">{t.auth.createAccount}</h1>
+              <p className="text-muted-foreground">{t.auth.createAccountDesc}</p>
+            </div>
+
+            <form onSubmit={handleSignUp} className="space-y-4">
+              <div className="grid grid-cols-2 gap-4">
+                <input
+                  type="text"
+                  value={firstName}
+                  onChange={(e) => setFirstName(e.target.value)}
+                  placeholder={t.auth.firstName}
+                  required
+                  className="input-luxury w-full"
+                />
+                <input
+                  type="text"
+                  value={lastName}
+                  onChange={(e) => setLastName(e.target.value)}
+                  placeholder={t.auth.lastName}
+                  required
+                  className="input-luxury w-full"
+                />
+              </div>
+              <input
+                type="email"
+                value={email}
+                onChange={(e) => setEmail(e.target.value)}
+                placeholder={t.landing.emailPlaceholder}
+                required
+                className="input-luxury w-full"
+              />
+              <input
+                type="password"
+                value={password}
+                onChange={(e) => setPassword(e.target.value)}
+                placeholder={t.auth.password}
+                required
+                minLength={6}
+                className="input-luxury w-full"
+              />
+              <input
+                type="password"
+                value={confirmPassword}
+                onChange={(e) => setConfirmPassword(e.target.value)}
+                placeholder={t.auth.confirmPassword}
+                required
+                minLength={6}
+                className="input-luxury w-full"
+              />
+              <button
+                type="submit"
+                disabled={loading}
+                className="btn-luxury w-full disabled:opacity-50"
+              >
+                {loading ? t.common.loading : t.auth.signUp}
+              </button>
+              <button
+                type="button"
+                onClick={() => setAuthMode('invite')}
+                className="w-full text-muted-foreground hover:text-foreground transition-colors text-sm"
+              >
+                {t.common.back}
+              </button>
+            </form>
+          </div>
+        </main>
+      </div>
+    );
+  }
+
+  // Login with password view
+  if (authMode === 'login-password') {
+    return (
+      <div className="min-h-screen bg-background">
+        <Header />
+        <main className="pt-24 px-4">
+          <div className="max-w-md mx-auto py-16">
+            <div className="text-center mb-12">
+              <img src={logo} alt="The Rare Goods Club" className="w-24 h-24 mx-auto mb-6 opacity-90" />
+              <h1 className="font-serif text-3xl md:text-4xl mb-2">{t.auth.loginTitle}</h1>
+              <p className="text-muted-foreground">{t.auth.loginWithPassword}</p>
+            </div>
+
+            <form onSubmit={handlePasswordLogin} className="space-y-4">
+              <input
+                type="email"
+                value={email}
+                onChange={(e) => setEmail(e.target.value)}
+                placeholder={t.landing.emailPlaceholder}
+                required
+                className="input-luxury w-full"
+              />
+              <input
+                type="password"
+                value={password}
+                onChange={(e) => setPassword(e.target.value)}
+                placeholder={t.auth.password}
+                required
+                className="input-luxury w-full"
+              />
+              <button
+                type="submit"
+                disabled={loading}
+                className="btn-luxury w-full disabled:opacity-50"
+              >
+                {loading ? t.common.loading : t.nav.login}
+              </button>
+              
+              <button
+                type="button"
+                onClick={() => setAuthMode('login')}
+                className="w-full text-muted-foreground hover:text-foreground transition-colors text-sm"
+              >
+                {t.auth.forgotPassword}
+              </button>
+              
+              <button
+                type="button"
+                onClick={() => setAuthMode('choose')}
+                className="w-full text-muted-foreground hover:text-foreground transition-colors text-sm"
+              >
+                {t.common.back}
+              </button>
+            </form>
+          </div>
+        </main>
+      </div>
+    );
+  }
+
+  // Login view (magic link + password option)
   return (
     <div className="min-h-screen bg-background">
       <Header />
@@ -380,6 +612,26 @@ export default function Auth() {
             >
               {loading ? t.common.loading : t.auth.sendMagicLink}
             </button>
+            
+            <div className="relative">
+              <div className="absolute inset-0 flex items-center">
+                <span className="w-full border-t border-border" />
+              </div>
+              <div className="relative flex justify-center text-xs uppercase">
+                <span className="bg-background px-2 text-muted-foreground">
+                  {t.auth.orUsePassword}
+                </span>
+              </div>
+            </div>
+            
+            <button
+              type="button"
+              onClick={() => setAuthMode('login-password')}
+              className="btn-outline-luxury w-full"
+            >
+              {t.auth.loginWithPassword}
+            </button>
+            
             <button
               type="button"
               onClick={() => setAuthMode('choose')}
