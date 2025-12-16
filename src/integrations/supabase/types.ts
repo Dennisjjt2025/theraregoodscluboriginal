@@ -14,6 +14,41 @@ export type Database = {
   }
   public: {
     Tables: {
+      drop_images: {
+        Row: {
+          alt_text: string | null
+          created_at: string
+          drop_id: string
+          id: string
+          image_url: string
+          sort_order: number
+        }
+        Insert: {
+          alt_text?: string | null
+          created_at?: string
+          drop_id: string
+          id?: string
+          image_url: string
+          sort_order?: number
+        }
+        Update: {
+          alt_text?: string | null
+          created_at?: string
+          drop_id?: string
+          id?: string
+          image_url?: string
+          sort_order?: number
+        }
+        Relationships: [
+          {
+            foreignKeyName: "drop_images_drop_id_fkey"
+            columns: ["drop_id"]
+            isOneToOne: false
+            referencedRelation: "drops"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       drop_participation: {
         Row: {
           created_at: string | null

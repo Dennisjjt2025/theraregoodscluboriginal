@@ -1,5 +1,5 @@
 import { useEffect, useState } from 'react';
-import { useNavigate, useSearchParams, Link } from 'react-router-dom';
+import { useNavigate, useSearchParams } from 'react-router-dom';
 import { useLanguage } from '@/contexts/LanguageContext';
 import { useAuth } from '@/contexts/AuthContext';
 import { supabase } from '@/integrations/supabase/client';
@@ -9,7 +9,7 @@ import { MediaLightbox, MediaHero } from '@/components/drop/MediaLightbox';
 import { StockIndicator } from '@/components/drop/StockIndicator';
 import { CollapsibleStory } from '@/components/drop/CollapsibleStory';
 import { toast } from 'sonner';
-import { MapPin, Calendar, Sparkles, AlertTriangle, ArrowRight } from 'lucide-react';
+import { MapPin, Calendar, Sparkles, AlertTriangle } from 'lucide-react';
 
 interface Drop {
   id: string;
@@ -35,6 +35,13 @@ interface Drop {
   is_draft: boolean;
 }
 
+interface GalleryImage {
+  id: string;
+  image_url: string;
+  alt_text: string | null;
+  sort_order: number;
+}
+
 export default function DropPreview() {
   const { t, language } = useLanguage();
   const { user, loading: authLoading } = useAuth();
@@ -42,9 +49,11 @@ export default function DropPreview() {
   const [searchParams] = useSearchParams();
 
   const [drop, setDrop] = useState<Drop | null>(null);
+  const [galleryImages, setGalleryImages] = useState<GalleryImage[]>([]);
   const [loading, setLoading] = useState(true);
   const [isAdmin, setIsAdmin] = useState(false);
   const [lightboxOpen, setLightboxOpen] = useState(false);
+  const [lightboxIndex, setLightboxIndex] = useState(0);
 
   const dropId = searchParams.get('id');
 
@@ -85,6 +94,16 @@ export default function DropPreview() {
 
         if (error) throw error;
         setDrop(data);
+
+        // Fetch gallery images
+        const { data: images, error: imagesError } = await supabase
+          .from('drop_images')
+          .select('id, image_url, alt_text, sort_order')
+          .eq('drop_id', dropId)
+          .order('sort_order', { ascending: true });
+
+        if (imagesError) throw imagesError;
+        setGalleryImages(images || []);
       }
     } catch (error) {
       console.error('Error:', error);
@@ -92,6 +111,11 @@ export default function DropPreview() {
     } finally {
       setLoading(false);
     }
+  };
+
+  const openLightbox = (index: number = 0) => {
+    setLightboxIndex(index);
+    setLightboxOpen(true);
   };
 
   if (authLoading || loading) {
@@ -123,6 +147,15 @@ export default function DropPreview() {
   const soldOut = drop.quantity_sold >= drop.quantity_available;
   const hasAttributes = drop.origin || drop.vintage;
 
+  // Combine main image with gallery images
+  const allImages: GalleryImage[] = [
+    ...(galleryImages.length > 0
+      ? galleryImages
+      : drop.image_url
+      ? [{ id: 'main', image_url: drop.image_url, alt_text: title, sort_order: 0 }]
+      : []),
+  ];
+
   const heroBadges = (
     <>
       <span className="bg-background/90 backdrop-blur-sm text-foreground px-3 py-1.5 text-xs font-sans uppercase tracking-wider border border-border/50">
@@ -142,9 +175,10 @@ export default function DropPreview() {
       <MediaLightbox
         isOpen={lightboxOpen}
         onClose={() => setLightboxOpen(false)}
-        imageUrl={drop.image_url}
+        images={allImages}
         videoUrl={drop.video_url}
         title={title}
+        initialIndex={lightboxIndex}
       />
       
       {/* Preview Banner */}
@@ -156,17 +190,17 @@ export default function DropPreview() {
       </div>
 
       <main className="pt-28 md:pt-32">
-        {/* Hero Image with Lightbox */}
+        {/* Hero Image with Gallery */}
         <MediaHero
-          imageUrl={drop.image_url}
+          images={allImages}
           videoUrl={drop.video_url}
           title={title}
-          onOpenLightbox={() => setLightboxOpen(true)}
+          onOpenLightbox={openLightbox}
           badges={heroBadges}
           tapToEnlargeText={drop.video_url ? t.drop.playVideo : t.drop.tapToEnlarge}
         />
 
-        <div className="container mx-auto max-w-4xl px-4 -mt-20 relative z-10">
+        <div className={`container mx-auto max-w-4xl px-4 ${allImages.length > 1 ? 'mt-4' : '-mt-20'} relative z-10`}>
           {/* Title & Description */}
           <div className="mb-8">
             <h1 className="font-serif text-4xl md:text-5xl lg:text-6xl mb-4">{title}</h1>
