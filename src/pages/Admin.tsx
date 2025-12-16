@@ -635,14 +635,14 @@ export default function Admin() {
                           <td className="py-3 px-4">
                             <div className="flex items-center gap-2">
                               <div>
-                                <p className="text-sm">{memberEmails[member.id]?.email || 'Loading...'}</p>
+                                <p className="text-sm">{memberEmails[member.id]?.email ?? 'Loading...'}</p>
                                 <p className="text-xs text-muted-foreground font-mono">{member.user_id.slice(0, 8)}...</p>
                               </div>
-                              {memberEmails[member.id]?.verified ? (
+                              {memberEmails[member.id] && memberEmails[member.id].verified ? (
                                 <span title={t.admin.emailVerifiedLabel}>
                                   <MailCheck className="w-4 h-4 text-secondary" />
                                 </span>
-                              ) : (
+                              ) : memberEmails[member.id] ? (
                                 <button
                                   onClick={() => verifyMemberEmail(member.user_id)}
                                   className="p-1 text-muted-foreground hover:text-secondary"
@@ -650,7 +650,7 @@ export default function Admin() {
                                 >
                                   <Mail className="w-4 h-4" />
                                 </button>
-                              )}
+                              ) : null}
                             </div>
                           </td>
                           <td className="py-3 px-4">
