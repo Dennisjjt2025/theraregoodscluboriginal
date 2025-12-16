@@ -180,6 +180,13 @@ type TranslationContent = {
     emailVerifiedLabel: string;
     emailVerifiedSuccess: string;
     verifyEmailBtn: string;
+    memberInvites: string;
+    invitesUpdated: string;
+    addInvite: string;
+    removeInvite: string;
+    bulkActions: string;
+    bulkInvitesAdded: string;
+    toAllMembers: string;
   };
   common: {
     loading: string;
@@ -374,6 +381,13 @@ export const translations: Record<Language, TranslationContent> = {
       emailVerifiedLabel: 'Email verified',
       emailVerifiedSuccess: 'Email verified successfully',
       verifyEmailBtn: 'Verify email manually',
+      memberInvites: 'Invites',
+      invitesUpdated: 'Invites updated',
+      addInvite: 'Add invite',
+      removeInvite: 'Remove invite',
+      bulkActions: 'Bulk actions',
+      bulkInvitesAdded: 'Invites added to all members',
+      toAllMembers: 'to all',
     },
     common: {
       loading: 'Loading...',
@@ -566,6 +580,13 @@ export const translations: Record<Language, TranslationContent> = {
       emailVerifiedLabel: 'Email geverifieerd',
       emailVerifiedSuccess: 'Email succesvol geverifieerd',
       verifyEmailBtn: 'Email handmatig verifiëren',
+      memberInvites: 'Uitnodigingen',
+      invitesUpdated: 'Uitnodigingen bijgewerkt',
+      addInvite: 'Uitnodiging toevoegen',
+      removeInvite: 'Uitnodiging verwijderen',
+      bulkActions: 'Bulk acties',
+      bulkInvitesAdded: 'Uitnodigingen toegevoegd aan alle leden',
+      toAllMembers: 'voor iedereen',
     },
     common: {
       loading: 'Laden...',
