@@ -672,7 +672,7 @@ export default function Admin() {
                           <Copy className="w-4 h-4" />
                         </button>
                         <button
-                          onClick={() => window.open(`/drop`, '_blank')}
+                          onClick={() => window.open(`/drop/preview?id=${drop.id}`, '_blank')}
                           className="p-2 hover:bg-muted rounded"
                           title="Preview"
                         >

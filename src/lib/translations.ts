@@ -116,6 +116,7 @@ type TranslationContent = {
     limited: string;
     membersOnly: string;
     whileSuppliesLast: string;
+    goToDrop: string;
   };
   admin: {
     title: string;
@@ -320,6 +321,7 @@ export const translations: Record<Language, TranslationContent> = {
       limited: 'Limited Edition',
       membersOnly: 'Members Only',
       whileSuppliesLast: 'While Supplies Last',
+      goToDrop: 'Go to drop',
     },
     admin: {
       title: 'Admin Dashboard',
@@ -522,6 +524,7 @@ export const translations: Record<Language, TranslationContent> = {
       limited: 'Limited Edition',
       membersOnly: 'Alleen voor Leden',
       whileSuppliesLast: 'Zolang de Voorraad Strekt',
+      goToDrop: 'Ga naar drop',
     },
     admin: {
       title: 'Admin Dashboard',

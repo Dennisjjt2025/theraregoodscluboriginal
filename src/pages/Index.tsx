@@ -4,7 +4,7 @@ import { useAuth } from '@/contexts/AuthContext';
 import { Header } from '@/components/Header';
 import { CountdownTimer } from '@/components/CountdownTimer';
 import { WaitlistForm } from '@/components/WaitlistForm';
-import { Wine, Globe, Award } from 'lucide-react';
+import { Wine, Globe, Award, ArrowRight } from 'lucide-react';
 import logo from '@/assets/logo.png';
 
 export default function Index() {
@@ -50,6 +50,17 @@ export default function Index() {
               {t.landing.nextDrop}
             </p>
             <CountdownTimer targetDate={nextDropDate} />
+            {user && (
+              <div className="mt-6">
+                <Link
+                  to="/drop"
+                  className="btn-luxury inline-flex items-center gap-2"
+                >
+                  {t.drop.goToDrop || 'Go to drop'}
+                  <ArrowRight className="w-4 h-4" />
+                </Link>
+              </div>
+            )}
           </div>
 
           {/* CTAs */}
