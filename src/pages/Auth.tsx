@@ -239,7 +239,7 @@ export default function Auth() {
       if (signUpError) throw signUpError;
 
       if (signUpData.user) {
-        // If we have a validated invite code, mark it as used
+        // If we have a validated invite code, mark it as used and auto-verify
         if (validatedInviteCode) {
           await supabase
             .from('invite_codes')
@@ -248,17 +248,28 @@ export default function Auth() {
               used_at: new Date().toISOString(),
             })
             .eq('code', validatedInviteCode);
-        }
 
-        // Send verification email
-        const sent = await sendVerificationEmail(signUpData.user.id, email, firstName);
-        
-        if (sent) {
-          setPendingUserId(signUpData.user.id);
-          setAuthMode('verify-pending');
-          toast.success(t.auth.verifyEmailSent);
+          // Auto-verify email for users with valid invite code (they're already validated)
+          await supabase
+            .from('profiles')
+            .update({ email_verified: true })
+            .eq('id', signUpData.user.id);
+
+          toast.success(t.auth.accountCreated);
+          setAuthMode('login-password');
+          setPassword('');
+          setConfirmPassword('');
         } else {
-          toast.error('Failed to send verification email. Please try again.');
+          // No invite code - require email verification
+          const sent = await sendVerificationEmail(signUpData.user.id, email, firstName);
+          
+          if (sent) {
+            setPendingUserId(signUpData.user.id);
+            setAuthMode('verify-pending');
+            toast.success(t.auth.verifyEmailSent);
+          } else {
+            toast.error('Failed to send verification email. Please try again.');
+          }
         }
       }
     } catch (error: any) {
