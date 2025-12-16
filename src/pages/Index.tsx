@@ -34,28 +34,40 @@ export default function Index() {
     try {
       const now = new Date().toISOString();
       
-      // First, check for active drops
-      const { data: activeData } = await supabase
+      // First, check for active drops (started and not ended)
+      const { data: activeData, error: activeError } = await supabase
         .from('drops')
         .select('id, title_en, title_nl, starts_at, ends_at, is_active')
         .eq('is_active', true)
-        .lt('starts_at', now)
-        .or(`ends_at.is.null,ends_at.gt.${now}`)
-        .order('starts_at', { ascending: true })
-        .limit(1)
-        .maybeSingle();
+        .lte('starts_at', now)
+        .order('starts_at', { ascending: false })
+        .limit(10);
 
-      if (activeData) {
-        setActiveDrop(activeData);
+      if (activeError) {
+        console.error('Error fetching active drops:', activeError);
+      }
+
+      // Filter for drops that haven't ended yet (ends_at is null or in future)
+      const currentlyActive = activeData?.find(drop => 
+        !drop.ends_at || new Date(drop.ends_at) > new Date()
+      );
+
+      if (currentlyActive) {
+        setActiveDrop(currentlyActive);
       } else {
         // No active drop, look for upcoming drops
-        const { data: upcomingData } = await supabase
+        const { data: upcomingData, error: upcomingError } = await supabase
           .from('drops')
           .select('id, title_en, title_nl, starts_at, ends_at, is_active')
           .gt('starts_at', now)
+          .eq('is_active', true)
           .order('starts_at', { ascending: true })
           .limit(1)
           .maybeSingle();
+
+        if (upcomingError) {
+          console.error('Error fetching upcoming drops:', upcomingError);
+        }
 
         if (upcomingData) {
           setNextDrop(upcomingData);
