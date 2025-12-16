@@ -8,7 +8,7 @@ import { MemberDetailModal } from '@/components/admin/MemberDetailModal';
 import { EmailComposer } from '@/components/admin/EmailComposer';
 import { toast } from 'sonner';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
-import { Plus, Users, Wine, Clock, Check, X, RotateCcw, Minus, FileText, Save, Eye, Mail, MailCheck, Gift, Send } from 'lucide-react';
+import { Plus, Users, Wine, Clock, Check, X, RotateCcw, Minus, FileText, Save, Eye, Mail, MailCheck, Gift, Send, Globe, Lock, Trash2 } from 'lucide-react';
 
 interface Drop {
   id: string;
@@ -19,6 +19,7 @@ interface Drop {
   starts_at: string;
   ends_at: string;
   is_active: boolean;
+  is_public: boolean;
 }
 
 interface Member {
@@ -409,6 +410,64 @@ export default function Admin() {
     }
   };
 
+  const deleteWaitlistEntry = async (id: string) => {
+    try {
+      const { error } = await supabase
+        .from('waitlist')
+        .delete()
+        .eq('id', id);
+
+      if (error) throw error;
+      toast.success('Waitlist entry deleted');
+      fetchData();
+    } catch (error) {
+      console.error('Delete waitlist error:', error);
+      toast.error(t.common.error);
+    }
+  };
+
+  const toggleDropPublic = async (dropId: string, currentStatus: boolean) => {
+    try {
+      const { error } = await supabase
+        .from('drops')
+        .update({ is_public: !currentStatus })
+        .eq('id', dropId);
+
+      if (error) throw error;
+      toast.success(`Drop ${!currentStatus ? 'made public for waitlist' : 'set to members only'}`);
+      fetchData();
+    } catch (error) {
+      console.error('Toggle public error:', error);
+      toast.error(t.common.error);
+    }
+  };
+
+  const emailWaitlistAboutDrop = async (dropId: string, dropTitle: string) => {
+    const publicDrops = drops.filter(d => d.is_public);
+    if (publicDrops.length === 0) {
+      toast.error('Please make the drop public first');
+      return;
+    }
+    
+    try {
+      const dropUrl = `${window.location.origin}/drop?public=${dropId}`;
+      const response = await supabase.functions.invoke('send-member-email', {
+        body: {
+          type: 'waitlist',
+          subject: `Exclusive Access: ${dropTitle}`,
+          message: `You've been given exclusive early access to our latest drop!\n\nThis is a limited offer available only to our waitlist members. Don't miss your chance to get your hands on this rare item.\n\nVisit the drop page: ${dropUrl}`,
+          emailType: 'drop_update',
+        },
+      });
+
+      if (response.error) throw response.error;
+      toast.success(`Email sent to ${response.data?.sent || 0} waitlist members`);
+    } catch (error) {
+      console.error('Email waitlist error:', error);
+      toast.error(t.common.error);
+    }
+  };
+
   const getStrikeIndicator = (strikes: number) => {
     return (
       <div className="flex items-center gap-1">
@@ -658,6 +717,13 @@ export default function Admin() {
                         <span className={`px-2 py-1 text-xs ${drop.is_active ? 'bg-secondary text-secondary-foreground' : 'bg-muted text-muted-foreground'}`}>
                           {drop.is_active ? 'Active' : 'Inactive'}
                         </span>
+                        <button
+                          onClick={() => toggleDropPublic(drop.id, drop.is_public)}
+                          className={`p-2 text-xs ${drop.is_public ? 'bg-amber-500 text-white' : 'bg-muted text-muted-foreground'}`}
+                          title={drop.is_public ? 'Public for waitlist' : 'Members only'}
+                        >
+                          {drop.is_public ? <Globe className="w-4 h-4" /> : <Lock className="w-4 h-4" />}
+                        </button>
                         <button
                           onClick={() => toggleDropActive(drop.id, drop.is_active)}
                           className="btn-outline-luxury text-xs px-3 py-1"
@@ -980,7 +1046,34 @@ export default function Admin() {
             {/* Waitlist Tab */}
             <TabsContent value="waitlist">
               <div className="bg-card border border-border p-6">
-                <h2 className="font-serif text-xl mb-6">{t.admin.waitlist}</h2>
+                <div className="flex items-center justify-between mb-6">
+                  <h2 className="font-serif text-xl">{t.admin.waitlist}</h2>
+                  {drops.filter(d => d.is_public).length > 0 && (
+                    <div className="flex items-center gap-2">
+                      <select
+                        className="input-luxury text-sm"
+                        id="waitlist-drop-select"
+                      >
+                        {drops.filter(d => d.is_public).map(drop => (
+                          <option key={drop.id} value={drop.id}>{drop.title_en}</option>
+                        ))}
+                      </select>
+                      <button
+                        onClick={() => {
+                          const select = document.getElementById('waitlist-drop-select') as HTMLSelectElement;
+                          const selectedDrop = drops.find(d => d.id === select.value);
+                          if (selectedDrop) {
+                            emailWaitlistAboutDrop(selectedDrop.id, selectedDrop.title_en);
+                          }
+                        }}
+                        className="btn-luxury text-xs px-3 py-2 flex items-center gap-1"
+                      >
+                        <Send className="w-3 h-3" />
+                        Email Waitlist
+                      </button>
+                    </div>
+                  )}
+                </div>
                 <div className="space-y-4">
                   {waitlist.map((entry) => (
                     <div
@@ -1013,9 +1106,20 @@ export default function Admin() {
                             </button>
                           </>
                         ) : (
-                          <span className={`px-2 py-1 text-xs ${entry.status === 'approved' ? 'bg-secondary text-secondary-foreground' : 'bg-muted text-muted-foreground'}`}>
-                            {entry.status}
-                          </span>
+                          <>
+                            <span className={`px-2 py-1 text-xs ${entry.status === 'approved' ? 'bg-secondary text-secondary-foreground' : 'bg-muted text-muted-foreground'}`}>
+                              {entry.status}
+                            </span>
+                            {entry.status === 'rejected' && (
+                              <button
+                                onClick={() => deleteWaitlistEntry(entry.id)}
+                                className="p-2 bg-destructive/10 text-destructive hover:bg-destructive/20"
+                                title="Delete entry"
+                              >
+                                <Trash2 className="w-4 h-4" />
+                              </button>
+                            )}
+                          </>
                         )}
                       </div>
                     </div>

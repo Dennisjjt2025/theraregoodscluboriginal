@@ -5,7 +5,7 @@ import { useAuth } from '@/contexts/AuthContext';
 import { supabase } from '@/integrations/supabase/client';
 import { Header } from '@/components/Header';
 import { toast } from 'sonner';
-import { Wine, Copy, Check, AlertTriangle, ArrowRight, User, Shield } from 'lucide-react';
+import { Wine, Copy, Check, AlertTriangle, ArrowRight, User, Shield, ShoppingBag } from 'lucide-react';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 
 interface Member {
@@ -31,6 +31,20 @@ interface Drop {
   price: number;
 }
 
+interface OrderHistory {
+  id: string;
+  drop_id: string;
+  purchased: boolean;
+  quantity: number;
+  created_at: string;
+  drop?: {
+    title_en: string;
+    title_nl: string;
+    price: number;
+    image_url: string | null;
+  };
+}
+
 interface Profile {
   first_name: string | null;
   last_name: string | null;
@@ -50,6 +64,7 @@ export default function Dashboard() {
   const [member, setMember] = useState<Member | null>(null);
   const [inviteCodes, setInviteCodes] = useState<InviteCode[]>([]);
   const [currentDrop, setCurrentDrop] = useState<Drop | null>(null);
+  const [orders, setOrders] = useState<OrderHistory[]>([]);
   const [profile, setProfile] = useState<Profile>({
     first_name: '',
     last_name: '',
@@ -140,6 +155,31 @@ export default function Dashboard() {
           .maybeSingle();
 
         setCurrentDrop(dropData);
+
+        // Fetch order history (purchased items)
+        const { data: orderData } = await supabase
+          .from('drop_participation')
+          .select(`
+            id,
+            drop_id,
+            purchased,
+            quantity,
+            created_at,
+            drops (
+              title_en,
+              title_nl,
+              price,
+              image_url
+            )
+          `)
+          .eq('member_id', memberData.id)
+          .eq('purchased', true)
+          .order('created_at', { ascending: false });
+
+        setOrders((orderData || []).map((o: any) => ({
+          ...o,
+          drop: o.drops
+        })));
       }
     } catch (error) {
       console.error('Error fetching data:', error);
@@ -266,8 +306,12 @@ export default function Dashboard() {
           </div>
 
           <Tabs defaultValue="overview" className="space-y-6">
-            <TabsList className="grid w-full grid-cols-2 max-w-md">
+            <TabsList className="grid w-full grid-cols-3 max-w-lg">
               <TabsTrigger value="overview">Overview</TabsTrigger>
+              <TabsTrigger value="orders" className="flex items-center gap-2">
+                <ShoppingBag className="w-4 h-4" />
+                {t.dashboard.purchaseHistory}
+              </TabsTrigger>
               <TabsTrigger value="profile" className="flex items-center gap-2">
                 <User className="w-4 h-4" />
                 {t.dashboard.myProfile}
@@ -491,6 +535,50 @@ export default function Dashboard() {
                     {savingProfile ? t.common.loading : t.common.save}
                   </button>
                 </div>
+              </div>
+            </TabsContent>
+
+            {/* Orders Tab */}
+            <TabsContent value="orders" className="space-y-6">
+              <div className="bg-card border border-border p-6">
+                <h2 className="font-serif text-xl mb-6">{t.dashboard.purchaseHistory}</h2>
+                
+                {orders.length > 0 ? (
+                  <div className="space-y-4">
+                    {orders.map((order) => (
+                      <div
+                        key={order.id}
+                        className="flex items-center gap-4 p-4 bg-muted/30 border border-border"
+                      >
+                        {order.drop?.image_url && (
+                          <img
+                            src={order.drop.image_url}
+                            alt={language === 'nl' ? order.drop.title_nl : order.drop.title_en}
+                            className="w-20 h-20 object-cover"
+                          />
+                        )}
+                        <div className="flex-1">
+                          <h3 className="font-serif text-lg">
+                            {language === 'nl' ? order.drop?.title_nl : order.drop?.title_en}
+                          </h3>
+                          <p className="text-sm text-muted-foreground">
+                            {order.quantity > 1 ? `${order.quantity}x ` : ''}€{order.drop?.price}
+                          </p>
+                          <p className="text-xs text-muted-foreground mt-1">
+                            {new Date(order.created_at).toLocaleDateString()}
+                          </p>
+                        </div>
+                        <div className="text-right">
+                          <span className="px-2 py-1 text-xs bg-secondary text-secondary-foreground">
+                            {t.admin.purchased}
+                          </span>
+                        </div>
+                      </div>
+                    ))}
+                  </div>
+                ) : (
+                  <p className="text-muted-foreground text-center py-8">{t.dashboard.noPurchases}</p>
+                )}
               </div>
             </TabsContent>
           </Tabs>

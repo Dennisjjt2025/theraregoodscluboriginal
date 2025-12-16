@@ -7,7 +7,7 @@ const corsHeaders = {
 };
 
 interface EmailRequest {
-  type: 'individual' | 'bulk';
+  type: 'individual' | 'bulk' | 'waitlist';
   recipients?: string[]; // For individual emails
   subject: string;
   message: string;
@@ -141,7 +141,7 @@ ${message}
           <tr>
             <td style="padding: 24px 40px; background-color: #f8f6f3; text-align: center; border-top: 1px solid #e5e2de;">
               <p style="margin: 0 0 8px; font-size: 11px; color: #888888; letter-spacing: 1px;">
-                You're receiving this because you're a member of The Rare Goods Club
+                You're receiving this because you're on our exclusive list
               </p>
               <p style="margin: 0; font-size: 11px; color: #aaaaaa;">
                 © ${new Date().getFullYear()} The Rare Goods Club. All rights reserved.
@@ -175,7 +175,21 @@ const handler = async (req: Request): Promise<Response> => {
 
     let emailAddresses: string[] = [];
 
-    if (type === 'bulk') {
+    if (type === 'waitlist') {
+      // Get all pending/approved waitlist emails
+      const { data: waitlistData, error: waitlistError } = await supabaseAdmin
+        .from('waitlist')
+        .select('email')
+        .in('status', ['pending', 'approved']);
+      
+      if (waitlistError) {
+        console.error("Error fetching waitlist emails:", waitlistError);
+        throw new Error("Failed to fetch waitlist emails");
+      }
+      
+      emailAddresses = waitlistData?.map((w: any) => w.email) || [];
+      console.log(`Waitlist email to ${emailAddresses.length} people`);
+    } else if (type === 'bulk') {
       // Get all active member emails
       const { data: memberData, error: memberError } = await supabaseAdmin
         .rpc('get_member_emails');
