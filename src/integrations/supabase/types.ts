@@ -64,10 +64,11 @@ export type Database = {
           created_at: string | null
           description_en: string | null
           description_nl: string | null
-          ends_at: string
+          ends_at: string | null
           id: string
           image_url: string | null
           is_active: boolean | null
+          is_draft: boolean | null
           is_public: boolean | null
           origin: string | null
           price: number
@@ -82,16 +83,18 @@ export type Database = {
           title_en: string
           title_nl: string
           updated_at: string | null
+          video_url: string | null
           vintage: string | null
         }
         Insert: {
           created_at?: string | null
           description_en?: string | null
           description_nl?: string | null
-          ends_at: string
+          ends_at?: string | null
           id?: string
           image_url?: string | null
           is_active?: boolean | null
+          is_draft?: boolean | null
           is_public?: boolean | null
           origin?: string | null
           price: number
@@ -106,16 +109,18 @@ export type Database = {
           title_en: string
           title_nl: string
           updated_at?: string | null
+          video_url?: string | null
           vintage?: string | null
         }
         Update: {
           created_at?: string | null
           description_en?: string | null
           description_nl?: string | null
-          ends_at?: string
+          ends_at?: string | null
           id?: string
           image_url?: string | null
           is_active?: boolean | null
+          is_draft?: boolean | null
           is_public?: boolean | null
           origin?: string | null
           price?: number
@@ -130,6 +135,7 @@ export type Database = {
           title_en?: string
           title_nl?: string
           updated_at?: string | null
+          video_url?: string | null
           vintage?: string | null
         }
         Relationships: []
