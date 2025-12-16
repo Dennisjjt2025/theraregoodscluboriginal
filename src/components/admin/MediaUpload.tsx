@@ -8,9 +8,10 @@ interface MediaUploadProps {
   onUpload: (url: string) => void;
   type?: 'image' | 'video' | 'both';
   label?: string;
+  showPreview?: boolean;
 }
 
-export function MediaUpload({ currentUrl, onUpload, type = 'both', label }: MediaUploadProps) {
+export function MediaUpload({ currentUrl, onUpload, type = 'both', label, showPreview = true }: MediaUploadProps) {
   const [uploading, setUploading] = useState(false);
   const [preview, setPreview] = useState<string | null>(currentUrl || null);
   const [isDragging, setIsDragging] = useState(false);
@@ -142,7 +143,7 @@ export function MediaUpload({ currentUrl, onUpload, type = 'both', label }: Medi
             <Loader2 className="w-8 h-8 animate-spin text-primary" />
             <p className="mt-2 text-sm text-muted-foreground">Uploading...</p>
           </div>
-        ) : preview ? (
+        ) : preview && showPreview ? (
           <div className="relative">
             {isVideoPreview ? (
               <video

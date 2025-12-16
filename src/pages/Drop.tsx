@@ -33,16 +33,25 @@ interface Drop {
   is_public: boolean | null;
 }
 
+interface GalleryImage {
+  id: string;
+  image_url: string;
+  alt_text: string | null;
+  sort_order: number;
+}
+
 export default function Drop() {
   const { t, language } = useLanguage();
   const { user, loading: authLoading } = useAuth();
 
   const [drop, setDrop] = useState<Drop | null>(null);
+  const [galleryImages, setGalleryImages] = useState<GalleryImage[]>([]);
   const [loading, setLoading] = useState(true);
   const [addingToCart, setAddingToCart] = useState(false);
   const [isMember, setIsMember] = useState(false);
   const [memberLoading, setMemberLoading] = useState(true);
   const [lightboxOpen, setLightboxOpen] = useState(false);
+  const [lightboxIndex, setLightboxIndex] = useState(0);
 
   // Check if user is a member
   useEffect(() => {
@@ -94,6 +103,18 @@ export default function Drop() {
 
       if (error) throw error;
       setDrop(data);
+
+      // Fetch gallery images if drop exists
+      if (data) {
+        const { data: images, error: imagesError } = await supabase
+          .from('drop_images')
+          .select('id, image_url, alt_text, sort_order')
+          .eq('drop_id', data.id)
+          .order('sort_order', { ascending: true });
+
+        if (imagesError) throw imagesError;
+        setGalleryImages(images || []);
+      }
     } catch (error) {
       console.error('Error fetching drop:', error);
     } finally {
@@ -116,6 +137,11 @@ export default function Drop() {
     } finally {
       setAddingToCart(false);
     }
+  };
+
+  const openLightbox = (index: number = 0) => {
+    setLightboxIndex(index);
+    setLightboxOpen(true);
   };
 
   // Can purchase if member OR drop is public
@@ -149,6 +175,16 @@ export default function Drop() {
   const tastingNotes = language === 'nl' ? drop.tasting_notes_nl : drop.tasting_notes_en;
   const soldOut = drop.quantity_sold >= drop.quantity_available;
   const hasAttributes = drop.origin || drop.vintage;
+
+  // Combine main image with gallery images
+  const allImages: GalleryImage[] = [
+    // If there are gallery images, use them; otherwise fall back to main image_url
+    ...(galleryImages.length > 0
+      ? galleryImages
+      : drop.image_url
+      ? [{ id: 'main', image_url: drop.image_url, alt_text: title, sort_order: 0 }]
+      : []),
+  ];
 
   // Purchase section component
   const PurchaseSection = ({ mobile = false }: { mobile?: boolean }) => {
@@ -253,23 +289,24 @@ export default function Drop() {
       <MediaLightbox
         isOpen={lightboxOpen}
         onClose={() => setLightboxOpen(false)}
-        imageUrl={drop.image_url}
+        images={allImages}
         videoUrl={drop.video_url}
         title={title}
+        initialIndex={lightboxIndex}
       />
 
       <main className="pt-20 md:pt-24">
-        {/* Hero Image with Lightbox */}
+        {/* Hero Image with Gallery */}
         <MediaHero
-          imageUrl={drop.image_url}
+          images={allImages}
           videoUrl={drop.video_url}
           title={title}
-          onOpenLightbox={() => setLightboxOpen(true)}
+          onOpenLightbox={openLightbox}
           badges={heroBadges}
           tapToEnlargeText={drop.video_url ? t.drop.playVideo : t.drop.tapToEnlarge}
         />
 
-        <div className="container mx-auto max-w-4xl px-4 -mt-20 relative z-10">
+        <div className={`container mx-auto max-w-4xl px-4 ${allImages.length > 1 ? 'mt-4' : '-mt-20'} relative z-10`}>
           {/* Title & Description */}
           <div className="mb-8">
             <h1 className="font-serif text-4xl md:text-5xl lg:text-6xl mb-4">{title}</h1>

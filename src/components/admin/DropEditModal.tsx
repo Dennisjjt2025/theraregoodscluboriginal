@@ -4,6 +4,7 @@ import { useLanguage } from '@/contexts/LanguageContext';
 import { toast } from 'sonner';
 import { X, Save, Copy, Loader2 } from 'lucide-react';
 import { MediaUpload } from './MediaUpload';
+import { DropGalleryManager } from './DropGalleryManager';
 
 interface Drop {
   id: string;
@@ -291,13 +292,20 @@ export function DropEditModal({ drop, onClose, onSave, mode }: DropEditModalProp
             />
           </div>
 
-          {/* Media Uploads */}
+          {/* Gallery Images - Only show when editing existing drop */}
+          {mode === 'edit' && drop && (
+            <div className="border-t border-border pt-6">
+              <DropGalleryManager dropId={drop.id} />
+            </div>
+          )}
+
+          {/* Legacy Media Uploads (for main image if no gallery) */}
           <div className="grid md:grid-cols-2 gap-4">
             <MediaUpload
               currentUrl={form.image_url}
               onUpload={(url) => setForm({ ...form, image_url: url })}
               type="image"
-              label="Product Image"
+              label="Main Product Image (fallback if no gallery)"
             />
             <MediaUpload
               currentUrl={form.video_url}
