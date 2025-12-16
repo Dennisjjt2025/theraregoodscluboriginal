@@ -1,20 +1,87 @@
+import { useState, useEffect } from 'react';
 import { Link } from 'react-router-dom';
 import { useLanguage } from '@/contexts/LanguageContext';
 import { useAuth } from '@/contexts/AuthContext';
+import { supabase } from '@/integrations/supabase/client';
 import { Header } from '@/components/Header';
 import { CountdownTimer } from '@/components/CountdownTimer';
 import { WaitlistForm } from '@/components/WaitlistForm';
 import { Wine, Globe, Award, ArrowRight } from 'lucide-react';
 import logo from '@/assets/logo.png';
 
-export default function Index() {
-  const { t } = useLanguage();
-  const { user } = useAuth();
+interface DropInfo {
+  id: string;
+  title_en: string;
+  title_nl: string;
+  starts_at: string;
+  ends_at: string | null;
+  is_active: boolean;
+}
 
-  // Next drop date - can be made dynamic from the database
-  const nextDropDate = new Date();
-  nextDropDate.setDate(nextDropDate.getDate() + 7);
-  nextDropDate.setHours(20, 0, 0, 0);
+export default function Index() {
+  const { t, language } = useLanguage();
+  const { user } = useAuth();
+  
+  const [nextDrop, setNextDrop] = useState<DropInfo | null>(null);
+  const [activeDrop, setActiveDrop] = useState<DropInfo | null>(null);
+  const [loading, setLoading] = useState(true);
+
+  useEffect(() => {
+    fetchDrops();
+  }, []);
+
+  const fetchDrops = async () => {
+    try {
+      const now = new Date().toISOString();
+      
+      // First, check for active drops
+      const { data: activeData } = await supabase
+        .from('drops')
+        .select('id, title_en, title_nl, starts_at, ends_at, is_active')
+        .eq('is_active', true)
+        .lt('starts_at', now)
+        .or(`ends_at.is.null,ends_at.gt.${now}`)
+        .order('starts_at', { ascending: true })
+        .limit(1)
+        .maybeSingle();
+
+      if (activeData) {
+        setActiveDrop(activeData);
+      } else {
+        // No active drop, look for upcoming drops
+        const { data: upcomingData } = await supabase
+          .from('drops')
+          .select('id, title_en, title_nl, starts_at, ends_at, is_active')
+          .gt('starts_at', now)
+          .order('starts_at', { ascending: true })
+          .limit(1)
+          .maybeSingle();
+
+        if (upcomingData) {
+          setNextDrop(upcomingData);
+        }
+      }
+    } catch (error) {
+      console.error('Error fetching drops:', error);
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  // Determine what to show
+  const isLive = !!activeDrop;
+  const dropToShow = activeDrop || nextDrop;
+  
+  // For countdown: if active drop has end date, count down to end. If upcoming, count down to start.
+  const countdownDate = activeDrop?.ends_at 
+    ? new Date(activeDrop.ends_at)
+    : nextDrop?.starts_at 
+      ? new Date(nextDrop.starts_at)
+      : null;
+
+  const dropTitle = dropToShow 
+    ? (language === 'nl' ? dropToShow.title_nl : dropToShow.title_en)
+    : null;
 
   return (
     <div className="min-h-screen bg-background">
@@ -46,20 +113,38 @@ export default function Index() {
 
           {/* Countdown */}
           <div className="mb-12 animate-slide-up" style={{ animationDelay: '0.2s' }}>
-            <p className="font-sans text-sm uppercase tracking-widest text-muted-foreground mb-4">
-              {t.landing.nextDrop}
-            </p>
-            <CountdownTimer targetDate={nextDropDate} />
-            {user && (
-              <div className="mt-6">
-                <Link
-                  to="/drop"
-                  className="btn-luxury inline-flex items-center gap-2"
-                >
-                  {t.drop.goToDrop || 'Go to drop'}
-                  <ArrowRight className="w-4 h-4" />
-                </Link>
-              </div>
+            {loading ? (
+              <div className="animate-pulse h-24 w-64 bg-muted rounded" />
+            ) : countdownDate ? (
+              <>
+                <p className="font-sans text-sm uppercase tracking-widest text-muted-foreground mb-2">
+                  {isLive ? (dropTitle || 'Drop') : t.landing.nextDrop}
+                </p>
+                {isLive && (
+                  <p className="font-serif text-lg text-secondary mb-4">
+                    {language === 'nl' ? 'Nu beschikbaar!' : 'Now available!'}
+                  </p>
+                )}
+                <CountdownTimer 
+                  targetDate={countdownDate} 
+                  isLive={isLive}
+                />
+                {user && isLive && (
+                  <div className="mt-6">
+                    <Link
+                      to="/drop"
+                      className="btn-luxury inline-flex items-center gap-2"
+                    >
+                      {t.drop.goToDrop}
+                      <ArrowRight className="w-4 h-4" />
+                    </Link>
+                  </div>
+                )}
+              </>
+            ) : (
+              <p className="font-sans text-muted-foreground">
+                {language === 'nl' ? 'Geen aankomende drops gepland' : 'No upcoming drops scheduled'}
+              </p>
             )}
           </div>
 
