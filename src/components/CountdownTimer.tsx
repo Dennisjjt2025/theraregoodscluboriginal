@@ -4,6 +4,7 @@ import { useLanguage } from '@/contexts/LanguageContext';
 interface CountdownTimerProps {
   targetDate: Date;
   className?: string;
+  isLive?: boolean; // When true, shows L-I-V-E instead of numbers
 }
 
 interface TimeLeft {
@@ -13,7 +14,7 @@ interface TimeLeft {
   seconds: number;
 }
 
-export function CountdownTimer({ targetDate, className }: CountdownTimerProps) {
+export function CountdownTimer({ targetDate, className, isLive = false }: CountdownTimerProps) {
   const { t } = useLanguage();
   const [timeLeft, setTimeLeft] = useState<TimeLeft>(calculateTimeLeft());
 
@@ -40,11 +41,13 @@ export function CountdownTimer({ targetDate, className }: CountdownTimerProps) {
     return () => clearInterval(timer);
   }, [targetDate]);
 
+  const liveLetters = ['L', 'I', 'V', 'E'];
+  
   const timeBlocks = [
-    { value: timeLeft.days, label: 'L' },
-    { value: timeLeft.hours, label: 'I' },
-    { value: timeLeft.minutes, label: 'V' },
-    { value: timeLeft.seconds, label: 'E' },
+    { value: timeLeft.days, label: t.landing.days, letter: 'L' },
+    { value: timeLeft.hours, label: t.landing.hours, letter: 'I' },
+    { value: timeLeft.minutes, label: t.landing.minutes, letter: 'V' },
+    { value: timeLeft.seconds, label: t.landing.seconds, letter: 'E' },
   ];
 
   return (
@@ -55,7 +58,7 @@ export function CountdownTimer({ targetDate, className }: CountdownTimerProps) {
             <div className="text-center">
               <div className="bg-card border border-border px-3 py-2 sm:px-5 sm:py-3 min-w-[60px] sm:min-w-[80px]">
                 <span className="font-serif text-2xl sm:text-4xl md:text-5xl font-medium tabular-nums">
-                  {String(block.value).padStart(2, '0')}
+                  {isLive ? block.letter : String(block.value).padStart(2, '0')}
                 </span>
               </div>
               <span className="text-xs sm:text-sm font-sans text-muted-foreground uppercase tracking-wider mt-2 block">
