@@ -7,7 +7,7 @@ import { Header } from '@/components/Header';
 import { MemberDetailModal } from '@/components/admin/MemberDetailModal';
 import { toast } from 'sonner';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
-import { Plus, Users, Wine, Clock, Check, X, RotateCcw, Minus, FileText, Save, Eye } from 'lucide-react';
+import { Plus, Users, Wine, Clock, Check, X, RotateCcw, Minus, FileText, Save, Eye, Mail, MailCheck } from 'lucide-react';
 
 interface Drop {
   id: string;
@@ -43,6 +43,7 @@ interface MemberEmail {
   member_id: string;
   user_id: string;
   email: string;
+  email_verified: boolean;
 }
 
 interface DropParticipationReport {
@@ -65,7 +66,7 @@ export default function Admin() {
   const [drops, setDrops] = useState<Drop[]>([]);
   const [members, setMembers] = useState<Member[]>([]);
   const [waitlist, setWaitlist] = useState<WaitlistEntry[]>([]);
-  const [memberEmails, setMemberEmails] = useState<Record<string, string>>({});
+  const [memberEmails, setMemberEmails] = useState<Record<string, { email: string; verified: boolean }>>({});
   
   // Drop participation report state
   const [selectedDropForReport, setSelectedDropForReport] = useState<string>('');
@@ -147,11 +148,11 @@ export default function Admin() {
       setMembers(membersRes.data || []);
       setWaitlist(waitlistRes.data || []);
       
-      // Build email lookup map
-      const emailMap: Record<string, string> = {};
+      // Build email lookup map with verification status
+      const emailMap: Record<string, { email: string; verified: boolean }> = {};
       if (emailsRes.data) {
         (emailsRes.data as MemberEmail[]).forEach((item) => {
-          emailMap[item.member_id] = item.email;
+          emailMap[item.member_id] = { email: item.email, verified: item.email_verified };
         });
       }
       setMemberEmails(emailMap);
@@ -307,6 +308,22 @@ export default function Admin() {
       fetchData();
     } catch (error) {
       console.error('Reset strikes error:', error);
+      toast.error(t.common.error);
+    }
+  };
+
+  const verifyMemberEmail = async (userId: string) => {
+    try {
+      const { error } = await supabase
+        .from('profiles')
+        .update({ email_verified: true })
+        .eq('id', userId);
+
+      if (error) throw error;
+      toast.success(t.admin.emailVerifiedSuccess);
+      fetchData();
+    } catch (error) {
+      console.error('Verify email error:', error);
       toast.error(t.common.error);
     }
   };
@@ -616,9 +633,24 @@ export default function Admin() {
                       {members.map((member) => (
                         <tr key={member.id} className="border-b border-border/50">
                           <td className="py-3 px-4">
-                            <div>
-                              <p className="text-sm">{memberEmails[member.id] || 'Loading...'}</p>
-                              <p className="text-xs text-muted-foreground font-mono">{member.user_id.slice(0, 8)}...</p>
+                            <div className="flex items-center gap-2">
+                              <div>
+                                <p className="text-sm">{memberEmails[member.id]?.email || 'Loading...'}</p>
+                                <p className="text-xs text-muted-foreground font-mono">{member.user_id.slice(0, 8)}...</p>
+                              </div>
+                              {memberEmails[member.id]?.verified ? (
+                                <span title={t.admin.emailVerifiedLabel}>
+                                  <MailCheck className="w-4 h-4 text-secondary" />
+                                </span>
+                              ) : (
+                                <button
+                                  onClick={() => verifyMemberEmail(member.user_id)}
+                                  className="p-1 text-muted-foreground hover:text-secondary"
+                                  title={t.admin.verifyEmailBtn}
+                                >
+                                  <Mail className="w-4 h-4" />
+                                </button>
+                              )}
                             </div>
                           </td>
                           <td className="py-3 px-4">
@@ -667,7 +699,7 @@ export default function Admin() {
                           <td className="py-3 px-4 text-right">
                             <div className="flex items-center justify-end gap-1">
                               <button
-                                onClick={() => setSelectedMemberForDetail({ id: member.id, email: memberEmails[member.id] || '' })}
+                                onClick={() => setSelectedMemberForDetail({ id: member.id, email: memberEmails[member.id]?.email || '' })}
                                 className="p-1 text-primary hover:text-primary/80"
                                 title={t.admin.viewDetails}
                               >

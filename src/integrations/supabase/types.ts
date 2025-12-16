@@ -337,6 +337,7 @@ export type Database = {
         Args: never
         Returns: {
           email: string
+          email_verified: boolean
           member_id: string
           user_id: string
         }[]
