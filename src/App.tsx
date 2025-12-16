@@ -11,6 +11,8 @@ import Dashboard from "./pages/Dashboard";
 import Drop from "./pages/Drop";
 import DropPreview from "./pages/DropPreview";
 import Manifesto from "./pages/Manifesto";
+import Archive from "./pages/Archive";
+import ArchiveDropDetail from "./pages/ArchiveDropDetail";
 import Admin from "./pages/Admin";
 import NotFound from "./pages/NotFound";
 
@@ -31,6 +33,8 @@ const App = () => (
               <Route path="/dashboard" element={<Dashboard />} />
               <Route path="/drop" element={<Drop />} />
               <Route path="/drop/preview" element={<DropPreview />} />
+              <Route path="/archive" element={<Archive />} />
+              <Route path="/archive/:dropId" element={<ArchiveDropDetail />} />
               <Route path="/admin" element={<Admin />} />
               {/* ADD ALL CUSTOM ROUTES ABOVE THE CATCH-ALL "*" ROUTE */}
               <Route path="*" element={<NotFound />} />

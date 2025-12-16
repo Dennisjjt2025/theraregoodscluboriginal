@@ -21,6 +21,7 @@ export function Header() {
 
   const memberLinks = user ? [
     { href: '/drop', label: t.nav.currentDrop },
+    { href: '/archive', label: language === 'nl' ? 'Archief' : 'Archive' },
     { href: '/dashboard', label: t.nav.dashboard },
   ] : [];
 
