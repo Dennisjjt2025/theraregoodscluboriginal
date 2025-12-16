@@ -41,10 +41,10 @@ export function CountdownTimer({ targetDate, className }: CountdownTimerProps) {
   }, [targetDate]);
 
   const timeBlocks = [
-    { value: timeLeft.days, label: t.landing.days },
-    { value: timeLeft.hours, label: t.landing.hours },
-    { value: timeLeft.minutes, label: t.landing.minutes },
-    { value: timeLeft.seconds, label: t.landing.seconds },
+    { value: timeLeft.days, label: 'L' },
+    { value: timeLeft.hours, label: 'I' },
+    { value: timeLeft.minutes, label: 'V' },
+    { value: timeLeft.seconds, label: 'E' },
   ];
 
   return (
