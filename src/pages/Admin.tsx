@@ -7,7 +7,7 @@ import { Header } from '@/components/Header';
 import { MemberDetailModal } from '@/components/admin/MemberDetailModal';
 import { toast } from 'sonner';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
-import { Plus, Users, Wine, Clock, Check, X, RotateCcw, Minus, FileText, Save, Eye, Mail, MailCheck } from 'lucide-react';
+import { Plus, Users, Wine, Clock, Check, X, RotateCcw, Minus, FileText, Save, Eye, Mail, MailCheck, Gift } from 'lucide-react';
 
 interface Drop {
   id: string;
@@ -328,6 +328,49 @@ export default function Admin() {
     }
   };
 
+  const updateMemberInvites = async (memberId: string, currentInvites: number, delta: number) => {
+    const newInvites = Math.max(0, currentInvites + delta);
+    try {
+      const { error } = await supabase
+        .from('members')
+        .update({ invites_remaining: newInvites })
+        .eq('id', memberId);
+
+      if (error) throw error;
+      toast.success(`${t.admin.invitesUpdated}: ${newInvites}`);
+      fetchData();
+    } catch (error) {
+      console.error('Update invites error:', error);
+      toast.error(t.common.error);
+    }
+  };
+
+  const bulkAddInvites = async (amount: number) => {
+    try {
+      // Get all active members
+      const { data: activeMembers, error: fetchError } = await supabase
+        .from('members')
+        .select('id, invites_remaining')
+        .eq('status', 'active');
+
+      if (fetchError) throw fetchError;
+
+      // Update each member's invites
+      for (const member of activeMembers || []) {
+        await supabase
+          .from('members')
+          .update({ invites_remaining: member.invites_remaining + amount })
+          .eq('id', member.id);
+      }
+
+      toast.success(`${t.admin.bulkInvitesAdded}: +${amount} ${t.admin.toAllMembers}`);
+      fetchData();
+    } catch (error) {
+      console.error('Bulk add invites error:', error);
+      toast.error(t.common.error);
+    }
+  };
+
   const saveNotes = async (memberId: string) => {
     try {
       const { error } = await supabase
@@ -617,7 +660,26 @@ export default function Admin() {
             {/* Members Tab */}
             <TabsContent value="members">
               <div className="bg-card border border-border p-6">
-                <h2 className="font-serif text-xl mb-6">{t.admin.manageMembers}</h2>
+                <div className="flex items-center justify-between mb-6">
+                  <h2 className="font-serif text-xl">{t.admin.manageMembers}</h2>
+                  <div className="flex items-center gap-2">
+                    <span className="text-sm text-muted-foreground">{t.admin.bulkActions}:</span>
+                    <button
+                      onClick={() => bulkAddInvites(1)}
+                      className="btn-outline-luxury text-xs px-3 py-1 flex items-center gap-1"
+                    >
+                      <Gift className="w-3 h-3" />
+                      +1 {t.admin.toAllMembers}
+                    </button>
+                    <button
+                      onClick={() => bulkAddInvites(3)}
+                      className="btn-outline-luxury text-xs px-3 py-1 flex items-center gap-1"
+                    >
+                      <Gift className="w-3 h-3" />
+                      +3 {t.admin.toAllMembers}
+                    </button>
+                  </div>
+                </div>
                 <div className="overflow-x-auto">
                   <table className="w-full">
                     <thead>
@@ -625,6 +687,7 @@ export default function Admin() {
                         <th className="text-left py-3 px-4 font-sans text-sm font-medium">{t.admin.memberEmail}</th>
                         <th className="text-left py-3 px-4 font-sans text-sm font-medium">{t.admin.memberStatus}</th>
                         <th className="text-left py-3 px-4 font-sans text-sm font-medium">{t.admin.memberStrikes}</th>
+                        <th className="text-left py-3 px-4 font-sans text-sm font-medium">{t.admin.memberInvites}</th>
                         <th className="text-left py-3 px-4 font-sans text-sm font-medium">{t.admin.memberNotes}</th>
                         <th className="text-right py-3 px-4 font-sans text-sm font-medium">{t.admin.memberActions}</th>
                       </tr>
@@ -659,6 +722,26 @@ export default function Admin() {
                             </span>
                           </td>
                           <td className="py-3 px-4">{getStrikeIndicator(member.strike_count)}</td>
+                          <td className="py-3 px-4">
+                            <div className="flex items-center gap-1">
+                              <button
+                                onClick={() => updateMemberInvites(member.id, member.invites_remaining, -1)}
+                                disabled={member.invites_remaining <= 0}
+                                className="p-1 text-muted-foreground hover:text-foreground disabled:opacity-30"
+                                title={t.admin.removeInvite}
+                              >
+                                <Minus className="w-3 h-3" />
+                              </button>
+                              <span className="w-6 text-center text-sm font-medium">{member.invites_remaining}</span>
+                              <button
+                                onClick={() => updateMemberInvites(member.id, member.invites_remaining, 1)}
+                                className="p-1 text-secondary hover:text-secondary/80"
+                                title={t.admin.addInvite}
+                              >
+                                <Plus className="w-3 h-3" />
+                              </button>
+                            </div>
+                          </td>
                           <td className="py-3 px-4 max-w-xs">
                             {editingNotes === member.id ? (
                               <div className="flex items-center gap-2">
