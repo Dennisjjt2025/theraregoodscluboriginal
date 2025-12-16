@@ -394,7 +394,7 @@ export default function Admin() {
     }
   };
 
-  const handleWaitlistAction = async (id: string, status: 'approved' | 'rejected') => {
+  const handleWaitlistAction = async (id: string, status: 'approved' | 'rejected' | 'pending') => {
     try {
       const { error } = await supabase
         .from('waitlist')
@@ -402,7 +402,7 @@ export default function Admin() {
         .eq('id', id);
 
       if (error) throw error;
-      toast.success(`Request ${status}`);
+      toast.success(`Status updated to ${status}`);
       fetchData();
     } catch (error) {
       console.error('Waitlist action error:', error);
@@ -1095,39 +1095,47 @@ export default function Admin() {
                         </p>
                       </div>
                       <div className="flex items-center gap-2">
-                        {entry.status === 'pending' ? (
-                          <>
-                            <button
-                              onClick={() => handleWaitlistAction(entry.id, 'approved')}
-                              className="p-2 bg-secondary text-secondary-foreground hover:bg-secondary/90"
-                              title={t.admin.approveWaitlist}
-                            >
-                              <Check className="w-4 h-4" />
-                            </button>
-                            <button
-                              onClick={() => handleWaitlistAction(entry.id, 'rejected')}
-                              className="p-2 bg-destructive text-destructive-foreground hover:bg-destructive/90"
-                              title={t.admin.rejectWaitlist}
-                            >
-                              <X className="w-4 h-4" />
-                            </button>
-                          </>
-                        ) : (
-                          <>
-                            <span className={`px-2 py-1 text-xs ${entry.status === 'approved' ? 'bg-secondary text-secondary-foreground' : 'bg-muted text-muted-foreground'}`}>
-                              {entry.status}
-                            </span>
-                            {entry.status === 'rejected' && (
-                              <button
-                                onClick={() => deleteWaitlistEntry(entry.id)}
-                                className="p-2 bg-destructive/10 text-destructive hover:bg-destructive/20"
-                                title="Delete entry"
-                              >
-                                <Trash2 className="w-4 h-4" />
-                              </button>
-                            )}
-                          </>
+                        <span className={`px-2 py-1 text-xs ${
+                          entry.status === 'approved' ? 'bg-secondary text-secondary-foreground' : 
+                          entry.status === 'pending' ? 'bg-amber-500/20 text-amber-700' : 
+                          'bg-muted text-muted-foreground'
+                        }`}>
+                          {entry.status}
+                        </span>
+                        {entry.status !== 'approved' && (
+                          <button
+                            onClick={() => handleWaitlistAction(entry.id, 'approved')}
+                            className="p-2 bg-secondary/20 text-secondary hover:bg-secondary/30"
+                            title={t.admin.approveWaitlist}
+                          >
+                            <Check className="w-4 h-4" />
+                          </button>
                         )}
+                        {entry.status !== 'pending' && (
+                          <button
+                            onClick={() => handleWaitlistAction(entry.id, 'pending')}
+                            className="p-2 bg-amber-500/20 text-amber-700 hover:bg-amber-500/30"
+                            title="Set to pending"
+                          >
+                            <RotateCcw className="w-4 h-4" />
+                          </button>
+                        )}
+                        {entry.status !== 'rejected' && (
+                          <button
+                            onClick={() => handleWaitlistAction(entry.id, 'rejected')}
+                            className="p-2 bg-destructive/20 text-destructive hover:bg-destructive/30"
+                            title={t.admin.rejectWaitlist}
+                          >
+                            <X className="w-4 h-4" />
+                          </button>
+                        )}
+                        <button
+                          onClick={() => deleteWaitlistEntry(entry.id)}
+                          className="p-2 bg-destructive/10 text-destructive hover:bg-destructive/20"
+                          title="Delete entry"
+                        >
+                          <Trash2 className="w-4 h-4" />
+                        </button>
                       </div>
                     </div>
                   ))}
