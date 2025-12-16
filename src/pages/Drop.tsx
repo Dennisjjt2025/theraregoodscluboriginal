@@ -1,12 +1,12 @@
 import { useEffect, useState } from 'react';
-import { useNavigate } from 'react-router-dom';
+import { useNavigate, Link } from 'react-router-dom';
 import { useLanguage } from '@/contexts/LanguageContext';
 import { useAuth } from '@/contexts/AuthContext';
 import { supabase } from '@/integrations/supabase/client';
 import { Header } from '@/components/Header';
 import { CountdownTimer } from '@/components/CountdownTimer';
 import { toast } from 'sonner';
-import { MapPin, Calendar, Sparkles } from 'lucide-react';
+import { MapPin, Calendar, Sparkles, Lock } from 'lucide-react';
 
 interface Drop {
   id: string;
@@ -27,6 +27,7 @@ interface Drop {
   video_url: string | null;
   shopify_product_id: string | null;
   ends_at: string | null;
+  is_public: boolean | null;
 }
 
 export default function Drop() {
@@ -37,23 +38,48 @@ export default function Drop() {
   const [drop, setDrop] = useState<Drop | null>(null);
   const [loading, setLoading] = useState(true);
   const [addingToCart, setAddingToCart] = useState(false);
+  const [isMember, setIsMember] = useState(false);
+  const [memberLoading, setMemberLoading] = useState(true);
 
+  // Check if user is a member
   useEffect(() => {
-    if (!authLoading && !user) {
-      navigate('/auth');
-    }
-  }, [user, authLoading, navigate]);
+    const checkMembership = async () => {
+      if (!user) {
+        setIsMember(false);
+        setMemberLoading(false);
+        return;
+      }
 
-  useEffect(() => {
-    if (user) {
-      fetchDrop();
+      try {
+        const { data, error } = await supabase
+          .from('members')
+          .select('id, status')
+          .eq('user_id', user.id)
+          .eq('status', 'active')
+          .maybeSingle();
+
+        if (error) throw error;
+        setIsMember(!!data);
+      } catch (error) {
+        console.error('Error checking membership:', error);
+        setIsMember(false);
+      } finally {
+        setMemberLoading(false);
+      }
+    };
+
+    if (!authLoading) {
+      checkMembership();
     }
-  }, [user]);
+  }, [user, authLoading]);
+
+  // Fetch drop for everyone
+  useEffect(() => {
+    fetchDrop();
+  }, []);
 
   const fetchDrop = async () => {
     try {
-      // Fetch active drops that have started
-      // Include drops with no end date OR end date in the future
       const now = new Date().toISOString();
       const { data, error } = await supabase
         .from('drops')
@@ -80,15 +106,7 @@ export default function Drop() {
 
     setAddingToCart(true);
     try {
-      // This would integrate with Shopify Buy SDK
-      // For now, we'll show a placeholder
       toast.success('Redirecting to checkout...');
-      
-      // In production, you would:
-      // 1. Initialize Shopify Buy SDK
-      // 2. Add product to cart
-      // 3. Redirect to checkout
-      
     } catch (error) {
       console.error('Cart error:', error);
       toast.error(t.common.error);
@@ -97,7 +115,10 @@ export default function Drop() {
     }
   };
 
-  if (authLoading || loading) {
+  // Can purchase if member OR drop is public
+  const canPurchase = isMember || drop?.is_public === true;
+
+  if (loading) {
     return (
       <div className="min-h-screen bg-background flex items-center justify-center">
         <div className="animate-pulse font-serif text-xl">{t.common.loading}</div>
@@ -125,6 +146,87 @@ export default function Drop() {
   const tastingNotes = language === 'nl' ? drop.tasting_notes_nl : drop.tasting_notes_en;
   const soldOut = drop.quantity_sold >= drop.quantity_available;
 
+  // Purchase section component
+  const PurchaseSection = ({ mobile = false }: { mobile?: boolean }) => {
+    if (memberLoading || authLoading) {
+      return (
+        <div className={mobile ? "fixed bottom-0 left-0 right-0 md:hidden bg-background border-t border-border p-4 z-50" : "hidden md:block bg-card border border-border p-6"}>
+          <div className="animate-pulse h-12 bg-muted rounded" />
+        </div>
+      );
+    }
+
+    if (!canPurchase) {
+      return (
+        <div className={mobile ? "fixed bottom-0 left-0 right-0 md:hidden bg-background border-t border-border p-4 z-50" : "hidden md:block bg-card border border-border p-6"}>
+          <div className="flex items-center gap-3 justify-center">
+            <Lock className="w-5 h-5 text-muted-foreground" />
+            <p className="text-muted-foreground text-sm">
+              {t.drop.membersOnlyMessage}
+            </p>
+          </div>
+          <div className={`flex gap-3 ${mobile ? 'mt-3' : 'mt-4 justify-center'}`}>
+            {user ? (
+              <Link to="/auth" className="btn-outline-luxury text-sm">
+                {t.drop.becomeMember}
+              </Link>
+            ) : (
+              <>
+                <Link to="/auth" className="btn-luxury text-sm">
+                  {t.drop.loginToPurchase}
+                </Link>
+                <Link to="/auth" className="btn-outline-luxury text-sm">
+                  {t.drop.becomeMember}
+                </Link>
+              </>
+            )}
+          </div>
+        </div>
+      );
+    }
+
+    // Can purchase - show buy section
+    if (mobile) {
+      return (
+        <div className="fixed bottom-0 left-0 right-0 md:hidden bg-background border-t border-border p-4 z-50">
+          <div className="flex items-center justify-between gap-4">
+            <div>
+              <p className="font-serif text-2xl">€{drop.price.toFixed(2)}</p>
+              <p className="text-xs text-muted-foreground">
+                {drop.quantity_available - drop.quantity_sold} remaining
+              </p>
+            </div>
+            <button
+              onClick={handleAddToCart}
+              disabled={soldOut || addingToCart}
+              className="btn-luxury flex-1 disabled:opacity-50 disabled:cursor-not-allowed"
+            >
+              {soldOut ? t.drop.soldOut : addingToCart ? t.common.loading : t.drop.addToCart}
+            </button>
+          </div>
+        </div>
+      );
+    }
+
+    return (
+      <div className="hidden md:flex items-center justify-between bg-card border border-border p-6">
+        <div>
+          <p className="font-serif text-3xl">€{drop.price.toFixed(2)}</p>
+          <p className="text-sm text-muted-foreground">
+            {drop.quantity_available - drop.quantity_sold} remaining
+          </p>
+        </div>
+        <button
+          onClick={handleAddToCart}
+          disabled={soldOut || addingToCart}
+          className="btn-luxury disabled:opacity-50 disabled:cursor-not-allowed"
+        >
+          {soldOut ? t.drop.soldOut : addingToCart ? t.common.loading : t.drop.addToCart}
+        </button>
+      </div>
+    );
+  };
+
   return (
     <div className="min-h-screen bg-background pb-24 md:pb-12">
       <Header />
@@ -144,9 +246,11 @@ export default function Drop() {
               <span className="bg-accent text-accent-foreground px-3 py-1 text-xs font-sans uppercase tracking-wider">
                 {t.drop.limited}
               </span>
-              <span className="bg-primary text-primary-foreground px-3 py-1 text-xs font-sans uppercase tracking-wider">
-                {t.drop.membersOnly}
-              </span>
+              {!drop.is_public && (
+                <span className="bg-primary text-primary-foreground px-3 py-1 text-xs font-sans uppercase tracking-wider">
+                  {t.drop.membersOnly}
+                </span>
+              )}
             </div>
           </div>
         )}
@@ -216,41 +320,11 @@ export default function Drop() {
           )}
 
           {/* Price (desktop) */}
-          <div className="hidden md:flex items-center justify-between bg-card border border-border p-6">
-            <div>
-              <p className="font-serif text-3xl">€{drop.price.toFixed(2)}</p>
-              <p className="text-sm text-muted-foreground">
-                {drop.quantity_available - drop.quantity_sold} remaining
-              </p>
-            </div>
-            <button
-              onClick={handleAddToCart}
-              disabled={soldOut || addingToCart}
-              className="btn-luxury disabled:opacity-50 disabled:cursor-not-allowed"
-            >
-              {soldOut ? t.drop.soldOut : addingToCart ? t.common.loading : t.drop.addToCart}
-            </button>
-          </div>
+          <PurchaseSection />
         </div>
 
         {/* Sticky Buy Button (mobile) */}
-        <div className="fixed bottom-0 left-0 right-0 md:hidden bg-background border-t border-border p-4 z-50">
-          <div className="flex items-center justify-between gap-4">
-            <div>
-              <p className="font-serif text-2xl">€{drop.price.toFixed(2)}</p>
-              <p className="text-xs text-muted-foreground">
-                {drop.quantity_available - drop.quantity_sold} remaining
-              </p>
-            </div>
-            <button
-              onClick={handleAddToCart}
-              disabled={soldOut || addingToCart}
-              className="btn-luxury flex-1 disabled:opacity-50 disabled:cursor-not-allowed"
-            >
-              {soldOut ? t.drop.soldOut : addingToCart ? t.common.loading : t.drop.addToCart}
-            </button>
-          </div>
-        </div>
+        <PurchaseSection mobile />
       </main>
     </div>
   );
