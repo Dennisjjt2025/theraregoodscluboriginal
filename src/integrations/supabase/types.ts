@@ -225,6 +225,7 @@ export type Database = {
           city: string | null
           country: string | null
           created_at: string | null
+          email_verified: boolean | null
           first_name: string | null
           house_number: string | null
           id: string
@@ -233,11 +234,14 @@ export type Database = {
           postal_code: string | null
           street_address: string | null
           updated_at: string | null
+          verification_token: string | null
+          verification_token_expires_at: string | null
         }
         Insert: {
           city?: string | null
           country?: string | null
           created_at?: string | null
+          email_verified?: boolean | null
           first_name?: string | null
           house_number?: string | null
           id: string
@@ -246,11 +250,14 @@ export type Database = {
           postal_code?: string | null
           street_address?: string | null
           updated_at?: string | null
+          verification_token?: string | null
+          verification_token_expires_at?: string | null
         }
         Update: {
           city?: string | null
           country?: string | null
           created_at?: string | null
+          email_verified?: boolean | null
           first_name?: string | null
           house_number?: string | null
           id?: string
@@ -259,6 +266,8 @@ export type Database = {
           postal_code?: string | null
           street_address?: string | null
           updated_at?: string | null
+          verification_token?: string | null
+          verification_token_expires_at?: string | null
         }
         Relationships: []
       }

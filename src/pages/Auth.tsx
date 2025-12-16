@@ -7,7 +7,7 @@ import { Header } from '@/components/Header';
 import { toast } from 'sonner';
 import logo from '@/assets/logo.png';
 
-type AuthMode = 'choose' | 'login' | 'login-password' | 'request-access' | 'invite' | 'waitlist' | 'signup';
+type AuthMode = 'choose' | 'login' | 'login-password' | 'request-access' | 'invite' | 'waitlist' | 'signup' | 'verify-pending' | 'verified';
 
 export default function Auth() {
   const { t } = useLanguage();
@@ -15,6 +15,7 @@ export default function Auth() {
   const navigate = useNavigate();
   const [searchParams] = useSearchParams();
   const inviteCodeParam = searchParams.get('invite');
+  const verifyToken = searchParams.get('verify');
 
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
@@ -28,6 +29,14 @@ export default function Auth() {
   const [emailSent, setEmailSent] = useState(false);
   const [waitlistSubmitted, setWaitlistSubmitted] = useState(false);
   const [validatedInviteCode, setValidatedInviteCode] = useState<string | null>(null);
+  const [pendingUserId, setPendingUserId] = useState<string | null>(null);
+
+  // Handle verification token on page load
+  useEffect(() => {
+    if (verifyToken) {
+      verifyEmailToken(verifyToken);
+    }
+  }, [verifyToken]);
 
   // Redirect if already logged in
   useEffect(() => {
@@ -35,6 +44,51 @@ export default function Auth() {
       navigate('/dashboard');
     }
   }, [user, navigate]);
+
+  const verifyEmailToken = async (token: string) => {
+    setLoading(true);
+    try {
+      // Find profile with this token
+      const { data: profile, error } = await supabase
+        .from('profiles')
+        .select('id, verification_token_expires_at')
+        .eq('verification_token', token)
+        .maybeSingle();
+
+      if (error || !profile) {
+        toast.error(t.auth.invalidVerificationToken);
+        setAuthMode('choose');
+        return;
+      }
+
+      // Check if token expired
+      if (new Date(profile.verification_token_expires_at!) < new Date()) {
+        toast.error(t.auth.invalidVerificationToken);
+        setAuthMode('choose');
+        return;
+      }
+
+      // Mark email as verified
+      const { error: updateError } = await supabase
+        .from('profiles')
+        .update({
+          email_verified: true,
+          verification_token: null,
+          verification_token_expires_at: null,
+        })
+        .eq('id', profile.id);
+
+      if (updateError) throw updateError;
+
+      setAuthMode('verified');
+      toast.success(t.auth.emailVerified);
+    } catch (error) {
+      console.error('Verification error:', error);
+      toast.error(t.common.error);
+    } finally {
+      setLoading(false);
+    }
+  };
 
   const handleMagicLink = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -69,12 +123,30 @@ export default function Auth() {
 
     setLoading(true);
     try {
-      const { error } = await supabase.auth.signInWithPassword({
+      // First try to login
+      const { data, error } = await supabase.auth.signInWithPassword({
         email,
         password,
       });
 
       if (error) throw error;
+
+      // Check if email is verified
+      if (data.user) {
+        const { data: profile } = await supabase
+          .from('profiles')
+          .select('email_verified')
+          .eq('id', data.user.id)
+          .maybeSingle();
+
+        if (profile && !profile.email_verified) {
+          // Sign out and show error
+          await supabase.auth.signOut();
+          toast.error(t.auth.emailNotVerified);
+          setPendingUserId(data.user.id);
+          return;
+        }
+      }
       
       navigate('/dashboard');
     } catch (error: any) {
@@ -116,6 +188,24 @@ export default function Auth() {
     }
   };
 
+  const sendVerificationEmail = async (userId: string, userEmail: string, userFirstName: string) => {
+    try {
+      const response = await supabase.functions.invoke('send-verification-email', {
+        body: {
+          userId,
+          email: userEmail,
+          firstName: userFirstName,
+        },
+      });
+
+      if (response.error) throw response.error;
+      return true;
+    } catch (error) {
+      console.error('Error sending verification email:', error);
+      return false;
+    }
+  };
+
   const handleSignUp = async (e: React.FormEvent) => {
     e.preventDefault();
     if (!email || !password || !firstName || !lastName) return;
@@ -148,27 +238,48 @@ export default function Auth() {
 
       if (signUpError) throw signUpError;
 
-      // If we have a validated invite code, mark it as used
-      if (validatedInviteCode && signUpData.user) {
-        await supabase
-          .from('invite_codes')
-          .update({
-            used_by: signUpData.user.id,
-            used_at: new Date().toISOString(),
-          })
-          .eq('code', validatedInviteCode);
-      }
+      if (signUpData.user) {
+        // If we have a validated invite code, mark it as used
+        if (validatedInviteCode) {
+          await supabase
+            .from('invite_codes')
+            .update({
+              used_by: signUpData.user.id,
+              used_at: new Date().toISOString(),
+            })
+            .eq('code', validatedInviteCode);
+        }
 
-      toast.success(t.auth.accountCreated);
-      // Navigate to login with password
-      setAuthMode('login-password');
-      setPassword('');
-      setConfirmPassword('');
+        // Send verification email
+        const sent = await sendVerificationEmail(signUpData.user.id, email, firstName);
+        
+        if (sent) {
+          setPendingUserId(signUpData.user.id);
+          setAuthMode('verify-pending');
+          toast.success(t.auth.verifyEmailSent);
+        } else {
+          toast.error('Failed to send verification email. Please try again.');
+        }
+      }
     } catch (error: any) {
       console.error('Signup error:', error);
       toast.error(error.message || t.common.error);
     } finally {
       setLoading(false);
+    }
+  };
+
+  const handleResendVerification = async () => {
+    if (!pendingUserId || !email || !firstName) return;
+    
+    setLoading(true);
+    const sent = await sendVerificationEmail(pendingUserId, email, firstName);
+    setLoading(false);
+    
+    if (sent) {
+      toast.success(t.auth.verifyEmailSent);
+    } else {
+      toast.error(t.common.error);
     }
   };
 
@@ -199,6 +310,69 @@ export default function Auth() {
       setLoading(false);
     }
   };
+
+  // Loading state for verification
+  if (loading && verifyToken) {
+    return (
+      <div className="min-h-screen bg-background flex items-center justify-center">
+        <div className="animate-pulse font-serif text-xl">{t.common.loading}</div>
+      </div>
+    );
+  }
+
+  // Email verified success view
+  if (authMode === 'verified') {
+    return (
+      <div className="min-h-screen bg-background">
+        <Header />
+        <main className="pt-24 px-4">
+          <div className="max-w-md mx-auto text-center py-24">
+            <div className="w-20 h-20 mx-auto mb-8 flex items-center justify-center border-2 border-secondary rounded-full">
+              <svg className="w-10 h-10 text-secondary" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M5 13l4 4L19 7" />
+              </svg>
+            </div>
+            <h1 className="font-serif text-3xl mb-4">{t.auth.emailVerified}</h1>
+            <p className="text-muted-foreground mb-8">{t.auth.emailVerifiedDesc}</p>
+            <button
+              onClick={() => setAuthMode('login-password')}
+              className="btn-luxury"
+            >
+              {t.auth.loginWithPassword}
+            </button>
+          </div>
+        </main>
+      </div>
+    );
+  }
+
+  // Verification pending view
+  if (authMode === 'verify-pending') {
+    return (
+      <div className="min-h-screen bg-background">
+        <Header />
+        <main className="pt-24 px-4">
+          <div className="max-w-md mx-auto text-center py-24">
+            <div className="w-20 h-20 mx-auto mb-8 flex items-center justify-center border-2 border-secondary rounded-full">
+              <svg className="w-10 h-10 text-secondary" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M3 19v-8.93a2 2 0 01.89-1.664l7-4.666a2 2 0 012.22 0l7 4.666A2 2 0 0121 10.07V19M3 19a2 2 0 002 2h14a2 2 0 002-2M3 19l6.75-4.5M21 19l-6.75-4.5M3 10l6.75 4.5M21 10l-6.75 4.5m0 0l-1.14.76a2 2 0 01-2.22 0l-1.14-.76" />
+              </svg>
+            </div>
+            <h1 className="font-serif text-3xl mb-4">{t.auth.verifyEmail}</h1>
+            <p className="text-muted-foreground mb-4">{t.auth.verifyEmailDesc}</p>
+            <p className="text-sm text-muted-foreground mb-8">{t.auth.verifyEmailCheck}</p>
+            <button
+              onClick={handleResendVerification}
+              disabled={loading}
+              className="btn-outline-luxury disabled:opacity-50"
+            >
+              {loading ? t.common.loading : t.auth.resendVerification}
+            </button>
+          </div>
+        </main>
+      </div>
+    );
+  }
 
   if (emailSent) {
     return (

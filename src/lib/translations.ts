@@ -62,6 +62,15 @@ type TranslationContent = {
     forgotPassword: string;
     orUsePassword: string;
     accountCreated: string;
+    verifyEmail: string;
+    verifyEmailDesc: string;
+    verifyEmailSent: string;
+    verifyEmailCheck: string;
+    emailVerified: string;
+    emailVerifiedDesc: string;
+    emailNotVerified: string;
+    invalidVerificationToken: string;
+    resendVerification: string;
   };
   dashboard: {
     title: string;
@@ -244,6 +253,15 @@ export const translations: Record<Language, TranslationContent> = {
       forgotPassword: 'Forgot password?',
       orUsePassword: 'Or login with password',
       accountCreated: 'Account created! You can now login.',
+      verifyEmail: 'Verify your email',
+      verifyEmailDesc: 'We sent a verification link to your email',
+      verifyEmailSent: 'Verification email sent!',
+      verifyEmailCheck: 'Please check your inbox and click the verification link to activate your account.',
+      emailVerified: 'Email verified!',
+      emailVerifiedDesc: 'Your email has been verified. You can now login.',
+      emailNotVerified: 'Please verify your email before logging in',
+      invalidVerificationToken: 'Invalid or expired verification link',
+      resendVerification: 'Resend verification email',
     },
     dashboard: {
       title: 'Member Dashboard',
@@ -424,6 +442,15 @@ export const translations: Record<Language, TranslationContent> = {
       forgotPassword: 'Wachtwoord vergeten?',
       orUsePassword: 'Of inloggen met wachtwoord',
       accountCreated: 'Account aangemaakt! Je kunt nu inloggen.',
+      verifyEmail: 'Verifieer je email',
+      verifyEmailDesc: 'We hebben een verificatielink naar je email gestuurd',
+      verifyEmailSent: 'Verificatie email verzonden!',
+      verifyEmailCheck: 'Controleer je inbox en klik op de verificatielink om je account te activeren.',
+      emailVerified: 'Email geverifieerd!',
+      emailVerifiedDesc: 'Je email is geverifieerd. Je kunt nu inloggen.',
+      emailNotVerified: 'Verifieer eerst je email voordat je inlogt',
+      invalidVerificationToken: 'Ongeldige of verlopen verificatielink',
+      resendVerification: 'Verificatie email opnieuw verzenden',
     },
     dashboard: {
       title: 'Leden Dashboard',
