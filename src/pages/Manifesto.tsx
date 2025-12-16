@@ -19,8 +19,13 @@ const OrnamentalDivider = ({ className = '' }: { className?: string }) => (
 
 // Wax seal component
 const WaxSeal = ({ className = '' }: { className?: string }) => (
-  <div className={`relative ${className}`}>
-    <svg width="100" height="100" viewBox="0 0 100 100" className="drop-shadow-lg">
+  <div className={`relative group cursor-pointer ${className}`}>
+    <svg 
+      width="100" 
+      height="100" 
+      viewBox="0 0 100 100" 
+      className="drop-shadow-lg transition-transform duration-500 ease-out group-hover:scale-105 group-hover:rotate-[8deg]"
+    >
       {/* Wax seal base with irregular edges */}
       <defs>
         <radialGradient id="sealGradient" cx="35%" cy="35%" r="65%">
