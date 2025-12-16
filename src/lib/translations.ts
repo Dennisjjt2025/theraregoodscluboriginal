@@ -112,6 +112,7 @@ type TranslationContent = {
     origin: string;
     vintage: string;
     tastingNotes: string;
+    details: string;
     theStory: string;
     limited: string;
     membersOnly: string;
@@ -120,6 +121,13 @@ type TranslationContent = {
     membersOnlyMessage: string;
     loginToPurchase: string;
     becomeMember: string;
+    tapToEnlarge: string;
+    playVideo: string;
+    almostSoldOut: string;
+    remaining: string;
+    claimed: string;
+    readMore: string;
+    showLess: string;
   };
   admin: {
     title: string;
@@ -320,6 +328,7 @@ export const translations: Record<Language, TranslationContent> = {
       origin: 'Origin',
       vintage: 'Vintage',
       tastingNotes: 'Tasting Notes',
+      details: 'Details',
       theStory: 'The Story',
       limited: 'Limited Edition',
       membersOnly: 'Members Only',
@@ -328,6 +337,13 @@ export const translations: Record<Language, TranslationContent> = {
       membersOnlyMessage: 'This drop is exclusive to members',
       loginToPurchase: 'Login to purchase',
       becomeMember: 'Become a member',
+      tapToEnlarge: 'Tap to enlarge',
+      playVideo: 'Play video',
+      almostSoldOut: 'Almost sold out!',
+      remaining: 'remaining',
+      claimed: 'claimed',
+      readMore: 'Read more',
+      showLess: 'Show less',
     },
     admin: {
       title: 'Admin Dashboard',
@@ -526,6 +542,7 @@ export const translations: Record<Language, TranslationContent> = {
       origin: 'Herkomst',
       vintage: 'Jaargang',
       tastingNotes: 'Proefnotities',
+      details: 'Details',
       theStory: 'Het Verhaal',
       limited: 'Limited Edition',
       membersOnly: 'Alleen voor Leden',
@@ -534,6 +551,13 @@ export const translations: Record<Language, TranslationContent> = {
       membersOnlyMessage: 'Deze drop is exclusief voor leden',
       loginToPurchase: 'Log in om te kopen',
       becomeMember: 'Word lid',
+      tapToEnlarge: 'Tik om te vergroten',
+      playVideo: 'Video afspelen',
+      almostSoldOut: 'Bijna uitverkocht!',
+      remaining: 'beschikbaar',
+      claimed: 'geclaimd',
+      readMore: 'Lees meer',
+      showLess: 'Toon minder',
     },
     admin: {
       title: 'Admin Dashboard',

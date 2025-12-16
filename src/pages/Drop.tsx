@@ -1,10 +1,13 @@
 import { useEffect, useState } from 'react';
-import { useNavigate, Link } from 'react-router-dom';
+import { Link } from 'react-router-dom';
 import { useLanguage } from '@/contexts/LanguageContext';
 import { useAuth } from '@/contexts/AuthContext';
 import { supabase } from '@/integrations/supabase/client';
 import { Header } from '@/components/Header';
 import { CountdownTimer } from '@/components/CountdownTimer';
+import { MediaLightbox, MediaHero } from '@/components/drop/MediaLightbox';
+import { StockIndicator } from '@/components/drop/StockIndicator';
+import { CollapsibleStory } from '@/components/drop/CollapsibleStory';
 import { toast } from 'sonner';
 import { MapPin, Calendar, Sparkles, Lock } from 'lucide-react';
 
@@ -33,13 +36,13 @@ interface Drop {
 export default function Drop() {
   const { t, language } = useLanguage();
   const { user, loading: authLoading } = useAuth();
-  const navigate = useNavigate();
 
   const [drop, setDrop] = useState<Drop | null>(null);
   const [loading, setLoading] = useState(true);
   const [addingToCart, setAddingToCart] = useState(false);
   const [isMember, setIsMember] = useState(false);
   const [memberLoading, setMemberLoading] = useState(true);
+  const [lightboxOpen, setLightboxOpen] = useState(false);
 
   // Check if user is a member
   useEffect(() => {
@@ -145,6 +148,7 @@ export default function Drop() {
   const story = language === 'nl' ? drop.story_nl : drop.story_en;
   const tastingNotes = language === 'nl' ? drop.tasting_notes_nl : drop.tasting_notes_en;
   const soldOut = drop.quantity_sold >= drop.quantity_available;
+  const hasAttributes = drop.origin || drop.vintage;
 
   // Purchase section component
   const PurchaseSection = ({ mobile = false }: { mobile?: boolean }) => {
@@ -193,7 +197,7 @@ export default function Drop() {
             <div>
               <p className="font-serif text-2xl">€{drop.price.toFixed(2)}</p>
               <p className="text-xs text-muted-foreground">
-                {drop.quantity_available - drop.quantity_sold} remaining
+                {drop.quantity_available - drop.quantity_sold} {t.drop.remaining}
               </p>
             </div>
             <button
@@ -213,7 +217,7 @@ export default function Drop() {
         <div>
           <p className="font-serif text-3xl">€{drop.price.toFixed(2)}</p>
           <p className="text-sm text-muted-foreground">
-            {drop.quantity_available - drop.quantity_sold} remaining
+            {drop.quantity_available - drop.quantity_sold} {t.drop.remaining}
           </p>
         </div>
         <button
@@ -227,36 +231,46 @@ export default function Drop() {
     );
   };
 
+  // Badges for hero
+  const heroBadges = (
+    <>
+      <span className="bg-background/90 backdrop-blur-sm text-foreground px-3 py-1.5 text-xs font-sans uppercase tracking-wider border border-border/50">
+        {t.drop.limited}
+      </span>
+      {!drop.is_public && (
+        <span className="bg-accent/90 backdrop-blur-sm text-accent-foreground px-3 py-1.5 text-xs font-sans uppercase tracking-wider">
+          {t.drop.membersOnly}
+        </span>
+      )}
+    </>
+  );
+
   return (
     <div className="min-h-screen bg-background pb-24 md:pb-12">
       <Header />
+      
+      {/* Media Lightbox */}
+      <MediaLightbox
+        isOpen={lightboxOpen}
+        onClose={() => setLightboxOpen(false)}
+        imageUrl={drop.image_url}
+        videoUrl={drop.video_url}
+        title={title}
+      />
+
       <main className="pt-20 md:pt-24">
-        {/* Hero Image */}
-        {drop.image_url && (
-          <div className="relative h-[50vh] md:h-[60vh] overflow-hidden">
-            <img
-              src={drop.image_url}
-              alt={title}
-              className="w-full h-full object-cover"
-            />
-            <div className="absolute inset-0 bg-gradient-to-t from-background via-transparent to-transparent" />
-            
-            {/* Badges */}
-            <div className="absolute top-4 left-4 flex gap-2">
-              <span className="bg-accent text-accent-foreground px-3 py-1 text-xs font-sans uppercase tracking-wider">
-                {t.drop.limited}
-              </span>
-              {!drop.is_public && (
-                <span className="bg-primary text-primary-foreground px-3 py-1 text-xs font-sans uppercase tracking-wider">
-                  {t.drop.membersOnly}
-                </span>
-              )}
-            </div>
-          </div>
-        )}
+        {/* Hero Image with Lightbox */}
+        <MediaHero
+          imageUrl={drop.image_url}
+          videoUrl={drop.video_url}
+          title={title}
+          onOpenLightbox={() => setLightboxOpen(true)}
+          badges={heroBadges}
+          tapToEnlargeText={drop.video_url ? t.drop.playVideo : t.drop.tapToEnlarge}
+        />
 
         <div className="container mx-auto max-w-4xl px-4 -mt-20 relative z-10">
-          {/* Title & Meta */}
+          {/* Title & Description */}
           <div className="mb-8">
             <h1 className="font-serif text-4xl md:text-5xl lg:text-6xl mb-4">{title}</h1>
             {description && (
@@ -264,58 +278,73 @@ export default function Drop() {
             )}
           </div>
 
-          {/* Meta Info */}
-          <div className="flex flex-wrap gap-6 mb-12 text-sm">
-            {drop.origin && (
-              <div className="flex items-center gap-2">
-                <MapPin className="w-4 h-4 text-muted-foreground" />
-                <span className="text-muted-foreground">{t.drop.origin}:</span>
-                <span>{drop.origin}</span>
-              </div>
-            )}
-            {drop.vintage && (
-              <div className="flex items-center gap-2">
-                <Calendar className="w-4 h-4 text-muted-foreground" />
-                <span className="text-muted-foreground">{t.drop.vintage}:</span>
-                <span>{drop.vintage}</span>
-              </div>
+          {/* Product Attributes - Only show if data exists */}
+          {hasAttributes && (
+            <div className="grid grid-cols-2 gap-4 mb-8">
+              {drop.origin && (
+                <div className="flex items-center gap-3 p-4 bg-card border border-border">
+                  <MapPin className="w-5 h-5 text-muted-foreground shrink-0" />
+                  <div>
+                    <p className="text-xs text-muted-foreground uppercase tracking-wider">{t.drop.origin}</p>
+                    <p className="font-medium">{drop.origin}</p>
+                  </div>
+                </div>
+              )}
+              {drop.vintage && (
+                <div className="flex items-center gap-3 p-4 bg-card border border-border">
+                  <Calendar className="w-5 h-5 text-muted-foreground shrink-0" />
+                  <div>
+                    <p className="text-xs text-muted-foreground uppercase tracking-wider">{t.drop.vintage}</p>
+                    <p className="font-medium">{drop.vintage}</p>
+                  </div>
+                </div>
+              )}
+            </div>
+          )}
+
+          {/* Stock Indicator */}
+          <div className="bg-card border border-border p-6 mb-8">
+            {drop.ends_at ? (
+              <>
+                <p className="font-sans text-sm uppercase tracking-widest text-muted-foreground mb-4 text-center">
+                  {t.drop.endsIn}
+                </p>
+                <CountdownTimer targetDate={new Date(drop.ends_at)} />
+                <div className="mt-6 pt-6 border-t border-border">
+                  <StockIndicator 
+                    quantityAvailable={drop.quantity_available} 
+                    quantitySold={drop.quantity_sold} 
+                  />
+                </div>
+              </>
+            ) : (
+              <>
+                <p className="font-sans text-sm uppercase tracking-widest text-muted-foreground mb-4 text-center">
+                  {t.drop.whileSuppliesLast}
+                </p>
+                <StockIndicator 
+                  quantityAvailable={drop.quantity_available} 
+                  quantitySold={drop.quantity_sold} 
+                />
+              </>
             )}
           </div>
 
-          {/* Countdown - only show if there's an end date */}
-          {drop.ends_at ? (
-            <div className="bg-card border border-border p-6 mb-12">
-              <p className="font-sans text-sm uppercase tracking-widest text-muted-foreground mb-4 text-center">
-                {t.drop.endsIn}
-              </p>
-              <CountdownTimer targetDate={new Date(drop.ends_at)} />
-            </div>
-          ) : (
-            <div className="bg-card border border-border p-6 mb-12 text-center">
-              <p className="font-sans text-sm uppercase tracking-widest text-muted-foreground">
-                {t.drop.whileSuppliesLast || 'While Supplies Last'}
-              </p>
-            </div>
-          )}
-
-          {/* Story Section */}
+          {/* Story Section - Collapsible on mobile */}
           {story && (
-            <div className="mb-12">
-              <h2 className="font-serif text-2xl md:text-3xl mb-6">{t.drop.theStory}</h2>
-              <div className="prose prose-lg max-w-none">
-                <p className="text-foreground/90 leading-relaxed whitespace-pre-line">{story}</p>
-              </div>
+            <div className="mb-8">
+              <CollapsibleStory story={story} title={t.drop.theStory} />
             </div>
           )}
 
-          {/* Tasting Notes */}
+          {/* Details Section (formerly Tasting Notes) - Only show if content exists */}
           {tastingNotes && (
-            <div className="mb-12 bg-card border border-border p-6">
+            <div className="mb-8 bg-card border border-border p-6">
               <div className="flex items-center gap-2 mb-4">
-                <Sparkles className="w-5 h-5 text-gold" />
-                <h2 className="font-serif text-xl">{t.drop.tastingNotes}</h2>
+                <Sparkles className="w-5 h-5 text-accent" />
+                <h2 className="font-serif text-xl">{t.drop.details}</h2>
               </div>
-              <p className="text-muted-foreground whitespace-pre-line">{tastingNotes}</p>
+              <p className="text-muted-foreground whitespace-pre-line leading-relaxed">{tastingNotes}</p>
             </div>
           )}
 
