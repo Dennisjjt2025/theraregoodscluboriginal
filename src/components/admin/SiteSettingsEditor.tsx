@@ -2,8 +2,9 @@ import { useState, useEffect } from 'react';
 import { supabase } from '@/integrations/supabase/client';
 import { useLanguage } from '@/contexts/LanguageContext';
 import { toast } from 'sonner';
-import { Save, Globe, MessageSquare, UserPlus, Mail, LogOut, ChevronDown, ChevronRight, LayoutDashboard } from 'lucide-react';
+import { Save, Globe, MessageSquare, UserPlus, Mail, LogOut, ChevronDown, ChevronRight, LayoutDashboard, Eye } from 'lucide-react';
 import { Collapsible, CollapsibleContent, CollapsibleTrigger } from '@/components/ui/collapsible';
+import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger } from '@/components/ui/dialog';
 
 interface SiteSetting {
   id: string;
@@ -19,6 +20,58 @@ interface SettingSection {
   icon: React.ReactNode;
   keys: string[];
   placeholders?: Record<string, string>;
+  isEmail?: boolean;
+}
+
+// Email preview component
+function EmailPreview({ subject, message }: { subject: string; message: string }) {
+  const replacePlaceholders = (text: string) => {
+    return text
+      .replace(/\{\{firstName\}\}/g, 'Jan')
+      .replace(/\{\{name\}\}/g, 'Jan de Vries')
+      .replace(/\{\{email\}\}/g, 'jan@example.com')
+      .replace(/\{\{verifyLink\}\}/g, '#');
+  };
+
+  const processedSubject = replacePlaceholders(subject || 'Subject');
+  const processedMessage = replacePlaceholders(message || 'Message content...');
+
+  return (
+    <div className="bg-[#FAF9F6] p-6 rounded-lg">
+      {/* Email container */}
+      <div className="max-w-lg mx-auto">
+        {/* Header */}
+        <div className="text-center pb-6">
+          <h1 className="text-foreground text-xl tracking-widest font-serif">
+            THE RARE GOODS CLUB
+          </h1>
+        </div>
+        
+        {/* Subject line indicator */}
+        <div className="mb-4 pb-2 border-b border-border">
+          <span className="text-xs uppercase tracking-wider text-muted-foreground">Subject:</span>
+          <p className="font-medium">{processedSubject}</p>
+        </div>
+        
+        {/* Content */}
+        <div className="bg-white border border-border p-6">
+          <div className="text-muted-foreground text-sm leading-relaxed whitespace-pre-line">
+            {processedMessage}
+          </div>
+        </div>
+        
+        {/* Footer with wax seal */}
+        <div className="text-center pt-6">
+          <div className="inline-flex items-center justify-center w-12 h-12 bg-[#722F37] rounded-full">
+            <span className="text-white text-lg font-bold">R</span>
+          </div>
+          <p className="text-muted-foreground text-xs mt-4 tracking-wider">
+            © {new Date().getFullYear()} The Rare Goods Club
+          </p>
+        </div>
+      </div>
+    </div>
+  );
 }
 
 export function SiteSettingsEditor() {
@@ -52,8 +105,9 @@ export function SiteSettingsEditor() {
         : 'Email that new members receive after registration',
       icon: <UserPlus className="w-5 h-5" />,
       keys: ['welcome_email_subject', 'welcome_email_message'],
+      isEmail: true,
       placeholders: {
-        '{{firstName}}': currentLang === 'nl' ? 'Voornaam van het lid' : 'Member\'s first name',
+        '{{firstName}}': currentLang === 'nl' ? 'Voornaam van het lid' : "Member's first name",
         '{{verifyLink}}': currentLang === 'nl' ? 'Verificatie link (automatisch)' : 'Verification link (automatic)',
       },
     },
@@ -65,8 +119,10 @@ export function SiteSettingsEditor() {
         : 'Email that people receive after joining the waitlist',
       icon: <Mail className="w-5 h-5" />,
       keys: ['waitlist_email_subject', 'waitlist_email_message'],
+      isEmail: true,
       placeholders: {
-        '{{name}}': currentLang === 'nl' ? 'Naam van de aanmelder' : 'Name of the subscriber',
+        '{{firstName}}': currentLang === 'nl' ? 'Voornaam van de aanmelder' : "Subscriber's first name",
+        '{{name}}': currentLang === 'nl' ? 'Volledige naam' : 'Full name',
       },
     },
     {
@@ -77,8 +133,10 @@ export function SiteSettingsEditor() {
         : 'Email that people receive after unsubscribing',
       icon: <LogOut className="w-5 h-5" />,
       keys: ['unsubscribe_email_subject', 'unsubscribe_email_message'],
+      isEmail: true,
       placeholders: {
-        '{{name}}': currentLang === 'nl' ? 'Naam van de persoon' : 'Person\'s name',
+        '{{firstName}}': currentLang === 'nl' ? 'Voornaam van de persoon' : "Person's first name",
+        '{{name}}': currentLang === 'nl' ? 'Volledige naam' : 'Full name',
       },
     },
   ];
@@ -348,6 +406,47 @@ export function SiteSettingsEditor() {
                       </div>
                     );
                   })}
+
+                  {/* Email Preview Button */}
+                  {section.isEmail && (
+                    <div className="p-4 bg-muted/20 border-t border-border">
+                      <Dialog>
+                        <DialogTrigger asChild>
+                          <button className="btn-luxury-outline flex items-center gap-2 w-full justify-center">
+                            <Eye className="w-4 h-4" />
+                            {currentLang === 'nl' ? 'Bekijk Email Preview' : 'View Email Preview'}
+                          </button>
+                        </DialogTrigger>
+                        <DialogContent className="max-w-2xl max-h-[90vh] overflow-y-auto">
+                          <DialogHeader>
+                            <DialogTitle className="flex items-center gap-2">
+                              <Mail className="w-5 h-5" />
+                              {section.title} - Preview ({editLang.toUpperCase()})
+                            </DialogTitle>
+                          </DialogHeader>
+                          <div className="mt-4">
+                            <EmailPreview
+                              subject={
+                                editLang === 'en'
+                                  ? sectionSettings.find(s => s.key.includes('subject'))?.value_en || ''
+                                  : sectionSettings.find(s => s.key.includes('subject'))?.value_nl || ''
+                              }
+                              message={
+                                editLang === 'en'
+                                  ? sectionSettings.find(s => s.key.includes('message'))?.value_en || ''
+                                  : sectionSettings.find(s => s.key.includes('message'))?.value_nl || ''
+                              }
+                            />
+                            <p className="text-xs text-muted-foreground mt-4 text-center">
+                              {currentLang === 'nl' 
+                                ? 'Placeholders worden vervangen door voorbeelddata (bijv. {{firstName}} → Jan)'
+                                : 'Placeholders are replaced with sample data (e.g. {{firstName}} → Jan)'}
+                            </p>
+                          </div>
+                        </DialogContent>
+                      </Dialog>
+                    </div>
+                  )}
                 </div>
               </CollapsibleContent>
             </Collapsible>
