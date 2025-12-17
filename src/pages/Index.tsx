@@ -8,6 +8,7 @@ import { CountdownTimer } from '@/components/CountdownTimer';
 import { WaitlistForm } from '@/components/WaitlistForm';
 import { Wine, Globe, Award, ArrowRight } from 'lucide-react';
 import logo from '@/assets/logo.png';
+import { ScrollIndicator } from '@/components/ScrollIndicator';
 
 interface DropInfo {
   id: string;
@@ -189,11 +190,7 @@ export default function Index() {
           </div>
 
           {/* Scroll indicator */}
-          <div className="absolute bottom-4 md:bottom-6 left-1/2 -translate-x-1/2 animate-bounce pointer-events-none">
-            <div className="w-6 h-10 border-2 border-muted-foreground/50 rounded-full flex justify-center">
-              <div className="w-1 h-3 bg-muted-foreground/50 rounded-full mt-2" />
-            </div>
-          </div>
+          <ScrollIndicator />
         </section>
 
         {/* Features Section */}
