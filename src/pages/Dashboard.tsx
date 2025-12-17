@@ -344,7 +344,7 @@ export default function Dashboard() {
       <main className="pt-24 pb-12 px-4">
         <div className="container mx-auto max-w-4xl">
           {/* Welcome Header */}
-          <div className="mb-8 flex items-start justify-between">
+          <div className="mb-8 flex flex-col sm:flex-row sm:items-start sm:justify-between gap-4">
             <div>
               <h1 className="font-serif text-3xl md:text-4xl mb-2">{t.dashboard.title}</h1>
               <p className="text-muted-foreground">
@@ -354,7 +354,7 @@ export default function Dashboard() {
             {isAdmin && (
               <Link
                 to="/admin"
-                className="btn-outline-luxury flex items-center gap-2 text-sm"
+                className="btn-outline-luxury flex items-center gap-2 text-sm w-fit"
               >
                 <Shield className="w-4 h-4" />
                 {t.nav.admin}
@@ -363,19 +363,22 @@ export default function Dashboard() {
           </div>
 
           <Tabs defaultValue="drops" className="space-y-6">
-            <TabsList className="grid w-full grid-cols-4 max-w-xl">
-              <TabsTrigger value="drops" className="flex items-center gap-2">
+            <TabsList className="grid w-full grid-cols-2 sm:grid-cols-4 max-w-xl h-auto">
+              <TabsTrigger value="drops" className="flex items-center gap-2 py-3">
                 <Wine className="w-4 h-4" />
-                Drops
+                <span className="hidden sm:inline">Drops</span>
+                <span className="sm:hidden">Drops</span>
               </TabsTrigger>
-              <TabsTrigger value="overview">Overview</TabsTrigger>
-              <TabsTrigger value="orders" className="flex items-center gap-2">
+              <TabsTrigger value="overview" className="py-3">Overview</TabsTrigger>
+              <TabsTrigger value="orders" className="flex items-center gap-2 py-3">
                 <ShoppingBag className="w-4 h-4" />
-                {language === 'nl' ? 'Bestellingen' : 'Orders'}
+                <span className="hidden sm:inline">{language === 'nl' ? 'Bestellingen' : 'Orders'}</span>
+                <span className="sm:hidden">{language === 'nl' ? 'Orders' : 'Orders'}</span>
               </TabsTrigger>
-              <TabsTrigger value="profile" className="flex items-center gap-2">
+              <TabsTrigger value="profile" className="flex items-center gap-2 py-3">
                 <User className="w-4 h-4" />
-                {t.dashboard.myProfile}
+                <span className="hidden sm:inline">{t.dashboard.myProfile}</span>
+                <span className="sm:hidden">Profiel</span>
                 {isProfileIncomplete && (
                   <span className="w-2 h-2 bg-secondary rounded-full" />
                 )}
@@ -517,8 +520,8 @@ export default function Dashboard() {
                   <div className="border-t border-border pt-4 mt-6">
                     <h3 className="font-serif text-lg mb-4">Adres</h3>
                     
-                    <div className="grid grid-cols-3 gap-4">
-                      <div className="col-span-2">
+                    <div className="grid grid-cols-1 sm:grid-cols-3 gap-4">
+                      <div className="sm:col-span-2">
                         <label className="block text-sm font-medium mb-2">{t.dashboard.streetAddress}</label>
                         <input
                           type="text"
@@ -538,7 +541,7 @@ export default function Dashboard() {
                       </div>
                     </div>
 
-                    <div className="grid grid-cols-2 gap-4 mt-4">
+                    <div className="grid grid-cols-1 sm:grid-cols-2 gap-4 mt-4">
                       <div>
                         <label className="block text-sm font-medium mb-2">{t.dashboard.postalCode}</label>
                         <input

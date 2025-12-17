@@ -560,32 +560,40 @@ export default function Admin() {
           <h1 className="font-serif text-3xl md:text-4xl mb-8">{t.admin.title}</h1>
 
           <Tabs defaultValue="drops" className="space-y-6">
-            <TabsList className="bg-card border border-border flex-wrap">
-              <TabsTrigger value="drops" className="flex items-center gap-2">
-                <Wine className="w-4 h-4" />
-                {t.admin.manageDrop}
-              </TabsTrigger>
-              <TabsTrigger value="members" className="flex items-center gap-2">
-                <Users className="w-4 h-4" />
-                {t.admin.manageMembers}
-              </TabsTrigger>
-              <TabsTrigger value="report" className="flex items-center gap-2">
-                <FileText className="w-4 h-4" />
-                {t.admin.dropReport}
-              </TabsTrigger>
-              <TabsTrigger value="waitlist" className="flex items-center gap-2">
-                <Clock className="w-4 h-4" />
-                {t.admin.waitlist}
-              </TabsTrigger>
-              <TabsTrigger value="preferences" className="flex items-center gap-2">
-                <Heart className="w-4 h-4" />
-                {language === 'nl' ? 'Voorkeuren' : 'Preferences'}
-              </TabsTrigger>
-              <TabsTrigger value="settings" className="flex items-center gap-2">
-                <MessageSquare className="w-4 h-4" />
-                {language === 'nl' ? 'Berichten' : 'Messages'}
-              </TabsTrigger>
-            </TabsList>
+            <div className="overflow-x-auto -mx-4 px-4 pb-2">
+              <TabsList className="bg-card border border-border flex w-max min-w-full sm:w-full sm:flex-wrap">
+                <TabsTrigger value="drops" className="flex items-center gap-2 min-h-[44px] px-3 sm:px-4">
+                  <Wine className="w-4 h-4" />
+                  <span className="hidden sm:inline">{t.admin.manageDrop}</span>
+                  <span className="sm:hidden">Drops</span>
+                </TabsTrigger>
+                <TabsTrigger value="members" className="flex items-center gap-2 min-h-[44px] px-3 sm:px-4">
+                  <Users className="w-4 h-4" />
+                  <span className="hidden sm:inline">{t.admin.manageMembers}</span>
+                  <span className="sm:hidden">Leden</span>
+                </TabsTrigger>
+                <TabsTrigger value="report" className="flex items-center gap-2 min-h-[44px] px-3 sm:px-4">
+                  <FileText className="w-4 h-4" />
+                  <span className="hidden sm:inline">{t.admin.dropReport}</span>
+                  <span className="sm:hidden">Report</span>
+                </TabsTrigger>
+                <TabsTrigger value="waitlist" className="flex items-center gap-2 min-h-[44px] px-3 sm:px-4">
+                  <Clock className="w-4 h-4" />
+                  <span className="hidden sm:inline">{t.admin.waitlist}</span>
+                  <span className="sm:hidden">Wacht</span>
+                </TabsTrigger>
+                <TabsTrigger value="preferences" className="flex items-center gap-2 min-h-[44px] px-3 sm:px-4">
+                  <Heart className="w-4 h-4" />
+                  <span className="hidden sm:inline">{language === 'nl' ? 'Voorkeuren' : 'Preferences'}</span>
+                  <span className="sm:hidden">Pref</span>
+                </TabsTrigger>
+                <TabsTrigger value="settings" className="flex items-center gap-2 min-h-[44px] px-3 sm:px-4">
+                  <MessageSquare className="w-4 h-4" />
+                  <span className="hidden sm:inline">{language === 'nl' ? 'Berichten' : 'Messages'}</span>
+                  <span className="sm:hidden">Msg</span>
+                </TabsTrigger>
+              </TabsList>
+            </div>
 
             {/* Drops Tab */}
             <TabsContent value="drops" className="space-y-6">
@@ -607,102 +615,108 @@ export default function Admin() {
                   {drops.map((drop) => (
                     <div
                       key={drop.id}
-                      className="flex items-center gap-4 p-4 hover:bg-muted/30 transition-colors"
+                      className="flex flex-col sm:flex-row sm:items-center gap-3 sm:gap-4 p-4 hover:bg-muted/30 transition-colors"
                     >
-                      {/* Thumbnail */}
-                      <div className="w-16 h-16 flex-shrink-0 bg-muted rounded overflow-hidden">
-                        {drop.image_url ? (
-                          <img
-                            src={drop.image_url}
-                            alt={drop.title_en}
-                            className="w-full h-full object-cover"
-                          />
-                        ) : (
-                          <div className="w-full h-full flex items-center justify-center">
-                            <Wine className="w-6 h-6 text-muted-foreground" />
-                          </div>
-                        )}
-                      </div>
-
-                      {/* Info */}
-                      <div className="flex-1 min-w-0">
-                        <div className="flex items-center gap-2 mb-1">
-                          <h3 className="font-medium truncate">{drop.title_en}</h3>
-                          {drop.is_draft && (
-                            <span className="px-2 py-0.5 text-xs bg-amber-500/20 text-amber-700 rounded">
-                              Draft
-                            </span>
-                          )}
-                        </div>
-                        <div className="flex items-center gap-3 text-sm text-muted-foreground">
-                          <span>€{drop.price}</span>
-                          <span>·</span>
-                          <span>{(drop.quantity_sold || 0)}/{drop.quantity_available} sold</span>
-                          {drop.ends_at ? (
-                            <>
-                              <span>·</span>
-                              <span>Ends {new Date(drop.ends_at).toLocaleDateString()}</span>
-                            </>
+                      {/* Mobile: Image + Title Row */}
+                      <div className="flex items-start gap-3 sm:contents">
+                        {/* Thumbnail */}
+                        <div className="w-14 h-14 sm:w-16 sm:h-16 flex-shrink-0 bg-muted rounded overflow-hidden">
+                          {drop.image_url ? (
+                            <img
+                              src={drop.image_url}
+                              alt={drop.title_en}
+                              className="w-full h-full object-cover"
+                            />
                           ) : (
-                            <>
-                              <span>·</span>
-                              <span className="text-secondary">While supplies last</span>
-                            </>
+                            <div className="w-full h-full flex items-center justify-center">
+                              <Wine className="w-5 h-5 sm:w-6 sm:h-6 text-muted-foreground" />
+                            </div>
                           )}
+                        </div>
+
+                        {/* Info */}
+                        <div className="flex-1 min-w-0">
+                          <div className="flex items-center gap-2 mb-1 flex-wrap">
+                            <h3 className="font-medium truncate text-sm sm:text-base">{drop.title_en}</h3>
+                            {drop.is_draft && (
+                              <span className="px-2 py-0.5 text-xs bg-amber-500/20 text-amber-700 rounded">
+                                Draft
+                              </span>
+                            )}
+                          </div>
+                          <div className="flex flex-wrap items-center gap-x-2 gap-y-1 text-xs sm:text-sm text-muted-foreground">
+                            <span>€{drop.price}</span>
+                            <span>·</span>
+                            <span>{(drop.quantity_sold || 0)}/{drop.quantity_available}</span>
+                            {drop.ends_at ? (
+                              <>
+                                <span className="hidden sm:inline">·</span>
+                                <span className="hidden sm:inline">Ends {new Date(drop.ends_at).toLocaleDateString()}</span>
+                              </>
+                            ) : (
+                              <>
+                                <span className="hidden sm:inline">·</span>
+                                <span className="hidden sm:inline text-secondary">While supplies last</span>
+                              </>
+                            )}
+                          </div>
                         </div>
                       </div>
 
-                      {/* Status Badges */}
-                      <div className="flex items-center gap-2">
-                        <span className={`px-2 py-1 text-xs ${drop.is_active ? 'bg-secondary text-secondary-foreground' : 'bg-muted text-muted-foreground'}`}>
-                          {drop.is_active ? 'Active' : 'Inactive'}
-                        </span>
-                        <button
-                          onClick={() => toggleDropPublic(drop.id, drop.is_public)}
-                          className={`p-2 ${drop.is_public ? 'bg-amber-500 text-white' : 'bg-muted text-muted-foreground'}`}
-                          title={drop.is_public ? 'Public for waitlist' : 'Members only'}
-                        >
-                          {drop.is_public ? <Globe className="w-4 h-4" /> : <Lock className="w-4 h-4" />}
-                        </button>
-                      </div>
+                      {/* Mobile: Status + Actions Row */}
+                      <div className="flex items-center justify-between sm:justify-end gap-2 sm:gap-3 mt-2 sm:mt-0">
+                        {/* Status Badges */}
+                        <div className="flex items-center gap-2">
+                          <span className={`px-2 py-1 text-xs ${drop.is_active ? 'bg-secondary text-secondary-foreground' : 'bg-muted text-muted-foreground'}`}>
+                            {drop.is_active ? 'Active' : 'Inactive'}
+                          </span>
+                          <button
+                            onClick={() => toggleDropPublic(drop.id, drop.is_public)}
+                            className={`p-2 min-h-[44px] min-w-[44px] flex items-center justify-center ${drop.is_public ? 'bg-amber-500 text-white' : 'bg-muted text-muted-foreground'}`}
+                            title={drop.is_public ? 'Public for waitlist' : 'Members only'}
+                          >
+                            {drop.is_public ? <Globe className="w-4 h-4" /> : <Lock className="w-4 h-4" />}
+                          </button>
+                        </div>
 
-                      {/* Actions */}
-                      <div className="flex items-center gap-1">
-                        <button
-                          onClick={() => openDropModal('edit', drop)}
-                          className="p-2 hover:bg-muted rounded"
-                          title="Edit"
-                        >
-                          <Pencil className="w-4 h-4" />
-                        </button>
-                        <button
-                          onClick={() => openDropModal('duplicate', drop)}
-                          className="p-2 hover:bg-muted rounded"
-                          title="Duplicate"
-                        >
-                          <Copy className="w-4 h-4" />
-                        </button>
-                        <button
-                          onClick={() => window.open(`/drop/preview?id=${drop.id}`, '_blank')}
-                          className="p-2 hover:bg-muted rounded"
-                          title="Preview"
-                        >
-                          <Eye className="w-4 h-4" />
-                        </button>
-                        <button
-                          onClick={() => toggleDropActive(drop.id, drop.is_active)}
-                          className={`p-2 rounded ${drop.is_active ? 'hover:bg-destructive/10 text-destructive' : 'hover:bg-secondary/10 text-secondary'}`}
-                          title={drop.is_active ? 'Deactivate' : 'Activate'}
-                        >
-                          {drop.is_active ? <X className="w-4 h-4" /> : <Check className="w-4 h-4" />}
-                        </button>
-                        <button
-                          onClick={() => deleteDrop(drop.id)}
-                          className="p-2 hover:bg-destructive/10 text-destructive rounded"
-                          title="Delete"
-                        >
-                          <Trash2 className="w-4 h-4" />
-                        </button>
+                        {/* Actions */}
+                        <div className="flex items-center gap-1">
+                          <button
+                            onClick={() => openDropModal('edit', drop)}
+                            className="p-2 min-h-[44px] min-w-[44px] flex items-center justify-center hover:bg-muted rounded"
+                            title="Edit"
+                          >
+                            <Pencil className="w-4 h-4" />
+                          </button>
+                          <button
+                            onClick={() => openDropModal('duplicate', drop)}
+                            className="p-2 min-h-[44px] min-w-[44px] flex items-center justify-center hover:bg-muted rounded hidden sm:flex"
+                            title="Duplicate"
+                          >
+                            <Copy className="w-4 h-4" />
+                          </button>
+                          <button
+                            onClick={() => window.open(`/drop/preview?id=${drop.id}`, '_blank')}
+                            className="p-2 min-h-[44px] min-w-[44px] flex items-center justify-center hover:bg-muted rounded"
+                            title="Preview"
+                          >
+                            <Eye className="w-4 h-4" />
+                          </button>
+                          <button
+                            onClick={() => toggleDropActive(drop.id, drop.is_active)}
+                            className={`p-2 min-h-[44px] min-w-[44px] flex items-center justify-center rounded ${drop.is_active ? 'hover:bg-destructive/10 text-destructive' : 'hover:bg-secondary/10 text-secondary'}`}
+                            title={drop.is_active ? 'Deactivate' : 'Activate'}
+                          >
+                            {drop.is_active ? <X className="w-4 h-4" /> : <Check className="w-4 h-4" />}
+                          </button>
+                          <button
+                            onClick={() => deleteDrop(drop.id)}
+                            className="p-2 min-h-[44px] min-w-[44px] flex items-center justify-center hover:bg-destructive/10 text-destructive rounded"
+                            title="Delete"
+                          >
+                            <Trash2 className="w-4 h-4" />
+                          </button>
+                        </div>
                       </div>
                     </div>
                   ))}
@@ -724,38 +738,40 @@ export default function Admin() {
 
             {/* Members Tab */}
             <TabsContent value="members">
-              <div className="bg-card border border-border p-6">
-                <div className="flex items-center justify-between mb-6">
+              <div className="bg-card border border-border p-4 sm:p-6">
+                <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4 mb-6">
                   <h2 className="font-serif text-xl">{t.admin.manageMembers}</h2>
-                  <div className="flex items-center gap-2">
-                    <span className="text-sm text-muted-foreground">{t.admin.bulkActions}:</span>
+                  <div className="flex flex-wrap items-center gap-2">
+                    <span className="text-sm text-muted-foreground hidden sm:inline">{t.admin.bulkActions}:</span>
                     <button
                       onClick={() => bulkAddInvites(1)}
-                      className="btn-outline-luxury text-xs px-3 py-1 flex items-center gap-1"
+                      className="btn-outline-luxury text-xs px-3 py-2 min-h-[44px] flex items-center gap-1"
                     >
                       <Gift className="w-3 h-3" />
-                      +1 {t.admin.toAllMembers}
+                      +1
                     </button>
                     <button
                       onClick={() => bulkAddInvites(3)}
-                      className="btn-outline-luxury text-xs px-3 py-1 flex items-center gap-1"
+                      className="btn-outline-luxury text-xs px-3 py-2 min-h-[44px] flex items-center gap-1"
                     >
                       <Gift className="w-3 h-3" />
-                      +3 {t.admin.toAllMembers}
+                      +3
                     </button>
                     <button
                       onClick={() => {
                         setEmailComposerPreselect(null);
                         setShowEmailComposer(true);
                       }}
-                      className="btn-luxury text-xs px-3 py-1 flex items-center gap-1"
+                      className="btn-luxury text-xs px-3 py-2 min-h-[44px] flex items-center gap-1"
                     >
                       <Send className="w-3 h-3" />
-                      {t.admin.sendEmail || 'Email'}
+                      <span className="hidden sm:inline">{t.admin.sendEmail || 'Email'}</span>
+                      <span className="sm:hidden">Email</span>
                     </button>
                   </div>
                 </div>
-                <div className="overflow-x-auto">
+                {/* Desktop Table - Hidden on mobile */}
+                <div className="hidden md:block overflow-x-auto">
                   <table className="w-full">
                     <thead>
                       <tr className="border-b border-border">
@@ -917,49 +933,199 @@ export default function Admin() {
                       ))}
                     </tbody>
                   </table>
-                  {members.length === 0 && (
-                    <p className="text-muted-foreground text-center py-8">No members yet</p>
-                  )}
                 </div>
+
+                {/* Mobile Cards - Visible only on mobile */}
+                <div className="md:hidden space-y-3">
+                  {members.map((member) => (
+                    <div key={member.id} className="bg-muted/30 border border-border p-4 space-y-3">
+                      {/* Header: Email + Status */}
+                      <div className="flex items-start justify-between gap-2">
+                        <div className="min-w-0 flex-1">
+                          <div className="flex items-center gap-2">
+                            <p className="text-sm font-medium truncate">{memberEmails[member.id]?.email ?? 'Loading...'}</p>
+                            {memberEmails[member.id] && memberEmails[member.id].verified ? (
+                              <MailCheck className="w-4 h-4 text-secondary flex-shrink-0" />
+                            ) : memberEmails[member.id] ? (
+                              <button
+                                onClick={() => verifyMemberEmail(member.user_id)}
+                                className="p-1 text-muted-foreground hover:text-secondary"
+                              >
+                                <Mail className="w-4 h-4" />
+                              </button>
+                            ) : null}
+                          </div>
+                          <p className="text-xs text-muted-foreground font-mono">{member.user_id.slice(0, 8)}...</p>
+                        </div>
+                        <span className={`px-2 py-1 text-xs flex-shrink-0 ${member.status === 'active' ? 'bg-secondary text-secondary-foreground' : 'bg-destructive text-destructive-foreground'}`}>
+                          {member.status}
+                        </span>
+                      </div>
+
+                      {/* Stats Row */}
+                      <div className="flex items-center gap-4 text-sm">
+                        <div className="flex items-center gap-2">
+                          <span className="text-muted-foreground">Strikes:</span>
+                          {getStrikeIndicator(member.strike_count)}
+                        </div>
+                        <div className="flex items-center gap-1">
+                          <span className="text-muted-foreground">Invites:</span>
+                          <button
+                            onClick={() => updateMemberInvites(member.id, member.invites_remaining, -1)}
+                            disabled={member.invites_remaining <= 0}
+                            className="p-2 min-h-[44px] min-w-[44px] flex items-center justify-center text-muted-foreground hover:text-foreground disabled:opacity-30"
+                          >
+                            <Minus className="w-4 h-4" />
+                          </button>
+                          <span className="w-6 text-center font-medium">{member.invites_remaining}</span>
+                          <button
+                            onClick={() => updateMemberInvites(member.id, member.invites_remaining, 1)}
+                            className="p-2 min-h-[44px] min-w-[44px] flex items-center justify-center text-secondary hover:text-secondary/80"
+                          >
+                            <Plus className="w-4 h-4" />
+                          </button>
+                        </div>
+                      </div>
+
+                      {/* Notes */}
+                      {editingNotes === member.id ? (
+                        <div className="flex items-start gap-2">
+                          <textarea
+                            value={notesValue}
+                            onChange={(e) => setNotesValue(e.target.value)}
+                            className="input-luxury text-sm flex-1"
+                            rows={2}
+                            placeholder={t.admin.addNote}
+                          />
+                          <button
+                            onClick={() => saveNotes(member.id)}
+                            className="p-2 min-h-[44px] min-w-[44px] flex items-center justify-center text-secondary hover:text-secondary/80"
+                          >
+                            <Save className="w-4 h-4" />
+                          </button>
+                          <button
+                            onClick={() => setEditingNotes(null)}
+                            className="p-2 min-h-[44px] min-w-[44px] flex items-center justify-center text-muted-foreground hover:text-foreground"
+                          >
+                            <X className="w-4 h-4" />
+                          </button>
+                        </div>
+                      ) : (
+                        <button
+                          onClick={() => {
+                            setEditingNotes(member.id);
+                            setNotesValue(member.notes || '');
+                          }}
+                          className="text-left text-sm text-muted-foreground hover:text-foreground w-full py-2"
+                        >
+                          {member.notes || t.admin.addNote}
+                        </button>
+                      )}
+
+                      {/* Actions */}
+                      <div className="flex items-center justify-between pt-2 border-t border-border">
+                        <div className="flex items-center gap-1">
+                          <button
+                            onClick={() => setSelectedMemberForDetail({ id: member.id, email: memberEmails[member.id]?.email || '' })}
+                            className="p-2 min-h-[44px] min-w-[44px] flex items-center justify-center text-primary hover:text-primary/80"
+                          >
+                            <Eye className="w-5 h-5" />
+                          </button>
+                          <button
+                            onClick={() => {
+                              setEmailComposerPreselect({ email: memberEmails[member.id]?.email });
+                              setShowEmailComposer(true);
+                            }}
+                            className="p-2 min-h-[44px] min-w-[44px] flex items-center justify-center text-accent hover:text-accent/80"
+                          >
+                            <Send className="w-5 h-5" />
+                          </button>
+                        </div>
+                        <div className="flex items-center gap-1">
+                          <button
+                            onClick={() => addStrike(member.id, member.strike_count)}
+                            className="p-2 min-h-[44px] min-w-[44px] flex items-center justify-center text-amber-500 hover:text-amber-600"
+                            title={t.admin.addStrike}
+                          >
+                            <Plus className="w-5 h-5" />
+                          </button>
+                          <button
+                            onClick={() => removeStrike(member.id, member.strike_count)}
+                            className="p-2 min-h-[44px] min-w-[44px] flex items-center justify-center text-secondary hover:text-secondary/80"
+                            title={t.admin.removeStrike}
+                          >
+                            <Minus className="w-5 h-5" />
+                          </button>
+                          <button
+                            onClick={() => resetStrikes(member.id)}
+                            className="p-2 min-h-[44px] min-w-[44px] flex items-center justify-center text-muted-foreground hover:text-foreground"
+                            title={t.admin.resetStrikes}
+                          >
+                            <RotateCcw className="w-5 h-5" />
+                          </button>
+                          {member.status === 'active' ? (
+                            <button
+                              onClick={() => updateMemberStatus(member.id, 'suspended')}
+                              className="p-2 min-h-[44px] min-w-[44px] flex items-center justify-center text-destructive hover:text-destructive/80"
+                            >
+                              <X className="w-5 h-5" />
+                            </button>
+                          ) : (
+                            <button
+                              onClick={() => updateMemberStatus(member.id, 'active')}
+                              className="p-2 min-h-[44px] min-w-[44px] flex items-center justify-center text-secondary hover:text-secondary/80"
+                            >
+                              <Check className="w-5 h-5" />
+                            </button>
+                          )}
+                        </div>
+                      </div>
+                    </div>
+                  ))}
+                </div>
+
+                {members.length === 0 && (
+                  <p className="text-muted-foreground text-center py-8">No members yet</p>
+                )}
               </div>
             </TabsContent>
 
             {/* Drop Participation Report Tab */}
             <TabsContent value="report">
-              <div className="bg-card border border-border p-6">
+              <div className="bg-card border border-border p-4 sm:p-6">
                 <h2 className="font-serif text-xl mb-6">{t.admin.dropReport}</h2>
                 
                 {/* Drop Selection & Filters */}
-                <div className="flex flex-col md:flex-row gap-4 mb-6">
+                <div className="flex flex-col gap-4 mb-6">
                   <select
                     value={selectedDropForReport}
                     onChange={(e) => setSelectedDropForReport(e.target.value)}
-                    className="input-luxury flex-1"
+                    className="input-luxury w-full"
                   >
                     <option value="">{t.admin.selectDrop}</option>
                     {drops.map((drop) => (
                       <option key={drop.id} value={drop.id}>
-                        {drop.title_en} ({new Date(drop.starts_at).toLocaleDateString()} - {new Date(drop.ends_at).toLocaleDateString()})
+                        {drop.title_en} ({new Date(drop.starts_at).toLocaleDateString()})
                       </option>
                     ))}
                   </select>
                   
-                  <div className="flex gap-2">
+                  <div className="flex flex-wrap gap-2">
                     <button
                       onClick={() => setReportFilter('all')}
-                      className={`px-3 py-2 text-sm ${reportFilter === 'all' ? 'bg-primary text-primary-foreground' : 'bg-muted text-muted-foreground hover:bg-muted/80'}`}
+                      className={`px-3 py-2 min-h-[44px] text-sm flex-1 sm:flex-none ${reportFilter === 'all' ? 'bg-primary text-primary-foreground' : 'bg-muted text-muted-foreground hover:bg-muted/80'}`}
                     >
                       {t.admin.filterAll}
                     </button>
                     <button
                       onClick={() => setReportFilter('purchased')}
-                      className={`px-3 py-2 text-sm ${reportFilter === 'purchased' ? 'bg-secondary text-secondary-foreground' : 'bg-muted text-muted-foreground hover:bg-muted/80'}`}
+                      className={`px-3 py-2 min-h-[44px] text-sm flex-1 sm:flex-none ${reportFilter === 'purchased' ? 'bg-secondary text-secondary-foreground' : 'bg-muted text-muted-foreground hover:bg-muted/80'}`}
                     >
                       {t.admin.filterPurchased}
                     </button>
                     <button
                       onClick={() => setReportFilter('not_purchased')}
-                      className={`px-3 py-2 text-sm ${reportFilter === 'not_purchased' ? 'bg-amber-500 text-white' : 'bg-muted text-muted-foreground hover:bg-muted/80'}`}
+                      className={`px-3 py-2 min-h-[44px] text-sm flex-1 sm:flex-none ${reportFilter === 'not_purchased' ? 'bg-amber-500 text-white' : 'bg-muted text-muted-foreground hover:bg-muted/80'}`}
                     >
                       {t.admin.filterNotPurchased}
                     </button>
@@ -968,57 +1134,82 @@ export default function Admin() {
 
                 {/* Report Stats */}
                 {selectedDropForReport && participationReport.length > 0 && (
-                  <div className="grid grid-cols-3 gap-4 mb-6">
-                    <div className="bg-muted/30 border border-border p-4 text-center">
-                      <p className="text-2xl font-serif">{participationReport.length}</p>
-                      <p className="text-sm text-muted-foreground">{t.admin.totalMembers}</p>
+                  <div className="grid grid-cols-3 gap-2 sm:gap-4 mb-6">
+                    <div className="bg-muted/30 border border-border p-3 sm:p-4 text-center">
+                      <p className="text-xl sm:text-2xl font-serif">{participationReport.length}</p>
+                      <p className="text-xs sm:text-sm text-muted-foreground">{t.admin.totalMembers}</p>
                     </div>
-                    <div className="bg-secondary/10 border border-secondary/30 p-4 text-center">
-                      <p className="text-2xl font-serif text-secondary">{participationReport.filter(r => r.purchased).length}</p>
-                      <p className="text-sm text-muted-foreground">{t.admin.purchased}</p>
+                    <div className="bg-secondary/10 border border-secondary/30 p-3 sm:p-4 text-center">
+                      <p className="text-xl sm:text-2xl font-serif text-secondary">{participationReport.filter(r => r.purchased).length}</p>
+                      <p className="text-xs sm:text-sm text-muted-foreground">{t.admin.purchased}</p>
                     </div>
-                    <div className="bg-amber-500/10 border border-amber-500/30 p-4 text-center">
-                      <p className="text-2xl font-serif text-amber-600">{participationReport.filter(r => !r.purchased).length}</p>
-                      <p className="text-sm text-muted-foreground">{t.admin.notPurchased}</p>
+                    <div className="bg-amber-500/10 border border-amber-500/30 p-3 sm:p-4 text-center">
+                      <p className="text-xl sm:text-2xl font-serif text-amber-600">{participationReport.filter(r => !r.purchased).length}</p>
+                      <p className="text-xs sm:text-sm text-muted-foreground">{t.admin.notPurchased}</p>
                     </div>
                   </div>
                 )}
 
-                {/* Report Table */}
+                {/* Report Table - Desktop */}
                 {loadingReport ? (
                   <p className="text-center py-8 text-muted-foreground">{t.common.loading}</p>
                 ) : selectedDropForReport ? (
-                  <div className="overflow-x-auto">
-                    <table className="w-full">
-                      <thead>
-                        <tr className="border-b border-border">
-                          <th className="text-left py-3 px-4 font-sans text-sm font-medium">{t.admin.memberEmail}</th>
-                          <th className="text-left py-3 px-4 font-sans text-sm font-medium">{t.admin.purchaseStatus}</th>
-                          <th className="text-left py-3 px-4 font-sans text-sm font-medium">{t.admin.memberStrikes}</th>
-                          <th className="text-left py-3 px-4 font-sans text-sm font-medium">{t.admin.memberNotes}</th>
-                        </tr>
-                      </thead>
-                      <tbody>
-                        {filteredReport.map((item) => (
-                          <tr key={item.member_id} className="border-b border-border/50">
-                            <td className="py-3 px-4 text-sm">{item.email}</td>
-                            <td className="py-3 px-4">
-                              <span className={`px-2 py-1 text-xs ${item.purchased ? 'bg-secondary text-secondary-foreground' : 'bg-amber-500/20 text-amber-700'}`}>
-                                {item.purchased ? t.admin.purchased : t.admin.notPurchased}
-                              </span>
-                            </td>
-                            <td className="py-3 px-4">{getStrikeIndicator(item.strike_count)}</td>
-                            <td className="py-3 px-4 text-sm text-muted-foreground max-w-xs truncate">
-                              {item.notes || '-'}
-                            </td>
+                  <>
+                    {/* Desktop Table */}
+                    <div className="hidden sm:block overflow-x-auto">
+                      <table className="w-full">
+                        <thead>
+                          <tr className="border-b border-border">
+                            <th className="text-left py-3 px-4 font-sans text-sm font-medium">{t.admin.memberEmail}</th>
+                            <th className="text-left py-3 px-4 font-sans text-sm font-medium">{t.admin.purchaseStatus}</th>
+                            <th className="text-left py-3 px-4 font-sans text-sm font-medium">{t.admin.memberStrikes}</th>
+                            <th className="text-left py-3 px-4 font-sans text-sm font-medium">{t.admin.memberNotes}</th>
                           </tr>
-                        ))}
-                      </tbody>
-                    </table>
+                        </thead>
+                        <tbody>
+                          {filteredReport.map((item) => (
+                            <tr key={item.member_id} className="border-b border-border/50">
+                              <td className="py-3 px-4 text-sm">{item.email}</td>
+                              <td className="py-3 px-4">
+                                <span className={`px-2 py-1 text-xs ${item.purchased ? 'bg-secondary text-secondary-foreground' : 'bg-amber-500/20 text-amber-700'}`}>
+                                  {item.purchased ? t.admin.purchased : t.admin.notPurchased}
+                                </span>
+                              </td>
+                              <td className="py-3 px-4">{getStrikeIndicator(item.strike_count)}</td>
+                              <td className="py-3 px-4 text-sm text-muted-foreground max-w-xs truncate">
+                                {item.notes || '-'}
+                              </td>
+                            </tr>
+                          ))}
+                        </tbody>
+                      </table>
+                    </div>
+
+                    {/* Mobile Cards */}
+                    <div className="sm:hidden space-y-3">
+                      {filteredReport.map((item) => (
+                        <div key={item.member_id} className="bg-muted/30 border border-border p-4 space-y-2">
+                          <div className="flex items-start justify-between gap-2">
+                            <p className="text-sm font-medium truncate flex-1">{item.email}</p>
+                            <span className={`px-2 py-1 text-xs flex-shrink-0 ${item.purchased ? 'bg-secondary text-secondary-foreground' : 'bg-amber-500/20 text-amber-700'}`}>
+                              {item.purchased ? t.admin.purchased : t.admin.notPurchased}
+                            </span>
+                          </div>
+                          <div className="flex items-center gap-2 text-sm">
+                            <span className="text-muted-foreground">Strikes:</span>
+                            {getStrikeIndicator(item.strike_count)}
+                          </div>
+                          {item.notes && (
+                            <p className="text-sm text-muted-foreground">{item.notes}</p>
+                          )}
+                        </div>
+                      ))}
+                    </div>
+
                     {filteredReport.length === 0 && (
                       <p className="text-muted-foreground text-center py-8">{t.admin.noResults}</p>
                     )}
-                  </div>
+                  </>
                 ) : (
                   <p className="text-muted-foreground text-center py-8">{t.admin.selectDropPrompt}</p>
                 )}
@@ -1027,11 +1218,11 @@ export default function Admin() {
 
             {/* Waitlist Tab */}
             <TabsContent value="waitlist">
-              <div className="bg-card border border-border p-6">
-                <div className="flex items-center justify-between mb-6">
+              <div className="bg-card border border-border p-4 sm:p-6">
+                <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4 mb-6">
                   <h2 className="font-serif text-xl">{t.admin.waitlist}</h2>
                   {drops.filter(d => d.is_public).length > 0 && waitlist.filter(w => w.status === 'pending' || w.status === 'approved').length > 0 && (
-                    <div className="flex items-center gap-2">
+                    <div className="flex flex-col sm:flex-row items-stretch sm:items-center gap-2">
                       <select
                         className="input-luxury text-sm"
                         id="waitlist-drop-select"
@@ -1048,7 +1239,7 @@ export default function Admin() {
                             emailWaitlistAboutDrop(selectedDrop.id, selectedDrop.title_en);
                           }
                         }}
-                        className="btn-luxury text-xs px-3 py-2 flex items-center gap-1"
+                        className="btn-luxury text-xs px-3 py-2 min-h-[44px] flex items-center justify-center gap-1"
                       >
                         <Send className="w-3 h-3" />
                         Email Waitlist
@@ -1056,20 +1247,20 @@ export default function Admin() {
                     </div>
                   )}
                 </div>
-                <div className="space-y-4">
+                <div className="space-y-3">
                   {waitlist.map((entry) => (
                     <div
                       key={entry.id}
-                      className="flex items-center justify-between p-4 bg-muted/30 border border-border"
+                      className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-3 p-4 bg-muted/30 border border-border"
                     >
-                      <div>
-                        <p className="font-medium">{entry.name}</p>
-                        <p className="text-sm text-muted-foreground">{entry.email}</p>
+                      <div className="min-w-0">
+                        <p className="font-medium truncate">{entry.name}</p>
+                        <p className="text-sm text-muted-foreground truncate">{entry.email}</p>
                         <p className="text-xs text-muted-foreground">
                           {new Date(entry.created_at).toLocaleDateString()}
                         </p>
                       </div>
-                      <div className="flex items-center gap-2">
+                      <div className="flex items-center justify-between sm:justify-end gap-2 flex-wrap">
                         <span className={`px-2 py-1 text-xs ${
                           entry.status === 'approved' ? 'bg-secondary text-secondary-foreground' : 
                           entry.status === 'pending' ? 'bg-amber-500/20 text-amber-700' : 
@@ -1077,40 +1268,42 @@ export default function Admin() {
                         }`}>
                           {entry.status}
                         </span>
-                        {entry.status !== 'approved' && (
+                        <div className="flex items-center gap-1">
+                          {entry.status !== 'approved' && (
+                            <button
+                              onClick={() => handleWaitlistAction(entry.id, 'approved')}
+                              className="p-2 min-h-[44px] min-w-[44px] flex items-center justify-center bg-secondary/20 text-secondary hover:bg-secondary/30"
+                              title={t.admin.approveWaitlist}
+                            >
+                              <Check className="w-4 h-4" />
+                            </button>
+                          )}
+                          {entry.status !== 'pending' && (
+                            <button
+                              onClick={() => handleWaitlistAction(entry.id, 'pending')}
+                              className="p-2 min-h-[44px] min-w-[44px] flex items-center justify-center bg-amber-500/20 text-amber-700 hover:bg-amber-500/30"
+                              title="Set to pending"
+                            >
+                              <RotateCcw className="w-4 h-4" />
+                            </button>
+                          )}
+                          {entry.status !== 'rejected' && (
+                            <button
+                              onClick={() => handleWaitlistAction(entry.id, 'rejected')}
+                              className="p-2 min-h-[44px] min-w-[44px] flex items-center justify-center bg-destructive/20 text-destructive hover:bg-destructive/30"
+                              title={t.admin.rejectWaitlist}
+                            >
+                              <X className="w-4 h-4" />
+                            </button>
+                          )}
                           <button
-                            onClick={() => handleWaitlistAction(entry.id, 'approved')}
-                            className="p-2 bg-secondary/20 text-secondary hover:bg-secondary/30"
-                            title={t.admin.approveWaitlist}
+                            onClick={() => deleteWaitlistEntry(entry.id)}
+                            className="p-2 min-h-[44px] min-w-[44px] flex items-center justify-center bg-destructive/10 text-destructive hover:bg-destructive/20"
+                            title="Delete entry"
                           >
-                            <Check className="w-4 h-4" />
+                            <Trash2 className="w-4 h-4" />
                           </button>
-                        )}
-                        {entry.status !== 'pending' && (
-                          <button
-                            onClick={() => handleWaitlistAction(entry.id, 'pending')}
-                            className="p-2 bg-amber-500/20 text-amber-700 hover:bg-amber-500/30"
-                            title="Set to pending"
-                          >
-                            <RotateCcw className="w-4 h-4" />
-                          </button>
-                        )}
-                        {entry.status !== 'rejected' && (
-                          <button
-                            onClick={() => handleWaitlistAction(entry.id, 'rejected')}
-                            className="p-2 bg-destructive/20 text-destructive hover:bg-destructive/30"
-                            title={t.admin.rejectWaitlist}
-                          >
-                            <X className="w-4 h-4" />
-                          </button>
-                        )}
-                        <button
-                          onClick={() => deleteWaitlistEntry(entry.id)}
-                          className="p-2 bg-destructive/10 text-destructive hover:bg-destructive/20"
-                          title="Delete entry"
-                        >
-                          <Trash2 className="w-4 h-4" />
-                        </button>
+                        </div>
                       </div>
                     </div>
                   ))}
