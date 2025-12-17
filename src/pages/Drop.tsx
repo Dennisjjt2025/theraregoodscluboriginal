@@ -8,6 +8,7 @@ import { CountdownTimer } from '@/components/CountdownTimer';
 import { MediaLightbox, MediaHero } from '@/components/drop/MediaLightbox';
 import { StockIndicator } from '@/components/drop/StockIndicator';
 import { CollapsibleStory } from '@/components/drop/CollapsibleStory';
+import { useCartStore } from '@/stores/cartStore';
 import { toast } from 'sonner';
 import { MapPin, Calendar, Sparkles, Lock } from 'lucide-react';
 
@@ -122,6 +123,8 @@ export default function Drop() {
     }
   };
 
+  const addItem = useCartStore((state) => state.addItem);
+
   const handleAddToCart = async () => {
     if (!drop?.shopify_product_id) {
       toast.error('Product not available');
@@ -130,7 +133,26 @@ export default function Drop() {
 
     setAddingToCart(true);
     try {
-      toast.success('Redirecting to checkout...');
+      const title = language === 'nl' ? drop.title_nl : drop.title_en;
+      
+      addItem({
+        dropId: drop.id,
+        variantId: drop.shopify_product_id,
+        title,
+        price: drop.price,
+        imageUrl: drop.image_url,
+      });
+
+      toast.success(
+        language === 'nl' 
+          ? 'Toegevoegd aan winkelwagen!' 
+          : 'Added to cart!',
+        {
+          description: language === 'nl'
+            ? 'Klik op het winkelwagen icoon om af te rekenen.'
+            : 'Click the cart icon to checkout.',
+        }
+      );
     } catch (error) {
       console.error('Cart error:', error);
       toast.error(t.common.error);
