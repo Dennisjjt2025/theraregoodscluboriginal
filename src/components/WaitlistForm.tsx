@@ -4,7 +4,7 @@ import { supabase } from '@/integrations/supabase/client';
 import { toast } from 'sonner';
 
 export function WaitlistForm() {
-  const { t } = useLanguage();
+  const { t, language } = useLanguage();
   const [email, setEmail] = useState('');
   const [name, setName] = useState('');
   const [loading, setLoading] = useState(false);
@@ -27,6 +27,16 @@ export function WaitlistForm() {
           throw error;
         }
       } else {
+        // Send confirmation email
+        try {
+          await supabase.functions.invoke('send-waitlist-confirmation', {
+            body: { email, name, language }
+          });
+        } catch (emailError) {
+          console.error('Failed to send confirmation email:', emailError);
+          // Don't fail the whole submission if email fails
+        }
+        
         setSubmitted(true);
         toast.success(t.landing.waitlistSuccess);
       }
