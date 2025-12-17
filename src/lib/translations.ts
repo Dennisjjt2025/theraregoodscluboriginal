@@ -90,6 +90,9 @@ type TranslationContent = {
     copyMessage: string;
     messageCopied: string;
     inviteShareText: string;
+    inviteUsed: string;
+    inviteExpired: string;
+    inviteActive: string;
     noInvites: string;
     currentDrop: string;
     noDrop: string;
@@ -331,6 +334,9 @@ export const translations: Record<Language, TranslationContent> = {
       copyMessage: 'Copy message',
       messageCopied: 'Message copied!',
       inviteShareText: 'I thought you might appreciate this – The Rare Goods Club gives me access to carefully curated, limited drops you won\'t find anywhere else. It\'s not a shop that\'s always open, but a group of friends sharing something special.\n\nI have a personal invite for you:',
+      inviteUsed: 'Used',
+      inviteExpired: 'Expired',
+      inviteActive: 'Active',
       noInvites: 'No invites remaining',
       currentDrop: 'Current Drop',
       noDrop: 'No active drop at the moment',
@@ -570,6 +576,9 @@ export const translations: Record<Language, TranslationContent> = {
       copyMessage: 'Kopieer bericht',
       messageCopied: 'Bericht gekopieerd!',
       inviteShareText: 'Ik dacht dat jij dit misschien zou waarderen – The Rare Goods Club geeft me toegang tot zorgvuldig gecureerde, gelimiteerde drops die je nergens anders vindt. Het is geen winkel die altijd open is, maar een groep vrienden die iets bijzonders deelt.\n\nIk heb een persoonlijke uitnodiging voor je:',
+      inviteUsed: 'Gebruikt',
+      inviteExpired: 'Verlopen',
+      inviteActive: 'Actief',
       noInvites: 'Geen uitnodigingen meer',
       currentDrop: 'Huidige Drop',
       noDrop: 'Momenteel geen actieve drop',

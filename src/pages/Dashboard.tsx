@@ -481,41 +481,77 @@ export default function Dashboard() {
                     </button>
                   )}
 
-                  <div className="space-y-2 max-h-40 overflow-y-auto">
-                    {inviteCodes.filter(c => !c.used_by).map((code) => (
-                      <div
-                        key={code.id}
-                        className="flex items-center justify-between bg-muted/50 px-3 py-2 text-sm"
-                      >
-                        <code className="font-mono text-xs sm:text-sm">{code.code}</code>
-                        <div className="flex items-center gap-1">
-                          <button
-                            onClick={() => copyToClipboard(code.code)}
-                            className="text-muted-foreground hover:text-foreground transition-colors p-1"
-                            title={t.dashboard.copyLink}
+                  <div className="space-y-2 max-h-48 overflow-y-auto">
+                    {inviteCodes
+                      .sort((a, b) => {
+                        // Sort: active first, then used, then expired
+                        const getOrder = (code: InviteCode) => {
+                          if (code.used_by) return 1;
+                          if (new Date(code.expires_at) < new Date()) return 2;
+                          return 0;
+                        };
+                        return getOrder(a) - getOrder(b);
+                      })
+                      .map((code) => {
+                        const isUsed = !!code.used_by;
+                        const isExpired = !isUsed && new Date(code.expires_at) < new Date();
+                        const isActive = !isUsed && !isExpired;
+                        
+                        return (
+                          <div
+                            key={code.id}
+                            className={`flex items-center justify-between px-3 py-2 text-sm ${
+                              isActive ? 'bg-muted/50' : 'bg-muted/20'
+                            }`}
                           >
-                            {copiedCode === code.code ? (
-                              <Check className="w-4 h-4 text-secondary" />
-                            ) : (
-                              <Copy className="w-4 h-4" />
+                            <div className="flex items-center gap-2">
+                              <code className={`font-mono text-xs sm:text-sm ${
+                                !isActive ? 'line-through text-muted-foreground' : ''
+                              }`}>
+                                {code.code}
+                              </code>
+                              {isUsed && (
+                                <span className="text-[10px] px-1.5 py-0.5 bg-secondary/20 text-secondary rounded">
+                                  {t.dashboard.inviteUsed}
+                                </span>
+                              )}
+                              {isExpired && (
+                                <span className="text-[10px] px-1.5 py-0.5 bg-destructive/20 text-destructive rounded">
+                                  {t.dashboard.inviteExpired}
+                                </span>
+                              )}
+                            </div>
+                            {isActive && (
+                              <div className="flex items-center gap-1">
+                                <button
+                                  onClick={() => copyToClipboard(code.code)}
+                                  className="text-muted-foreground hover:text-foreground transition-colors p-1"
+                                  title={t.dashboard.copyLink}
+                                >
+                                  {copiedCode === code.code ? (
+                                    <Check className="w-4 h-4 text-secondary" />
+                                  ) : (
+                                    <Copy className="w-4 h-4" />
+                                  )}
+                                </button>
+                                <button
+                                  onClick={() => shareOrCopyMessage(code.code)}
+                                  className="text-muted-foreground hover:text-foreground transition-colors p-1"
+                                  title={t.dashboard.copyMessage}
+                                >
+                                  {copiedMessage === code.code ? (
+                                    <Check className="w-4 h-4 text-secondary" />
+                                  ) : canNativeShare ? (
+                                    <Share2 className="w-4 h-4" />
+                                  ) : (
+                                    <MessageSquare className="w-4 h-4" />
+                                  )}
+                                </button>
+                              </div>
                             )}
-                          </button>
-                          <button
-                            onClick={() => shareOrCopyMessage(code.code)}
-                            className="text-muted-foreground hover:text-foreground transition-colors p-1"
-                            title={canNativeShare ? t.dashboard.copyMessage : t.dashboard.copyMessage}
-                          >
-                            {copiedMessage === code.code ? (
-                              <Check className="w-4 h-4 text-secondary" />
-                            ) : canNativeShare ? (
-                              <Share2 className="w-4 h-4" />
-                            ) : (
-                              <MessageSquare className="w-4 h-4" />
-                            )}
-                          </button>
-                        </div>
-                      </div>
-                    ))}
+                          </div>
+                        );
+                      })}
                   </div>
 
                   {member.invites_remaining === 0 && inviteCodes.length === 0 && (
