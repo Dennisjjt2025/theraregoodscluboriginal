@@ -1,8 +1,9 @@
 import { useState, useEffect } from 'react';
 import { supabase } from '@/integrations/supabase/client';
 import { useLanguage } from '@/contexts/LanguageContext';
+import { useAuth } from '@/contexts/AuthContext';
 import { toast } from 'sonner';
-import { Save, Globe, MessageSquare, UserPlus, Mail, LogOut, ChevronDown, ChevronRight, LayoutDashboard, Eye } from 'lucide-react';
+import { Save, Globe, MessageSquare, UserPlus, Mail, LogOut, ChevronDown, ChevronRight, LayoutDashboard, Eye, Send } from 'lucide-react';
 import { Collapsible, CollapsibleContent, CollapsibleTrigger } from '@/components/ui/collapsible';
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger } from '@/components/ui/dialog';
 
@@ -76,9 +77,11 @@ function EmailPreview({ subject, message }: { subject: string; message: string }
 
 export function SiteSettingsEditor() {
   const { t, language: currentLang } = useLanguage();
+  const { user } = useAuth();
   const [settings, setSettings] = useState<SiteSetting[]>([]);
   const [loading, setLoading] = useState(true);
   const [saving, setSaving] = useState(false);
+  const [sendingTest, setSendingTest] = useState<string | null>(null);
   const [editLang, setEditLang] = useState<'en' | 'nl'>('en');
   const [openSections, setOpenSections] = useState<Record<string, boolean>>({
     dashboard: true,
@@ -268,6 +271,45 @@ export function SiteSettingsEditor() {
     }));
   };
 
+  const sendTestEmail = async (sectionId: string) => {
+    if (!user?.email) {
+      toast.error(currentLang === 'nl' ? 'Geen e-mailadres gevonden' : 'No email address found');
+      return;
+    }
+
+    setSendingTest(sectionId);
+    try {
+      let functionName = '';
+      if (sectionId === 'welcome') functionName = 'send-verification-email';
+      else if (sectionId === 'waitlist') functionName = 'send-waitlist-confirmation';
+      else if (sectionId === 'unsubscribe') functionName = 'send-unsubscribe-confirmation';
+
+      if (!functionName) return;
+
+      const { error } = await supabase.functions.invoke(functionName, {
+        body: {
+          email: user.email,
+          name: 'Test User',
+          language: editLang,
+          ...(sectionId === 'welcome' && { verificationUrl: window.location.origin }),
+        },
+      });
+
+      if (error) throw error;
+
+      toast.success(
+        currentLang === 'nl' 
+          ? `Test email verzonden naar ${user.email}` 
+          : `Test email sent to ${user.email}`
+      );
+    } catch (error) {
+      console.error('Error sending test email:', error);
+      toast.error(currentLang === 'nl' ? 'Kon test email niet verzenden' : 'Failed to send test email');
+    } finally {
+      setSendingTest(null);
+    }
+  };
+
   if (loading) {
     return (
       <div className="p-8 text-center">
@@ -407,14 +449,14 @@ export function SiteSettingsEditor() {
                     );
                   })}
 
-                  {/* Email Preview Button */}
+                  {/* Email Preview & Test Buttons */}
                   {section.isEmail && (
-                    <div className="p-4 bg-muted/20 border-t border-border">
+                    <div className="p-4 bg-muted/20 border-t border-border flex flex-col sm:flex-row gap-2">
                       <Dialog>
                         <DialogTrigger asChild>
-                          <button className="btn-luxury-outline flex items-center gap-2 w-full justify-center">
+                          <button className="btn-luxury-outline flex items-center gap-2 flex-1 justify-center">
                             <Eye className="w-4 h-4" />
-                            {currentLang === 'nl' ? 'Bekijk Email Preview' : 'View Email Preview'}
+                            {currentLang === 'nl' ? 'Bekijk Preview' : 'View Preview'}
                           </button>
                         </DialogTrigger>
                         <DialogContent className="max-w-2xl max-h-[90vh] overflow-y-auto">
@@ -445,6 +487,16 @@ export function SiteSettingsEditor() {
                           </div>
                         </DialogContent>
                       </Dialog>
+                      <button
+                        onClick={() => sendTestEmail(section.id)}
+                        disabled={sendingTest === section.id}
+                        className="btn-luxury flex items-center gap-2 flex-1 justify-center"
+                      >
+                        <Send className="w-4 h-4" />
+                        {sendingTest === section.id
+                          ? (currentLang === 'nl' ? 'Verzenden...' : 'Sending...')
+                          : (currentLang === 'nl' ? 'Stuur Test Email' : 'Send Test Email')}
+                      </button>
                     </div>
                   )}
                 </div>
