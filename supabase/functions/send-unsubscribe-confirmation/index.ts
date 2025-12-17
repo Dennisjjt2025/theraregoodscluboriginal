@@ -43,6 +43,8 @@ Het The Rare Goods Club Team`
 };
 
 function getBaseEmailTemplate(content: string, language: string, siteUrl: string): string {
+  const logoUrl = `${Deno.env.get("SUPABASE_URL")}/storage/v1/object/public/drop-media/email-assets/logo.png`;
+  
   return `
     <!DOCTYPE html>
     <html>
@@ -58,7 +60,7 @@ function getBaseEmailTemplate(content: string, language: string, siteUrl: string
               <!-- Header with Logo -->
               <tr>
                 <td align="center" style="padding-bottom: 30px;">
-                  <img src="${siteUrl}/logo.png" alt="The Rare Goods Club" style="height: 60px; width: auto;" />
+                  <img src="${logoUrl}" alt="The Rare Goods Club" style="height: 60px; width: auto;" />
                 </td>
               </tr>
               
