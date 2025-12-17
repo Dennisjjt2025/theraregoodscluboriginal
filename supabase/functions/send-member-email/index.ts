@@ -1,18 +1,26 @@
 import { serve } from "https://deno.land/std@0.190.0/http/server.ts";
 import { createClient } from "https://esm.sh/@supabase/supabase-js@2.49.1";
+import { z } from "https://deno.land/x/zod@v3.22.4/mod.ts";
 
 const corsHeaders = {
   "Access-Control-Allow-Origin": "*",
   "Access-Control-Allow-Headers": "authorization, x-client-info, apikey, content-type",
 };
 
-interface EmailRequest {
-  type: 'individual' | 'bulk' | 'waitlist';
-  recipients?: string[]; // For individual emails
-  subject: string;
-  message: string;
-  emailType: 'strike_warning' | 'thank_you' | 'drop_update' | 'newsletter' | 'custom';
-}
+// Input validation schemas
+const EmailSchema = z.string().email().max(255);
+const SubjectSchema = z.string().min(1).max(200);
+const MessageSchema = z.string().min(1).max(10000);
+const EmailTypeSchema = z.enum(['strike_warning', 'thank_you', 'drop_update', 'newsletter', 'custom']);
+const TypeSchema = z.enum(['individual', 'bulk', 'waitlist']);
+
+const EmailRequestSchema = z.object({
+  type: TypeSchema,
+  recipients: z.array(EmailSchema).optional(),
+  subject: SubjectSchema,
+  message: MessageSchema,
+  emailType: EmailTypeSchema,
+});
 
 const getEmailTemplate = (subject: string, message: string, emailType: string) => {
   // Get appropriate header based on email type
@@ -164,14 +172,60 @@ const handler = async (req: Request): Promise<Response> => {
   }
 
   try {
-    const { type, recipients, subject, message, emailType }: EmailRequest = await req.json();
-    
-    console.log(`Sending ${type} email - Type: ${emailType}, Subject: ${subject}`);
+    // Authentication check - require admin role
+    const authHeader = req.headers.get('authorization');
+    if (!authHeader) {
+      console.error("Missing authorization header");
+      return new Response(
+        JSON.stringify({ error: 'Unauthorized - Missing authorization' }),
+        { status: 401, headers: { "Content-Type": "application/json", ...corsHeaders } }
+      );
+    }
 
+    const token = authHeader.replace('Bearer ', '');
+    
     const supabaseAdmin = createClient(
       Deno.env.get("SUPABASE_URL") ?? "",
       Deno.env.get("SUPABASE_SERVICE_ROLE_KEY") ?? ""
     );
+
+    // Verify the user
+    const { data: { user }, error: authError } = await supabaseAdmin.auth.getUser(token);
+    if (authError || !user) {
+      console.error("Auth error:", authError?.message || "No user found");
+      return new Response(
+        JSON.stringify({ error: 'Unauthorized - Invalid token' }),
+        { status: 401, headers: { "Content-Type": "application/json", ...corsHeaders } }
+      );
+    }
+
+    // Check admin role
+    const { data: isAdmin, error: roleError } = await supabaseAdmin
+      .rpc('has_role', { _user_id: user.id, _role: 'admin' });
+    
+    if (roleError || !isAdmin) {
+      console.error("Role check failed:", roleError?.message || "User is not admin");
+      return new Response(
+        JSON.stringify({ error: 'Forbidden - Admin access required' }),
+        { status: 403, headers: { "Content-Type": "application/json", ...corsHeaders } }
+      );
+    }
+
+    // Parse and validate input
+    const rawBody = await req.json();
+    const validationResult = EmailRequestSchema.safeParse(rawBody);
+    
+    if (!validationResult.success) {
+      console.error("Validation error:", validationResult.error.errors);
+      return new Response(
+        JSON.stringify({ error: 'Invalid input', details: validationResult.error.errors }),
+        { status: 400, headers: { "Content-Type": "application/json", ...corsHeaders } }
+      );
+    }
+
+    const { type, recipients, subject, message, emailType } = validationResult.data;
+    
+    console.log(`Admin ${user.email} sending ${type} email - Type: ${emailType}, Subject: ${subject}`);
 
     let emailAddresses: string[] = [];
 
