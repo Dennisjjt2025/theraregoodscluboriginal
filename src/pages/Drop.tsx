@@ -425,7 +425,7 @@ export default function Drop() {
               {t.drop.membersOnlyMessage}
             </p>
           </div>
-          <div className={`flex gap-3 ${mobile ? 'mt-3' : 'mt-4 justify-center'}`}>
+          <div className={`flex flex-wrap gap-3 ${mobile ? 'mt-3 justify-center' : 'mt-4 justify-center'}`}>
             {user ? (
               <Link to="/auth" className="btn-outline-luxury text-sm">
                 {t.drop.becomeMember}
@@ -438,6 +438,9 @@ export default function Drop() {
                 <Link to="/auth" className="btn-outline-luxury text-sm">
                   {t.drop.becomeMember}
                 </Link>
+                <a href="/#waitlist" className="btn-outline-luxury text-sm">
+                  {t.landing.joinWaitlist}
+                </a>
               </>
             )}
           </div>

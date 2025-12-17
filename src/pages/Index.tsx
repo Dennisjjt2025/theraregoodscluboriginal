@@ -6,7 +6,7 @@ import { supabase } from '@/integrations/supabase/client';
 import { Header } from '@/components/Header';
 import { CountdownTimer } from '@/components/CountdownTimer';
 import { WaitlistForm } from '@/components/WaitlistForm';
-import { Wine, Globe, Award, ArrowRight } from 'lucide-react';
+import { Wine, Globe, Award, ArrowRight, Eye } from 'lucide-react';
 import logo from '@/assets/logo.png';
 import { ScrollIndicator } from '@/components/ScrollIndicator';
 
@@ -179,7 +179,14 @@ export default function Index() {
               </Link>
             ) : (
               <>
-                <Link to="/auth" className="btn-luxury">
+                {/* Sneak Peek button - only show when there's an upcoming (not live) drop */}
+                {nextDrop && !activeDrop && (
+                  <Link to="/drop" className="btn-luxury flex items-center gap-2">
+                    <Eye className="w-4 h-4" />
+                    {t.landing.sneakPeek}
+                  </Link>
+                )}
+                <Link to="/auth" className={nextDrop && !activeDrop ? "btn-outline-luxury" : "btn-luxury"}>
                   {t.landing.memberLogin}
                 </Link>
                 <a href="#waitlist" className="btn-outline-luxury">

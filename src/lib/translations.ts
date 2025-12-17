@@ -28,6 +28,7 @@ type TranslationContent = {
     exclusiveAccess: string;
     curatedDrops: string;
     limitedEditions: string;
+    sneakPeek: string;
   };
   auth: {
     loginTitle: string;
@@ -265,6 +266,7 @@ export const translations: Record<Language, TranslationContent> = {
       exclusiveAccess: 'Exclusive access to rare goods',
       curatedDrops: 'Curated drops from around the world',
       limitedEditions: 'Limited editions & allocations',
+      sneakPeek: 'Sneak Peek',
     },
     auth: {
       loginTitle: 'Member Access',
@@ -500,6 +502,7 @@ export const translations: Record<Language, TranslationContent> = {
       exclusiveAccess: 'Exclusieve toegang tot zeldzame producten',
       curatedDrops: 'Gecureerde drops van over de hele wereld',
       limitedEditions: 'Limited editions & allocaties',
+      sneakPeek: 'Sneak Peek',
     },
     auth: {
       loginTitle: 'Leden Toegang',
