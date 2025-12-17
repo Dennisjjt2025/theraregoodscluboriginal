@@ -10,7 +10,7 @@ import { StockIndicator } from '@/components/drop/StockIndicator';
 import { CollapsibleStory } from '@/components/drop/CollapsibleStory';
 import { useCartStore } from '@/stores/cartStore';
 import { toast } from 'sonner';
-import { MapPin, Calendar, Sparkles, Lock } from 'lucide-react';
+import { MapPin, Calendar, Sparkles, Lock, Bell, BellOff, Clock } from 'lucide-react';
 
 interface Drop {
   id: string;
@@ -30,6 +30,7 @@ interface Drop {
   image_url: string | null;
   video_url: string | null;
   shopify_product_id: string | null;
+  starts_at: string;
   ends_at: string | null;
   is_public: boolean | null;
 }
@@ -53,6 +54,11 @@ export default function Drop() {
   const [memberLoading, setMemberLoading] = useState(true);
   const [lightboxOpen, setLightboxOpen] = useState(false);
   const [lightboxIndex, setLightboxIndex] = useState(0);
+  
+  // Upcoming drop states
+  const [isUpcoming, setIsUpcoming] = useState(false);
+  const [isInterested, setIsInterested] = useState(false);
+  const [interestLoading, setInterestLoading] = useState(false);
 
   // Check if user is a member
   useEffect(() => {
@@ -91,10 +97,19 @@ export default function Drop() {
     fetchDrop();
   }, []);
 
+  // Check if user is interested in this drop
+  useEffect(() => {
+    if (drop && user) {
+      checkInterest();
+    }
+  }, [drop, user]);
+
   const fetchDrop = async () => {
     try {
       const now = new Date().toISOString();
-      const { data, error } = await supabase
+      
+      // First try to get active/live drop
+      let { data: activeDrop } = await supabase
         .from('drops')
         .select('*')
         .eq('is_active', true)
@@ -102,15 +117,33 @@ export default function Drop() {
         .or(`ends_at.is.null,ends_at.gt.${now}`)
         .maybeSingle();
 
-      if (error) throw error;
-      setDrop(data);
+      // If no active drop, try to get upcoming drop
+      if (!activeDrop) {
+        const { data: upcomingDrop } = await supabase
+          .from('drops')
+          .select('*')
+          .eq('is_active', true)
+          .gt('starts_at', now)
+          .order('starts_at', { ascending: true })
+          .limit(1)
+          .maybeSingle();
+        
+        if (upcomingDrop) {
+          activeDrop = upcomingDrop;
+          setIsUpcoming(true);
+        }
+      } else {
+        setIsUpcoming(false);
+      }
+
+      setDrop(activeDrop);
 
       // Fetch gallery images if drop exists
-      if (data) {
+      if (activeDrop) {
         const { data: images, error: imagesError } = await supabase
           .from('drop_images')
           .select('id, image_url, alt_text, sort_order')
-          .eq('drop_id', data.id)
+          .eq('drop_id', activeDrop.id)
           .order('sort_order', { ascending: true });
 
         if (imagesError) throw imagesError;
@@ -120,6 +153,83 @@ export default function Drop() {
       console.error('Error fetching drop:', error);
     } finally {
       setLoading(false);
+    }
+  };
+
+  const checkInterest = async () => {
+    if (!drop || !user) return;
+    
+    try {
+      const { data, error } = await supabase
+        .from('drop_interests')
+        .select('id')
+        .eq('drop_id', drop.id)
+        .eq('user_id', user.id)
+        .maybeSingle();
+
+      if (error) throw error;
+      setIsInterested(!!data);
+    } catch (error) {
+      console.error('Error checking interest:', error);
+    }
+  };
+
+  const handleToggleInterest = async () => {
+    if (!drop || !user) return;
+
+    setInterestLoading(true);
+    try {
+      if (isInterested) {
+        // Remove interest
+        const { error } = await supabase
+          .from('drop_interests')
+          .delete()
+          .eq('drop_id', drop.id)
+          .eq('user_id', user.id);
+
+        if (error) throw error;
+        setIsInterested(false);
+        toast.success(
+          language === 'nl' 
+            ? 'Interesse verwijderd' 
+            : 'Interest removed'
+        );
+      } else {
+        // Add interest
+        // First get member_id if exists
+        const { data: memberData } = await supabase
+          .from('members')
+          .select('id')
+          .eq('user_id', user.id)
+          .maybeSingle();
+
+        const { error } = await supabase
+          .from('drop_interests')
+          .insert({
+            drop_id: drop.id,
+            user_id: user.id,
+            member_id: memberData?.id || null,
+            email: user.email || '',
+          });
+
+        if (error) throw error;
+        setIsInterested(true);
+        toast.success(
+          language === 'nl' 
+            ? 'Interesse geregistreerd! We sturen je een notificatie.' 
+            : 'Interest registered! We will notify you.',
+          {
+            description: language === 'nl'
+              ? 'Je ontvangt een melding zodra de drop live gaat.'
+              : 'You will receive a notification when the drop goes live.',
+          }
+        );
+      }
+    } catch (error) {
+      console.error('Error toggling interest:', error);
+      toast.error(t.common.error);
+    } finally {
+      setInterestLoading(false);
     }
   };
 
@@ -200,7 +310,6 @@ export default function Drop() {
 
   // Combine main image with gallery images
   const allImages: GalleryImage[] = [
-    // If there are gallery images, use them; otherwise fall back to main image_url
     ...(galleryImages.length > 0
       ? galleryImages
       : drop.image_url
@@ -208,12 +317,101 @@ export default function Drop() {
       : []),
   ];
 
+  // Interest Section for upcoming drops
+  const InterestSection = () => {
+    if (!isUpcoming) return null;
+    
+    return (
+      <div className="bg-secondary/10 border border-secondary/30 p-6 mb-8 text-center">
+        <Bell className="w-8 h-8 mx-auto mb-3 text-secondary" />
+        <h3 className="font-serif text-xl mb-2">
+          {language === 'nl' ? 'Wil je deze drop niet missen?' : "Don't want to miss this drop?"}
+        </h3>
+        <p className="text-muted-foreground text-sm mb-4">
+          {language === 'nl' 
+            ? 'Klik op geïnteresseerd en ontvang een notificatie zodra de drop live gaat.'
+            : 'Click interested and receive a notification when this drop goes live.'}
+        </p>
+        {user ? (
+          <button
+            onClick={handleToggleInterest}
+            disabled={interestLoading}
+            className={`btn-luxury flex items-center gap-2 mx-auto ${isInterested ? 'bg-secondary hover:bg-secondary/90' : ''}`}
+          >
+            {interestLoading ? (
+              t.common.loading
+            ) : isInterested ? (
+              <>
+                <BellOff className="w-4 h-4" />
+                {language === 'nl' ? 'Niet meer geïnteresseerd' : 'Remove interest'}
+              </>
+            ) : (
+              <>
+                <Bell className="w-4 h-4" />
+                {language === 'nl' ? 'Ik ben geïnteresseerd' : "I'm interested"}
+              </>
+            )}
+          </button>
+        ) : (
+          <p className="text-sm text-muted-foreground">
+            <Link to="/auth" className="underline hover:text-foreground transition-colors">
+              {language === 'nl' ? 'Log in om interesse te registreren' : 'Login to register interest'}
+            </Link>
+          </p>
+        )}
+      </div>
+    );
+  };
+
   // Purchase section component
   const PurchaseSection = ({ mobile = false }: { mobile?: boolean }) => {
     if (memberLoading || authLoading) {
       return (
         <div className={mobile ? "fixed bottom-0 left-0 right-0 md:hidden bg-background border-t border-border p-4 z-50" : "hidden md:block bg-card border border-border p-6"}>
           <div className="animate-pulse h-12 bg-muted rounded" />
+        </div>
+      );
+    }
+
+    // Show "Coming Soon" for upcoming drops
+    if (isUpcoming) {
+      if (mobile) {
+        return (
+          <div className="fixed bottom-0 left-0 right-0 md:hidden bg-background border-t border-border p-4 z-50">
+            <div className="flex items-center justify-between gap-4">
+              <div>
+                <p className="font-serif text-2xl">€{drop.price.toFixed(2)}</p>
+                <p className="text-xs text-muted-foreground">
+                  {language === 'nl' ? 'Nog niet beschikbaar' : 'Not available yet'}
+                </p>
+              </div>
+              <button
+                disabled
+                className="btn-luxury flex-1 opacity-50 cursor-not-allowed flex items-center justify-center gap-2"
+              >
+                <Clock className="w-4 h-4" />
+                {language === 'nl' ? 'Komt Binnenkort' : 'Coming Soon'}
+              </button>
+            </div>
+          </div>
+        );
+      }
+
+      return (
+        <div className="hidden md:flex items-center justify-between bg-card border border-border p-6">
+          <div>
+            <p className="font-serif text-3xl">€{drop.price.toFixed(2)}</p>
+            <p className="text-sm text-muted-foreground">
+              {language === 'nl' ? 'Nog niet beschikbaar' : 'Not available yet'}
+            </p>
+          </div>
+          <button
+            disabled
+            className="btn-luxury opacity-50 cursor-not-allowed flex items-center gap-2"
+          >
+            <Clock className="w-4 h-4" />
+            {language === 'nl' ? 'Komt Binnenkort' : 'Coming Soon'}
+          </button>
         </div>
       );
     }
@@ -292,9 +490,15 @@ export default function Drop() {
   // Badges for hero
   const heroBadges = (
     <>
-      <span className="bg-background/90 backdrop-blur-sm text-foreground px-3 py-1.5 text-xs font-sans uppercase tracking-wider border border-border/50">
-        {t.drop.limited}
-      </span>
+      {isUpcoming ? (
+        <span className="bg-accent/90 backdrop-blur-sm text-accent-foreground px-3 py-1.5 text-xs font-sans uppercase tracking-wider">
+          {language === 'nl' ? 'Binnenkort' : 'Coming Soon'}
+        </span>
+      ) : (
+        <span className="bg-background/90 backdrop-blur-sm text-foreground px-3 py-1.5 text-xs font-sans uppercase tracking-wider border border-border/50">
+          {t.drop.limited}
+        </span>
+      )}
       {!drop.is_public && (
         <span className="bg-accent/90 backdrop-blur-sm text-accent-foreground px-3 py-1.5 text-xs font-sans uppercase tracking-wider">
           {t.drop.membersOnly}
@@ -361,14 +565,30 @@ export default function Drop() {
             </div>
           )}
 
-          {/* Stock Indicator */}
+          {/* Interest Section for upcoming drops */}
+          <InterestSection />
+
+          {/* Stock/Countdown Section */}
           <div className="bg-card border border-border p-6 mb-8">
-            {drop.ends_at ? (
+            {isUpcoming ? (
+              <>
+                <p className="font-sans text-sm uppercase tracking-widest text-muted-foreground mb-4 text-center">
+                  {language === 'nl' ? 'Drop begint over' : 'Drop starts in'}
+                </p>
+                <CountdownTimer targetDate={new Date(drop.starts_at)} />
+                <div className="mt-6 pt-6 border-t border-border">
+                  <StockIndicator 
+                    quantityAvailable={drop.quantity_available} 
+                    quantitySold={drop.quantity_sold} 
+                  />
+                </div>
+              </>
+            ) : drop.ends_at ? (
               <>
                 <p className="font-sans text-sm uppercase tracking-widest text-muted-foreground mb-4 text-center">
                   {t.drop.endsIn}
                 </p>
-                <CountdownTimer targetDate={new Date(drop.ends_at)} />
+                <CountdownTimer targetDate={new Date(drop.ends_at)} isLive={true} />
                 <div className="mt-6 pt-6 border-t border-border">
                   <StockIndicator 
                     quantityAvailable={drop.quantity_available} 
