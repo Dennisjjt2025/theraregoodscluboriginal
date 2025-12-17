@@ -25,7 +25,7 @@ interface SettingSection {
 }
 
 // Email preview component
-function EmailPreview({ subject, message }: { subject: string; message: string }) {
+function EmailPreview({ subject, message, showUnsubscribe = true }: { subject: string; message: string; showUnsubscribe?: boolean }) {
   const replacePlaceholders = (text: string) => {
     return text
       .replace(/\{\{firstName\}\}/g, 'Jan')
@@ -41,11 +41,13 @@ function EmailPreview({ subject, message }: { subject: string; message: string }
     <div className="bg-[#FAF9F6] p-6 rounded-lg">
       {/* Email container */}
       <div className="max-w-lg mx-auto">
-        {/* Header */}
+        {/* Header with Logo */}
         <div className="text-center pb-6">
-          <h1 className="text-foreground text-xl tracking-widest font-serif">
-            THE RARE GOODS CLUB
-          </h1>
+          <img 
+            src="/logo.png" 
+            alt="The Rare Goods Club" 
+            className="h-14 mx-auto"
+          />
         </div>
         
         {/* Subject line indicator */}
@@ -69,6 +71,11 @@ function EmailPreview({ subject, message }: { subject: string; message: string }
           <p className="text-muted-foreground text-xs mt-4 tracking-wider">
             © {new Date().getFullYear()} The Rare Goods Club
           </p>
+          {showUnsubscribe && (
+            <p className="text-muted-foreground text-xs mt-3">
+              <span className="underline cursor-pointer">Uitschrijven / Unsubscribe</span>
+            </p>
+          )}
         </div>
       </div>
     </div>
@@ -478,6 +485,7 @@ export function SiteSettingsEditor() {
                                   ? sectionSettings.find(s => s.key.includes('message'))?.value_en || ''
                                   : sectionSettings.find(s => s.key.includes('message'))?.value_nl || ''
                               }
+                              showUnsubscribe={section.id !== 'unsubscribe'}
                             />
                             <p className="text-xs text-muted-foreground mt-4 text-center">
                               {currentLang === 'nl' 

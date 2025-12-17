@@ -42,57 +42,64 @@ Het The Rare Goods Club Team`
   }
 };
 
-const getEmailTemplate = (subject: string, message: string): string => {
+function getBaseEmailTemplate(content: string, language: string, siteUrl: string): string {
   return `
     <!DOCTYPE html>
     <html>
-      <head>
-        <meta charset="utf-8">
-        <meta name="viewport" content="width=device-width, initial-scale=1.0">
-        <title>${subject}</title>
-      </head>
-      <body style="margin: 0; padding: 0; background-color: #FAF9F6; font-family: Georgia, 'Times New Roman', serif;">
-        <table role="presentation" style="width: 100%; border-collapse: collapse;">
-          <tr>
-            <td align="center" style="padding: 40px 20px;">
-              <table role="presentation" style="max-width: 600px; width: 100%; border-collapse: collapse;">
-                <!-- Header with Logo -->
-                <tr>
-                  <td align="center" style="padding-bottom: 30px;">
-                    <h1 style="color: #1C1917; font-size: 28px; font-weight: normal; margin: 0; letter-spacing: 2px;">
-                      THE RARE GOODS CLUB
-                    </h1>
-                  </td>
-                </tr>
-                
-                <!-- Main Content -->
-                <tr>
-                  <td style="background-color: #FFFFFF; padding: 40px; border: 1px solid #E7E5E4;">
-                    <div style="color: #44403C; font-size: 16px; line-height: 1.8; white-space: pre-line;">
-                      ${message}
-                    </div>
-                  </td>
-                </tr>
-                
-                <!-- Footer with Wax Seal -->
-                <tr>
-                  <td align="center" style="padding-top: 30px;">
-                    <div style="width: 60px; height: 60px; background-color: #722F37; border-radius: 50%; display: inline-block; position: relative;">
-                      <span style="color: #FAF9F6; font-size: 24px; font-weight: bold; line-height: 60px;">R</span>
-                    </div>
-                    <p style="color: #78716C; font-size: 12px; margin-top: 20px; letter-spacing: 1px;">
-                      © ${new Date().getFullYear()} The Rare Goods Club
-                    </p>
-                  </td>
-                </tr>
-              </table>
-            </td>
-          </tr>
-        </table>
-      </body>
+    <head>
+      <meta charset="utf-8">
+      <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    </head>
+    <body style="margin: 0; padding: 0; background-color: #FAF9F6; font-family: Georgia, 'Times New Roman', serif;">
+      <table role="presentation" style="width: 100%; border-collapse: collapse;">
+        <tr>
+          <td align="center" style="padding: 40px 20px;">
+            <table role="presentation" style="max-width: 600px; width: 100%; border-collapse: collapse;">
+              <!-- Header with Logo -->
+              <tr>
+                <td align="center" style="padding-bottom: 30px;">
+                  <img src="${siteUrl}/logo.png" alt="The Rare Goods Club" style="height: 60px; width: auto;" />
+                </td>
+              </tr>
+              
+              <!-- Main Content Card -->
+              <tr>
+                <td style="background-color: #FFFFFF; padding: 40px; border: 1px solid #E7E5E4;">
+                  <div style="color: #44403C; font-size: 16px; line-height: 1.8; white-space: pre-line;">
+                    ${content}
+                  </div>
+                </td>
+              </tr>
+              
+              <!-- Footer with Wax Seal -->
+              <tr>
+                <td align="center" style="padding-top: 30px;">
+                  <table role="presentation" style="border-collapse: collapse;">
+                    <tr>
+                      <td align="center">
+                        <div style="width: 60px; height: 60px; background-color: #722F37; border-radius: 50%; text-align: center;">
+                          <span style="color: #FAF9F6; font-size: 24px; font-weight: bold; line-height: 60px; display: block;">R</span>
+                        </div>
+                      </td>
+                    </tr>
+                    <tr>
+                      <td align="center" style="padding-top: 20px;">
+                        <p style="color: #78716C; font-size: 12px; margin: 0; letter-spacing: 1px;">
+                          © ${new Date().getFullYear()} The Rare Goods Club
+                        </p>
+                      </td>
+                    </tr>
+                  </table>
+                </td>
+              </tr>
+            </table>
+          </td>
+        </tr>
+      </table>
+    </body>
     </html>
   `;
-};
+}
 
 const replacePlaceholders = (template: string, data: Record<string, string>): string => {
   let result = template;
@@ -159,8 +166,11 @@ const handler = async (req: Request): Promise<Response> => {
     subject = replacePlaceholders(subject, placeholderData);
     const message = replacePlaceholders(messageTemplate, placeholderData);
 
+    // Get site URL
+    const siteUrl = Deno.env.get("SITE_URL") || "https://preview--raregoodsclub.lovable.app";
+
     // Generate HTML email
-    const htmlContent = getEmailTemplate(subject, message);
+    const htmlContent = getBaseEmailTemplate(message, language, siteUrl);
 
     // Send email via Resend
     const resendApiKey = Deno.env.get("RESEND_API_KEY");
