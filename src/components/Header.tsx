@@ -15,15 +15,16 @@ export function Header() {
 
   const isActive = (path: string) => location.pathname === path;
 
-  const publicLinks = [
+  // Only show marketing pages to non-logged-in users
+  const publicLinks = !user ? [
     { href: '/manifesto', label: language === 'nl' ? 'Ons Verhaal' : 'Our Story' },
     { href: '/membership', label: language === 'nl' ? 'Lidmaatschap' : 'Membership' },
-  ];
+  ] : [];
 
+  // Only show member pages to logged-in users
   const memberLinks = user ? [
     { href: '/drop', label: t.nav.currentDrop },
     { href: '/archive', label: language === 'nl' ? 'Archief' : 'Archive' },
-    { href: '/dashboard', label: t.nav.dashboard },
   ] : [];
 
   const navLinks = [...publicLinks, ...memberLinks];
@@ -60,12 +61,17 @@ export function Header() {
             <LanguageToggle />
 
             {user ? (
-              <button
-                onClick={signOut}
-                className="font-sans text-sm tracking-wide text-muted-foreground hover:text-foreground transition-colors"
-              >
-                {t.nav.logout}
-              </button>
+              <div className="flex items-center gap-4">
+                <button
+                  onClick={signOut}
+                  className="font-sans text-sm tracking-wide text-muted-foreground hover:text-foreground transition-colors"
+                >
+                  {language === 'nl' ? 'Uitloggen' : 'Logout'}
+                </button>
+                <Link to="/dashboard" className="btn-luxury">
+                  {language === 'nl' ? 'MIJN CLUB' : 'MY CLUB'}
+                </Link>
+              </div>
             ) : (
               <Link
                 to="/auth"
@@ -110,15 +116,24 @@ export function Header() {
               ))}
               
               {user ? (
-                <button
-                  onClick={() => {
-                    signOut();
-                    setIsMenuOpen(false);
-                  }}
-                  className="font-sans text-base py-2 text-muted-foreground text-left"
-                >
-                  {t.nav.logout}
-                </button>
+                <div className="flex flex-col gap-2">
+                  <Link
+                    to="/dashboard"
+                    onClick={() => setIsMenuOpen(false)}
+                    className="btn-luxury text-center"
+                  >
+                    {language === 'nl' ? 'MIJN CLUB' : 'MY CLUB'}
+                  </Link>
+                  <button
+                    onClick={() => {
+                      signOut();
+                      setIsMenuOpen(false);
+                    }}
+                    className="font-sans text-sm py-2 text-muted-foreground text-center"
+                  >
+                    {language === 'nl' ? 'Uitloggen' : 'Logout'}
+                  </button>
+                </div>
               ) : (
                 <Link
                   to="/auth"
