@@ -10,30 +10,89 @@ interface VerificationRequest {
   email: string;
   firstName: string;
   userId: string;
+  language?: string;
+}
+
+interface EmailTemplate {
+  subject: string;
+  message: string;
+}
+
+const defaultTemplates = {
+  en: {
+    subject: "Verify your email - The Rare Goods Club",
+    message: `Welcome, {{firstName}}
+
+Thank you for joining The Rare Goods Club. To complete your registration and activate your membership, please verify your email address.
+
+Click the button below to verify your email:`,
+  },
+  nl: {
+    subject: "Bevestig je e-mail - The Rare Goods Club",
+    message: `Welkom, {{firstName}}
+
+Bedankt voor je aanmelding bij The Rare Goods Club. Om je registratie te voltooien en je lidmaatschap te activeren, bevestig je e-mailadres.
+
+Klik op de onderstaande knop om je e-mail te bevestigen:`,
+  },
+};
+
+async function getEmailTemplate(supabaseAdmin: any, language: string): Promise<EmailTemplate> {
+  try {
+    const { data: settings, error } = await supabaseAdmin
+      .from("site_settings")
+      .select("key, value_en, value_nl")
+      .in("key", ["welcome_email_subject", "welcome_email_message"]);
+
+    if (error) {
+      console.error("Error fetching email templates:", error);
+      return defaultTemplates[language as keyof typeof defaultTemplates] || defaultTemplates.en;
+    }
+
+    const subjectSetting = settings?.find((s: any) => s.key === "welcome_email_subject");
+    const messageSetting = settings?.find((s: any) => s.key === "welcome_email_message");
+
+    const isNl = language === "nl";
+    const subject = isNl 
+      ? (subjectSetting?.value_nl || defaultTemplates.nl.subject)
+      : (subjectSetting?.value_en || defaultTemplates.en.subject);
+    const message = isNl
+      ? (messageSetting?.value_nl || defaultTemplates.nl.message)
+      : (messageSetting?.value_en || defaultTemplates.en.message);
+
+    return { subject, message };
+  } catch (err) {
+    console.error("Error in getEmailTemplate:", err);
+    return defaultTemplates[language as keyof typeof defaultTemplates] || defaultTemplates.en;
+  }
+}
+
+function replacePlaceholders(text: string, replacements: Record<string, string>): string {
+  let result = text;
+  for (const [key, value] of Object.entries(replacements)) {
+    result = result.replace(new RegExp(`{{${key}}}`, "g"), value);
+  }
+  return result;
 }
 
 const handler = async (req: Request): Promise<Response> => {
-  // Handle CORS preflight requests
   if (req.method === "OPTIONS") {
     return new Response(null, { headers: corsHeaders });
   }
 
   try {
-    const { email, firstName, userId }: VerificationRequest = await req.json();
+    const { email, firstName, userId, language = "en" }: VerificationRequest = await req.json();
     
-    console.log("Sending verification email to:", email);
+    console.log("Sending verification email to:", email, "language:", language);
 
-    // Generate verification token
     const verificationToken = crypto.randomUUID();
-    const expiresAt = new Date(Date.now() + 24 * 60 * 60 * 1000); // 24 hours
+    const expiresAt = new Date(Date.now() + 24 * 60 * 60 * 1000);
 
-    // Create Supabase admin client
     const supabaseAdmin = createClient(
       Deno.env.get("SUPABASE_URL") ?? "",
       Deno.env.get("SUPABASE_SERVICE_ROLE_KEY") ?? ""
     );
 
-    // Store token in profiles
     const { error: updateError } = await supabaseAdmin
       .from("profiles")
       .update({
@@ -47,11 +106,27 @@ const handler = async (req: Request): Promise<Response> => {
       throw new Error("Failed to store verification token");
     }
 
-    // Build verification URL
     const siteUrl = Deno.env.get("SITE_URL") || "https://preview--raregoodsclub.lovable.app";
     const verificationUrl = `${siteUrl}/auth?verify=${verificationToken}`;
 
-    // Send email using Resend API directly
+    // Get email template from database
+    const template = await getEmailTemplate(supabaseAdmin, language);
+    
+    // Replace placeholders
+    const replacements = {
+      firstName,
+      verifyLink: verificationUrl,
+    };
+    
+    const emailSubject = replacePlaceholders(template.subject, replacements);
+    const emailMessage = replacePlaceholders(template.message, replacements);
+
+    // Convert message to HTML paragraphs
+    const messageHtml = emailMessage
+      .split("\n\n")
+      .map((paragraph) => `<p style="margin: 0 0 20px; font-size: 16px; line-height: 1.6; color: #4a4a4a;">${paragraph.replace(/\n/g, "<br>")}</p>`)
+      .join("");
+
     const resendApiKey = Deno.env.get("RESEND_API_KEY");
     
     const emailResponse = await fetch("https://api.resend.com/emails", {
@@ -63,7 +138,7 @@ const handler = async (req: Request): Promise<Response> => {
       body: JSON.stringify({
         from: "The Rare Goods Club <onboarding@resend.dev>",
         to: [email],
-        subject: "Verify your email - The Rare Goods Club",
+        subject: emailSubject,
         html: `
           <!DOCTYPE html>
           <html>
@@ -85,26 +160,20 @@ const handler = async (req: Request): Promise<Response> => {
                     </tr>
                     <tr>
                       <td style="padding: 40px;">
-                        <h2 style="margin: 0 0 20px; font-size: 20px; font-weight: normal; color: #1a1a1a;">
-                          Welcome, ${firstName}
-                        </h2>
-                        <p style="margin: 0 0 20px; font-size: 16px; line-height: 1.6; color: #4a4a4a;">
-                          Thank you for joining The Rare Goods Club. To complete your registration and activate your membership, please verify your email address.
-                        </p>
-                        <p style="margin: 0 0 30px; font-size: 16px; line-height: 1.6; color: #4a4a4a;">
-                          Click the button below to verify your email:
-                        </p>
+                        ${messageHtml}
                         <table role="presentation" style="width: 100%; border-collapse: collapse;">
                           <tr>
                             <td align="center">
                               <a href="${verificationUrl}" style="display: inline-block; padding: 14px 32px; background-color: #1a1a1a; color: #ffffff; text-decoration: none; font-size: 14px; letter-spacing: 1px; border: none;">
-                                VERIFY EMAIL
+                                ${language === "nl" ? "BEVESTIG E-MAIL" : "VERIFY EMAIL"}
                               </a>
                             </td>
                           </tr>
                         </table>
                         <p style="margin: 30px 0 0; font-size: 14px; line-height: 1.6; color: #888888;">
-                          This link will expire in 24 hours. If you didn't create an account with The Rare Goods Club, you can safely ignore this email.
+                          ${language === "nl" 
+                            ? "Deze link verloopt over 24 uur. Als je geen account hebt aangemaakt bij The Rare Goods Club, kun je deze e-mail negeren."
+                            : "This link will expire in 24 hours. If you didn't create an account with The Rare Goods Club, you can safely ignore this email."}
                         </p>
                       </td>
                     </tr>
