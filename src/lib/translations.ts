@@ -93,6 +93,8 @@ type TranslationContent = {
     inviteUsed: string;
     inviteExpired: string;
     inviteActive: string;
+    deleteExpired: string;
+    expiredDeleted: string;
     noInvites: string;
     currentDrop: string;
     noDrop: string;
@@ -337,6 +339,8 @@ export const translations: Record<Language, TranslationContent> = {
       inviteUsed: 'Used',
       inviteExpired: 'Expired',
       inviteActive: 'Active',
+      deleteExpired: 'Delete expired',
+      expiredDeleted: 'Expired codes deleted',
       noInvites: 'No invites remaining',
       currentDrop: 'Current Drop',
       noDrop: 'No active drop at the moment',
@@ -579,6 +583,8 @@ export const translations: Record<Language, TranslationContent> = {
       inviteUsed: 'Gebruikt',
       inviteExpired: 'Verlopen',
       inviteActive: 'Actief',
+      deleteExpired: 'Verwijder verlopen',
+      expiredDeleted: 'Verlopen codes verwijderd',
       noInvites: 'Geen uitnodigingen meer',
       currentDrop: 'Huidige Drop',
       noDrop: 'Momenteel geen actieve drop',
