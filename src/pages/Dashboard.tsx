@@ -68,16 +68,12 @@ interface Profile {
   preferences: string[];
 }
 
-const PREFERENCE_KEYS = [
-  'wine_spirits',
-  'art_prints',
-  'regional_products',
-  'farm_local',
-  'food_delicatessen',
-  'fashion_accessories',
-  'home_design',
-  'collectibles',
-] as const;
+interface PreferenceCategory {
+  id: string;
+  key: string;
+  label_en: string;
+  label_nl: string;
+}
 
 export default function Dashboard() {
   const { t, language } = useLanguage();
@@ -106,6 +102,7 @@ export default function Dashboard() {
   const [copiedCode, setCopiedCode] = useState<string | null>(null);
   const [generatingInvite, setGeneratingInvite] = useState(false);
   const [isAdmin, setIsAdmin] = useState(false);
+  const [preferenceCategories, setPreferenceCategories] = useState<PreferenceCategory[]>([]);
 
   useEffect(() => {
     if (!authLoading && !user) {
@@ -121,6 +118,15 @@ export default function Dashboard() {
 
   const fetchData = async () => {
     try {
+      // Fetch preference categories
+      const { data: categoriesData } = await supabase
+        .from('preference_categories')
+        .select('id, key, label_en, label_nl')
+        .eq('is_active', true)
+        .order('sort_order');
+      
+      setPreferenceCategories(categoriesData || []);
+
       // Check if user is admin
       const { data: adminRole } = await supabase
         .from('user_roles')
@@ -571,24 +577,26 @@ export default function Dashboard() {
                     <p className="text-sm text-muted-foreground mb-4">{t.dashboard.interestsSubtitle}</p>
                     
                     <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
-                      {PREFERENCE_KEYS.map((key) => (
+                      {preferenceCategories.map((category) => (
                         <label
-                          key={key}
+                          key={category.key}
                           className="flex items-center gap-3 p-3 bg-muted/30 border border-border rounded cursor-pointer hover:bg-muted/50 transition-colors"
                         >
                           <input
                             type="checkbox"
-                            checked={profile.preferences.includes(key)}
+                            checked={profile.preferences.includes(category.key)}
                             onChange={(e) => {
                               if (e.target.checked) {
-                                setProfile({ ...profile, preferences: [...profile.preferences, key] });
+                                setProfile({ ...profile, preferences: [...profile.preferences, category.key] });
                               } else {
-                                setProfile({ ...profile, preferences: profile.preferences.filter(p => p !== key) });
+                                setProfile({ ...profile, preferences: profile.preferences.filter(p => p !== category.key) });
                               }
                             }}
                             className="w-4 h-4 accent-secondary"
                           />
-                          <span className="text-sm">{t.dashboard.preferences[key]}</span>
+                          <span className="text-sm">
+                            {language === 'nl' ? category.label_nl : category.label_en}
+                          </span>
                         </label>
                       ))}
                     </div>
