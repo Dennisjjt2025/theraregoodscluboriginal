@@ -9,8 +9,9 @@ import { EmailComposer } from '@/components/admin/EmailComposer';
 import { DropEditor } from '@/components/admin/DropEditor';
 import { toast } from 'sonner';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
-import { Plus, Users, Wine, Clock, Check, X, RotateCcw, Minus, FileText, Save, Eye, Mail, MailCheck, Gift, Send, Globe, Lock, Trash2, Pencil, Copy, Settings } from 'lucide-react';
+import { Plus, Users, Wine, Clock, Check, X, RotateCcw, Minus, FileText, Save, Eye, Mail, MailCheck, Gift, Send, Globe, Lock, Trash2, Pencil, Copy, Settings, Heart } from 'lucide-react';
 import { SiteSettingsEditor } from '@/components/admin/SiteSettingsEditor';
+import { PreferencesOverview } from '@/components/admin/PreferencesOverview';
 
 interface Drop {
   id: string;
@@ -575,6 +576,10 @@ export default function Admin() {
                 <Clock className="w-4 h-4" />
                 {t.admin.waitlist}
               </TabsTrigger>
+              <TabsTrigger value="preferences" className="flex items-center gap-2">
+                <Heart className="w-4 h-4" />
+                {language === 'nl' ? 'Voorkeuren' : 'Preferences'}
+              </TabsTrigger>
               <TabsTrigger value="settings" className="flex items-center gap-2">
                 <Settings className="w-4 h-4" />
                 {language === 'nl' ? 'Instellingen' : 'Settings'}
@@ -1113,6 +1118,11 @@ export default function Admin() {
                   )}
                 </div>
               </div>
+            </TabsContent>
+
+            {/* Preferences Tab */}
+            <TabsContent value="preferences" className="space-y-6">
+              <PreferencesOverview />
             </TabsContent>
 
             {/* Settings Tab */}
