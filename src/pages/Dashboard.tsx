@@ -5,7 +5,7 @@ import { useAuth } from '@/contexts/AuthContext';
 import { supabase } from '@/integrations/supabase/client';
 import { Header } from '@/components/Header';
 import { toast } from 'sonner';
-import { Wine, Copy, Check, AlertTriangle, User, Shield, ShoppingBag, MessageSquare } from 'lucide-react';
+import { Wine, Copy, Check, AlertTriangle, User, Shield, ShoppingBag, MessageSquare, Share2 } from 'lucide-react';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { DropsTab } from '@/components/dashboard/DropsTab';
 
@@ -310,14 +310,32 @@ export default function Dashboard() {
 
   const [copiedMessage, setCopiedMessage] = useState<string | null>(null);
 
-  const copyShareMessage = async (code: string) => {
+  const shareOrCopyMessage = async (code: string) => {
     const inviteUrl = `${window.location.origin}/auth?invite=${code}`;
     const fullMessage = `${t.dashboard.inviteShareText}\n\n${inviteUrl}`;
+    
+    // Use native share API if available (mobile)
+    if (navigator.share) {
+      try {
+        await navigator.share({
+          title: 'The Rare Goods Club',
+          text: fullMessage,
+        });
+        return;
+      } catch (err) {
+        // User cancelled or share failed, fall back to copy
+        if ((err as Error).name === 'AbortError') return;
+      }
+    }
+    
+    // Fall back to clipboard copy
     await navigator.clipboard.writeText(fullMessage);
     setCopiedMessage(code);
     toast.success(t.dashboard.messageCopied);
     setTimeout(() => setCopiedMessage(null), 2000);
   };
+
+  const canNativeShare = typeof navigator !== 'undefined' && !!navigator.share;
 
   if (authLoading || loading) {
     return (
@@ -483,12 +501,14 @@ export default function Dashboard() {
                             )}
                           </button>
                           <button
-                            onClick={() => copyShareMessage(code.code)}
+                            onClick={() => shareOrCopyMessage(code.code)}
                             className="text-muted-foreground hover:text-foreground transition-colors p-1"
-                            title={t.dashboard.copyMessage}
+                            title={canNativeShare ? t.dashboard.copyMessage : t.dashboard.copyMessage}
                           >
                             {copiedMessage === code.code ? (
                               <Check className="w-4 h-4 text-secondary" />
+                            ) : canNativeShare ? (
+                              <Share2 className="w-4 h-4" />
                             ) : (
                               <MessageSquare className="w-4 h-4" />
                             )}
