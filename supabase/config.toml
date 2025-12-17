@@ -11,3 +11,6 @@ verify_jwt = false
 
 [functions.send-unsubscribe-confirmation]
 verify_jwt = false
+
+[functions.send-drop-live-notification]
+verify_jwt = false
