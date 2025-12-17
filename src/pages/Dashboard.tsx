@@ -5,7 +5,7 @@ import { useAuth } from '@/contexts/AuthContext';
 import { supabase } from '@/integrations/supabase/client';
 import { Header } from '@/components/Header';
 import { toast } from 'sonner';
-import { Wine, Copy, Check, AlertTriangle, User, Shield, ShoppingBag, MessageSquare, Share2 } from 'lucide-react';
+import { Wine, Copy, Check, AlertTriangle, User, Shield, ShoppingBag, MessageSquare, Share2, Trash2 } from 'lucide-react';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { DropsTab } from '@/components/dashboard/DropsTab';
 
@@ -337,6 +337,28 @@ export default function Dashboard() {
 
   const canNativeShare = typeof navigator !== 'undefined' && !!navigator.share;
 
+  const expiredCodes = inviteCodes.filter(c => !c.used_by && new Date(c.expires_at) < new Date());
+  
+  const deleteExpiredCodes = async () => {
+    if (expiredCodes.length === 0) return;
+    
+    try {
+      const expiredIds = expiredCodes.map(c => c.id);
+      const { error } = await supabase
+        .from('invite_codes')
+        .delete()
+        .in('id', expiredIds);
+      
+      if (error) throw error;
+      
+      toast.success(t.dashboard.expiredDeleted);
+      fetchData();
+    } catch (error) {
+      console.error('Error deleting expired codes:', error);
+      toast.error(t.common.error);
+    }
+  };
+
   if (authLoading || loading) {
     return (
       <div className="min-h-screen bg-background flex items-center justify-center">
@@ -553,6 +575,16 @@ export default function Dashboard() {
                         );
                       })}
                   </div>
+
+                  {expiredCodes.length > 0 && (
+                    <button
+                      onClick={deleteExpiredCodes}
+                      className="flex items-center gap-1.5 text-sm text-muted-foreground hover:text-destructive transition-colors mt-3"
+                    >
+                      <Trash2 className="w-3.5 h-3.5" />
+                      {t.dashboard.deleteExpired} ({expiredCodes.length})
+                    </button>
+                  )}
 
                   {member.invites_remaining === 0 && inviteCodes.length === 0 && (
                     <p className="text-sm text-muted-foreground">{t.dashboard.noInvites}</p>
