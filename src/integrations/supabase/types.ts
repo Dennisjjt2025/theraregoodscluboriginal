@@ -474,12 +474,14 @@ export type Database = {
         Args: { drop_id_param: string }
         Returns: {
           email: string
+          interest_date: string
           member_id: string
           notes: string
           purchased: boolean
           status: string
           strike_count: number
           user_id: string
+          was_interested: boolean
         }[]
       }
       get_member_emails: {
