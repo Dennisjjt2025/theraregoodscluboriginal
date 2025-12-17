@@ -315,6 +315,33 @@ export type Database = {
         }
         Relationships: []
       }
+      site_settings: {
+        Row: {
+          created_at: string | null
+          id: string
+          key: string
+          updated_at: string | null
+          value_en: string | null
+          value_nl: string | null
+        }
+        Insert: {
+          created_at?: string | null
+          id?: string
+          key: string
+          updated_at?: string | null
+          value_en?: string | null
+          value_nl?: string | null
+        }
+        Update: {
+          created_at?: string | null
+          id?: string
+          key?: string
+          updated_at?: string | null
+          value_en?: string | null
+          value_nl?: string | null
+        }
+        Relationships: []
+      }
       user_roles: {
         Row: {
           id: string
