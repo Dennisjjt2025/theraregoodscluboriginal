@@ -1,19 +1,17 @@
 import { serve } from "https://deno.land/std@0.190.0/http/server.ts";
 import { createClient } from "https://esm.sh/@supabase/supabase-js@2.49.1";
-import { z } from "https://deno.land/x/zod@v3.22.4/mod.ts";
 
 const corsHeaders = {
   "Access-Control-Allow-Origin": "*",
   "Access-Control-Allow-Headers": "authorization, x-client-info, apikey, content-type",
 };
 
-// Input validation schemas
-const VerificationRequestSchema = z.object({
-  email: z.string().email().max(255),
-  firstName: z.string().min(1).max(100).regex(/^[a-zA-ZÀ-ÿ\s\-']+$/),
-  userId: z.string().uuid(),
-  language: z.enum(['en', 'nl']).optional().default('en'),
-});
+interface VerificationRequest {
+  email: string;
+  firstName: string;
+  userId: string;
+  language?: string;
+}
 
 interface EmailTemplate {
   subject: string;
@@ -151,19 +149,7 @@ const handler = async (req: Request): Promise<Response> => {
   }
 
   try {
-    // Parse and validate input
-    const rawBody = await req.json();
-    const validationResult = VerificationRequestSchema.safeParse(rawBody);
-    
-    if (!validationResult.success) {
-      console.error("Validation error:", validationResult.error.errors);
-      return new Response(
-        JSON.stringify({ error: 'Invalid input', details: validationResult.error.errors }),
-        { status: 400, headers: { "Content-Type": "application/json", ...corsHeaders } }
-      );
-    }
-
-    const { email, firstName, userId, language } = validationResult.data;
+    const { email, firstName, userId, language = "en" }: VerificationRequest = await req.json();
     
     console.log("Sending verification email to:", email, "language:", language);
 
@@ -174,21 +160,6 @@ const handler = async (req: Request): Promise<Response> => {
       Deno.env.get("SUPABASE_URL") ?? "",
       Deno.env.get("SUPABASE_SERVICE_ROLE_KEY") ?? ""
     );
-
-    // Verify that the userId matches the profile being updated (security check)
-    const { data: profile, error: profileError } = await supabaseAdmin
-      .from("profiles")
-      .select("id")
-      .eq("id", userId)
-      .single();
-
-    if (profileError || !profile) {
-      console.error("Profile not found:", profileError);
-      return new Response(
-        JSON.stringify({ error: 'Profile not found' }),
-        { status: 404, headers: { "Content-Type": "application/json", ...corsHeaders } }
-      );
-    }
 
     const { error: updateError } = await supabaseAdmin
       .from("profiles")

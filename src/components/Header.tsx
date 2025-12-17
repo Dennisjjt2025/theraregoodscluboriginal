@@ -4,7 +4,6 @@ import { Menu, X } from 'lucide-react';
 import { useLanguage } from '@/contexts/LanguageContext';
 import { useAuth } from '@/contexts/AuthContext';
 import { LanguageToggle } from './LanguageToggle';
-import { CartDrawer } from './cart/CartDrawer';
 import { cn } from '@/lib/utils';
 import logo from '@/assets/logo.png';
 
@@ -60,8 +59,6 @@ export function Header() {
             ))}
             
             <LanguageToggle />
-            
-            {user && <CartDrawer />}
 
             {user ? (
               <div className="flex items-center gap-4">
@@ -86,9 +83,8 @@ export function Header() {
           </nav>
 
           {/* Mobile Menu Button */}
-          <div className="flex items-center gap-2 md:hidden">
+          <div className="flex items-center gap-4 md:hidden">
             <LanguageToggle />
-            {user && <CartDrawer />}
             <button
               onClick={() => setIsMenuOpen(!isMenuOpen)}
               className="p-2 text-foreground"
