@@ -193,7 +193,7 @@ export default function Manifesto() {
 
           {/* Main paragraphs */}
           <div 
-            className="space-y-8 text-lg md:text-xl leading-relaxed text-foreground/85 mb-16 animate-slide-up"
+            className="space-y-8 text-lg md:text-xl leading-relaxed text-foreground/85 mb-16 animate-slide-up text-center"
             style={{ animationDelay: '0.3s' }}
           >
             <p>{t.paragraph1}</p>
