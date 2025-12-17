@@ -9,7 +9,8 @@ import { EmailComposer } from '@/components/admin/EmailComposer';
 import { DropEditor } from '@/components/admin/DropEditor';
 import { toast } from 'sonner';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
-import { Plus, Users, Wine, Clock, Check, X, RotateCcw, Minus, FileText, Save, Eye, Mail, MailCheck, Gift, Send, Globe, Lock, Trash2, Pencil, Copy } from 'lucide-react';
+import { Plus, Users, Wine, Clock, Check, X, RotateCcw, Minus, FileText, Save, Eye, Mail, MailCheck, Gift, Send, Globe, Lock, Trash2, Pencil, Copy, Settings } from 'lucide-react';
+import { SiteSettingsEditor } from '@/components/admin/SiteSettingsEditor';
 
 interface Drop {
   id: string;
@@ -73,7 +74,7 @@ interface DropParticipationReport {
 }
 
 export default function Admin() {
-  const { t } = useLanguage();
+  const { t, language } = useLanguage();
   const { user, loading: authLoading } = useAuth();
   const navigate = useNavigate();
 
@@ -557,7 +558,7 @@ export default function Admin() {
           <h1 className="font-serif text-3xl md:text-4xl mb-8">{t.admin.title}</h1>
 
           <Tabs defaultValue="drops" className="space-y-6">
-            <TabsList className="bg-card border border-border">
+            <TabsList className="bg-card border border-border flex-wrap">
               <TabsTrigger value="drops" className="flex items-center gap-2">
                 <Wine className="w-4 h-4" />
                 {t.admin.manageDrop}
@@ -573,6 +574,10 @@ export default function Admin() {
               <TabsTrigger value="waitlist" className="flex items-center gap-2">
                 <Clock className="w-4 h-4" />
                 {t.admin.waitlist}
+              </TabsTrigger>
+              <TabsTrigger value="settings" className="flex items-center gap-2">
+                <Settings className="w-4 h-4" />
+                {language === 'nl' ? 'Instellingen' : 'Settings'}
               </TabsTrigger>
             </TabsList>
 
@@ -1108,6 +1113,11 @@ export default function Admin() {
                   )}
                 </div>
               </div>
+            </TabsContent>
+
+            {/* Settings Tab */}
+            <TabsContent value="settings" className="space-y-6">
+              <SiteSettingsEditor />
             </TabsContent>
           </Tabs>
         </div>

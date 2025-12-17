@@ -5,8 +5,9 @@ import { useAuth } from '@/contexts/AuthContext';
 import { supabase } from '@/integrations/supabase/client';
 import { Header } from '@/components/Header';
 import { toast } from 'sonner';
-import { Wine, Copy, Check, AlertTriangle, ArrowRight, User, Shield, ShoppingBag } from 'lucide-react';
+import { Wine, Copy, Check, AlertTriangle, User, Shield, ShoppingBag } from 'lucide-react';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
+import { DropsTab } from '@/components/dashboard/DropsTab';
 
 interface Member {
   id: string;
@@ -27,8 +28,18 @@ interface Drop {
   title_en: string;
   title_nl: string;
   image_url: string | null;
-  ends_at: string;
+  starts_at: string;
+  ends_at: string | null;
   price: number;
+  quantity_available: number;
+  quantity_sold: number | null;
+  is_active: boolean;
+}
+
+interface SiteSetting {
+  key: string;
+  value_en: string | null;
+  value_nl: string | null;
 }
 
 interface OrderHistory {
@@ -63,7 +74,9 @@ export default function Dashboard() {
 
   const [member, setMember] = useState<Member | null>(null);
   const [inviteCodes, setInviteCodes] = useState<InviteCode[]>([]);
-  const [currentDrop, setCurrentDrop] = useState<Drop | null>(null);
+  const [activeDrop, setActiveDrop] = useState<Drop | null>(null);
+  const [upcomingDrop, setUpcomingDrop] = useState<Drop | null>(null);
+  const [siteSettings, setSiteSettings] = useState<SiteSetting[]>([]);
   const [orders, setOrders] = useState<OrderHistory[]>([]);
   const [profile, setProfile] = useState<Profile>({
     first_name: '',
@@ -145,16 +158,40 @@ export default function Dashboard() {
 
         setInviteCodes(codes || []);
 
-        // Fetch current active drop
-        const { data: dropData } = await supabase
+        // Fetch current active drop (live now - started and not ended or no end date)
+        const now = new Date().toISOString();
+        const { data: activeDropData } = await supabase
           .from('drops')
           .select('*')
           .eq('is_active', true)
-          .gt('ends_at', new Date().toISOString())
-          .lt('starts_at', new Date().toISOString())
+          .eq('is_draft', false)
+          .lt('starts_at', now)
+          .order('starts_at', { ascending: false })
+          .limit(1);
+
+        // Filter to find truly active drop (either no end date or end date in future)
+        const activeDrop = activeDropData?.find(d => !d.ends_at || new Date(d.ends_at) > new Date());
+        setActiveDrop(activeDrop || null);
+
+        // Fetch upcoming drop (starts in future)
+        const { data: upcomingDropData } = await supabase
+          .from('drops')
+          .select('*')
+          .eq('is_active', true)
+          .eq('is_draft', false)
+          .gt('starts_at', now)
+          .order('starts_at', { ascending: true })
+          .limit(1)
           .maybeSingle();
 
-        setCurrentDrop(dropData);
+        setUpcomingDrop(upcomingDropData);
+
+        // Fetch site settings
+        const { data: settingsData } = await supabase
+          .from('site_settings')
+          .select('key, value_en, value_nl');
+
+        setSiteSettings(settingsData || []);
 
         // Fetch order history (purchased items)
         const { data: orderData } = await supabase
@@ -305,12 +342,16 @@ export default function Dashboard() {
             )}
           </div>
 
-          <Tabs defaultValue="overview" className="space-y-6">
-            <TabsList className="grid w-full grid-cols-3 max-w-lg">
+          <Tabs defaultValue="drops" className="space-y-6">
+            <TabsList className="grid w-full grid-cols-4 max-w-xl">
+              <TabsTrigger value="drops" className="flex items-center gap-2">
+                <Wine className="w-4 h-4" />
+                Drops
+              </TabsTrigger>
               <TabsTrigger value="overview">Overview</TabsTrigger>
               <TabsTrigger value="orders" className="flex items-center gap-2">
                 <ShoppingBag className="w-4 h-4" />
-                {t.dashboard.purchaseHistory}
+                {language === 'nl' ? 'Bestellingen' : 'Orders'}
               </TabsTrigger>
               <TabsTrigger value="profile" className="flex items-center gap-2">
                 <User className="w-4 h-4" />
@@ -320,6 +361,15 @@ export default function Dashboard() {
                 )}
               </TabsTrigger>
             </TabsList>
+
+            {/* Drops Tab - Default landing */}
+            <TabsContent value="drops">
+              <DropsTab
+                activeDrop={activeDrop}
+                upcomingDrop={upcomingDrop}
+                settings={siteSettings}
+              />
+            </TabsContent>
 
             <TabsContent value="overview" className="space-y-6">
               {isProfileIncomplete && (
@@ -362,32 +412,6 @@ export default function Dashboard() {
                     </div>
                   )}
                 </div>
-
-                {/* Current Drop Card */}
-                <div className="bg-card border border-border p-6">
-                  <h2 className="font-serif text-xl mb-4">{t.dashboard.currentDrop}</h2>
-                  {currentDrop ? (
-                    <div className="space-y-4">
-                      {currentDrop.image_url && (
-                        <img
-                          src={currentDrop.image_url}
-                          alt={language === 'nl' ? currentDrop.title_nl : currentDrop.title_en}
-                          className="w-full h-40 object-cover"
-                        />
-                      )}
-                      <h3 className="font-serif text-lg">
-                        {language === 'nl' ? currentDrop.title_nl : currentDrop.title_en}
-                      </h3>
-                      <Link to="/drop" className="btn-luxury inline-flex items-center gap-2">
-                        {t.dashboard.viewDrop}
-                        <ArrowRight className="w-4 h-4" />
-                      </Link>
-                    </div>
-                  ) : (
-                    <p className="text-muted-foreground">{t.dashboard.noDrop}</p>
-                  )}
-                </div>
-
                 {/* Invites Card */}
                 <div className="bg-card border border-border p-6">
                   <h2 className="font-serif text-xl mb-4">{t.dashboard.invites}</h2>
