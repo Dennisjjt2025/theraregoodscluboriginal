@@ -75,6 +75,73 @@ function replacePlaceholders(text: string, replacements: Record<string, string>)
   return result;
 }
 
+function getBaseEmailTemplate(content: string, language: string, siteUrl: string): string {
+  const unsubscribeText = language === "nl" ? "Uitschrijven" : "Unsubscribe";
+  const unsubscribeUrl = `${siteUrl}/unsubscribe`;
+  
+  return `
+    <!DOCTYPE html>
+    <html>
+    <head>
+      <meta charset="utf-8">
+      <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    </head>
+    <body style="margin: 0; padding: 0; background-color: #FAF9F6; font-family: Georgia, 'Times New Roman', serif;">
+      <table role="presentation" style="width: 100%; border-collapse: collapse;">
+        <tr>
+          <td align="center" style="padding: 40px 20px;">
+            <table role="presentation" style="max-width: 600px; width: 100%; border-collapse: collapse;">
+              <!-- Header with Logo -->
+              <tr>
+                <td align="center" style="padding-bottom: 30px;">
+                  <img src="${siteUrl}/logo.png" alt="The Rare Goods Club" style="height: 60px; width: auto;" />
+                </td>
+              </tr>
+              
+              <!-- Main Content Card -->
+              <tr>
+                <td style="background-color: #FFFFFF; border: 1px solid #E7E5E4;">
+                  ${content}
+                </td>
+              </tr>
+              
+              <!-- Footer with Wax Seal -->
+              <tr>
+                <td align="center" style="padding-top: 30px;">
+                  <table role="presentation" style="border-collapse: collapse;">
+                    <tr>
+                      <td align="center">
+                        <div style="width: 60px; height: 60px; background-color: #722F37; border-radius: 50%; text-align: center;">
+                          <span style="color: #FAF9F6; font-size: 24px; font-weight: bold; line-height: 60px; display: block;">R</span>
+                        </div>
+                      </td>
+                    </tr>
+                    <tr>
+                      <td align="center" style="padding-top: 20px;">
+                        <p style="color: #78716C; font-size: 12px; margin: 0; letter-spacing: 1px;">
+                          © ${new Date().getFullYear()} The Rare Goods Club
+                        </p>
+                      </td>
+                    </tr>
+                    <tr>
+                      <td align="center" style="padding-top: 15px;">
+                        <a href="${unsubscribeUrl}" style="color: #78716C; font-size: 11px; text-decoration: underline;">
+                          ${unsubscribeText}
+                        </a>
+                      </td>
+                    </tr>
+                  </table>
+                </td>
+              </tr>
+            </table>
+          </td>
+        </tr>
+      </table>
+    </body>
+    </html>
+  `;
+}
+
 const handler = async (req: Request): Promise<Response> => {
   if (req.method === "OPTIONS") {
     return new Response(null, { headers: corsHeaders });
@@ -124,8 +191,30 @@ const handler = async (req: Request): Promise<Response> => {
     // Convert message to HTML paragraphs
     const messageHtml = emailMessage
       .split("\n\n")
-      .map((paragraph) => `<p style="margin: 0 0 20px; font-size: 16px; line-height: 1.6; color: #4a4a4a;">${paragraph.replace(/\n/g, "<br>")}</p>`)
+      .map((paragraph) => `<p style="margin: 0 0 20px; font-size: 16px; line-height: 1.6; color: #44403C;">${paragraph.replace(/\n/g, "<br>")}</p>`)
       .join("");
+
+    const contentHtml = `
+      <div style="padding: 40px;">
+        ${messageHtml}
+        <table role="presentation" style="width: 100%; border-collapse: collapse;">
+          <tr>
+            <td align="center">
+              <a href="${verificationUrl}" style="display: inline-block; padding: 14px 32px; background-color: #1a1a1a; color: #ffffff; text-decoration: none; font-size: 14px; letter-spacing: 1px; border: none;">
+                ${language === "nl" ? "BEVESTIG E-MAIL" : "VERIFY EMAIL"}
+              </a>
+            </td>
+          </tr>
+        </table>
+        <p style="margin: 30px 0 0; font-size: 14px; line-height: 1.6; color: #78716C;">
+          ${language === "nl" 
+            ? "Deze link verloopt over 24 uur. Als je geen account hebt aangemaakt bij The Rare Goods Club, kun je deze e-mail negeren."
+            : "This link will expire in 24 hours. If you didn't create an account with The Rare Goods Club, you can safely ignore this email."}
+        </p>
+      </div>
+    `;
+
+    const htmlEmail = getBaseEmailTemplate(contentHtml, language, siteUrl);
 
     const resendApiKey = Deno.env.get("RESEND_API_KEY");
     
@@ -139,58 +228,7 @@ const handler = async (req: Request): Promise<Response> => {
         from: "The Rare Goods Club <onboarding@resend.dev>",
         to: [email],
         subject: emailSubject,
-        html: `
-          <!DOCTYPE html>
-          <html>
-          <head>
-            <meta charset="utf-8">
-            <meta name="viewport" content="width=device-width, initial-scale=1.0">
-          </head>
-          <body style="margin: 0; padding: 0; background-color: #f8f6f3; font-family: Georgia, 'Times New Roman', serif;">
-            <table role="presentation" style="width: 100%; border-collapse: collapse;">
-              <tr>
-                <td align="center" style="padding: 40px 20px;">
-                  <table role="presentation" style="max-width: 500px; width: 100%; border-collapse: collapse; background-color: #ffffff; border: 1px solid #e5e2de;">
-                    <tr>
-                      <td style="padding: 40px 40px 30px; text-align: center; border-bottom: 1px solid #e5e2de;">
-                        <h1 style="margin: 0; font-size: 24px; font-weight: normal; color: #1a1a1a; letter-spacing: 2px;">
-                          THE RARE GOODS CLUB
-                        </h1>
-                      </td>
-                    </tr>
-                    <tr>
-                      <td style="padding: 40px;">
-                        ${messageHtml}
-                        <table role="presentation" style="width: 100%; border-collapse: collapse;">
-                          <tr>
-                            <td align="center">
-                              <a href="${verificationUrl}" style="display: inline-block; padding: 14px 32px; background-color: #1a1a1a; color: #ffffff; text-decoration: none; font-size: 14px; letter-spacing: 1px; border: none;">
-                                ${language === "nl" ? "BEVESTIG E-MAIL" : "VERIFY EMAIL"}
-                              </a>
-                            </td>
-                          </tr>
-                        </table>
-                        <p style="margin: 30px 0 0; font-size: 14px; line-height: 1.6; color: #888888;">
-                          ${language === "nl" 
-                            ? "Deze link verloopt over 24 uur. Als je geen account hebt aangemaakt bij The Rare Goods Club, kun je deze e-mail negeren."
-                            : "This link will expire in 24 hours. If you didn't create an account with The Rare Goods Club, you can safely ignore this email."}
-                        </p>
-                      </td>
-                    </tr>
-                    <tr>
-                      <td style="padding: 30px 40px; background-color: #f8f6f3; text-align: center; border-top: 1px solid #e5e2de;">
-                        <p style="margin: 0; font-size: 12px; color: #888888;">
-                          © ${new Date().getFullYear()} The Rare Goods Club. All rights reserved.
-                        </p>
-                      </td>
-                    </tr>
-                  </table>
-                </td>
-              </tr>
-            </table>
-          </body>
-          </html>
-        `,
+        html: htmlEmail,
       }),
     });
 
