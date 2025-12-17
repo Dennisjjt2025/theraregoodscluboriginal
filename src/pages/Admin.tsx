@@ -633,39 +633,38 @@ export default function Admin() {
           <h1 className="font-serif text-3xl md:text-4xl mb-8">{t.admin.title}</h1>
 
           <Tabs defaultValue="drops" className="space-y-6">
-            <div className="overflow-x-auto -mx-4 px-4 pb-2">
-              <TabsList className="bg-card border border-border flex w-max min-w-full sm:w-full sm:flex-wrap">
-                <TabsTrigger value="drops" className="flex items-center gap-2 min-h-[44px] px-3 sm:px-4">
-                  <Wine className="w-4 h-4" />
-                  <span className="hidden sm:inline">{t.admin.manageDrop}</span>
-                  <span className="sm:hidden">Drops</span>
-                </TabsTrigger>
-                <TabsTrigger value="members" className="flex items-center gap-2 min-h-[44px] px-3 sm:px-4">
-                  <Users className="w-4 h-4" />
-                  <span className="hidden sm:inline">{t.admin.manageMembers}</span>
-                  <span className="sm:hidden">Leden</span>
-                </TabsTrigger>
-                <TabsTrigger value="report" className="flex items-center gap-2 min-h-[44px] px-3 sm:px-4">
-                  <FileText className="w-4 h-4" />
-                  <span className="hidden sm:inline">{t.admin.dropReport}</span>
-                  <span className="sm:hidden">Report</span>
-                </TabsTrigger>
-                <TabsTrigger value="waitlist" className="flex items-center gap-2 min-h-[44px] px-3 sm:px-4">
-                  <Clock className="w-4 h-4" />
-                  <span className="hidden sm:inline">{t.admin.waitlist}</span>
-                  <span className="sm:hidden">Wacht</span>
-                </TabsTrigger>
-                <TabsTrigger value="preferences" className="flex items-center gap-2 min-h-[44px] px-3 sm:px-4">
-                  <Heart className="w-4 h-4" />
-                  <span className="hidden sm:inline">{language === 'nl' ? 'Voorkeuren' : 'Preferences'}</span>
-                  <span className="sm:hidden">Pref</span>
-                </TabsTrigger>
-                <TabsTrigger value="settings" className="flex items-center gap-2 min-h-[44px] px-3 sm:px-4">
-                  <MessageSquare className="w-4 h-4" />
-                  <span className="hidden sm:inline">{language === 'nl' ? 'Berichten' : 'Messages'}</span>
-                  <span className="sm:hidden">Msg</span>
-                </TabsTrigger>
-              </TabsList>
+            <div className="relative">
+              {/* Scroll hint gradient */}
+              <div className="absolute inset-y-0 right-0 w-8 bg-gradient-to-l from-background to-transparent pointer-events-none z-10 sm:hidden" />
+              
+              <div className="overflow-x-auto scrollbar-hide -mx-4 px-4 pb-2">
+                <TabsList className="inline-flex h-12 items-center gap-1 rounded-lg bg-muted/50 p-1.5 text-muted-foreground w-max">
+                  <TabsTrigger value="drops" className="inline-flex items-center gap-2 whitespace-nowrap rounded-md px-4 py-2.5 text-sm font-medium transition-all hover:bg-background/60 data-[state=active]:bg-background data-[state=active]:text-foreground data-[state=active]:shadow-sm">
+                    <Wine className="w-4 h-4 flex-shrink-0" />
+                    <span>{t.admin.manageDrop}</span>
+                  </TabsTrigger>
+                  <TabsTrigger value="members" className="inline-flex items-center gap-2 whitespace-nowrap rounded-md px-4 py-2.5 text-sm font-medium transition-all hover:bg-background/60 data-[state=active]:bg-background data-[state=active]:text-foreground data-[state=active]:shadow-sm">
+                    <Users className="w-4 h-4 flex-shrink-0" />
+                    <span>{t.admin.manageMembers}</span>
+                  </TabsTrigger>
+                  <TabsTrigger value="report" className="inline-flex items-center gap-2 whitespace-nowrap rounded-md px-4 py-2.5 text-sm font-medium transition-all hover:bg-background/60 data-[state=active]:bg-background data-[state=active]:text-foreground data-[state=active]:shadow-sm">
+                    <FileText className="w-4 h-4 flex-shrink-0" />
+                    <span>{t.admin.dropReport}</span>
+                  </TabsTrigger>
+                  <TabsTrigger value="waitlist" className="inline-flex items-center gap-2 whitespace-nowrap rounded-md px-4 py-2.5 text-sm font-medium transition-all hover:bg-background/60 data-[state=active]:bg-background data-[state=active]:text-foreground data-[state=active]:shadow-sm">
+                    <Clock className="w-4 h-4 flex-shrink-0" />
+                    <span>{t.admin.waitlist}</span>
+                  </TabsTrigger>
+                  <TabsTrigger value="preferences" className="inline-flex items-center gap-2 whitespace-nowrap rounded-md px-4 py-2.5 text-sm font-medium transition-all hover:bg-background/60 data-[state=active]:bg-background data-[state=active]:text-foreground data-[state=active]:shadow-sm">
+                    <Heart className="w-4 h-4 flex-shrink-0" />
+                    <span>{language === 'nl' ? 'Voorkeuren' : 'Preferences'}</span>
+                  </TabsTrigger>
+                  <TabsTrigger value="settings" className="inline-flex items-center gap-2 whitespace-nowrap rounded-md px-4 py-2.5 text-sm font-medium transition-all hover:bg-background/60 data-[state=active]:bg-background data-[state=active]:text-foreground data-[state=active]:shadow-sm">
+                    <MessageSquare className="w-4 h-4 flex-shrink-0" />
+                    <span>{language === 'nl' ? 'Berichten' : 'Messages'}</span>
+                  </TabsTrigger>
+                </TabsList>
+              </div>
             </div>
 
             {/* Drops Tab */}
