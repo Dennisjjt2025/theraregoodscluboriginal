@@ -2,7 +2,8 @@ import { useState, useEffect } from 'react';
 import { supabase } from '@/integrations/supabase/client';
 import { useLanguage } from '@/contexts/LanguageContext';
 import { toast } from 'sonner';
-import { Save, Globe } from 'lucide-react';
+import { Save, Globe, MessageSquare, UserPlus, Mail, LogOut, ChevronDown, ChevronRight, LayoutDashboard } from 'lucide-react';
+import { Collapsible, CollapsibleContent, CollapsibleTrigger } from '@/components/ui/collapsible';
 
 interface SiteSetting {
   id: string;
@@ -11,12 +12,76 @@ interface SiteSetting {
   value_nl: string | null;
 }
 
+interface SettingSection {
+  id: string;
+  title: string;
+  description: string;
+  icon: React.ReactNode;
+  keys: string[];
+  placeholders?: Record<string, string>;
+}
+
 export function SiteSettingsEditor() {
   const { t, language: currentLang } = useLanguage();
   const [settings, setSettings] = useState<SiteSetting[]>([]);
   const [loading, setLoading] = useState(true);
   const [saving, setSaving] = useState(false);
   const [editLang, setEditLang] = useState<'en' | 'nl'>('en');
+  const [openSections, setOpenSections] = useState<Record<string, boolean>>({
+    dashboard: true,
+    welcome: false,
+    waitlist: false,
+    unsubscribe: false,
+  });
+
+  const sections: SettingSection[] = [
+    {
+      id: 'dashboard',
+      title: currentLang === 'nl' ? 'Dashboard Berichten' : 'Dashboard Messages',
+      description: currentLang === 'nl' 
+        ? 'Berichten die leden zien op hun dashboard' 
+        : 'Messages that members see on their dashboard',
+      icon: <LayoutDashboard className="w-5 h-5" />,
+      keys: ['drop_teaser_title', 'drop_teaser_message', 'no_drops_title', 'no_drops_message'],
+    },
+    {
+      id: 'welcome',
+      title: currentLang === 'nl' ? 'Welkom & Verificatie' : 'Welcome & Verification',
+      description: currentLang === 'nl' 
+        ? 'E-mail die nieuwe leden ontvangen na registratie' 
+        : 'Email that new members receive after registration',
+      icon: <UserPlus className="w-5 h-5" />,
+      keys: ['welcome_email_subject', 'welcome_email_message'],
+      placeholders: {
+        '{{firstName}}': currentLang === 'nl' ? 'Voornaam van het lid' : 'Member\'s first name',
+        '{{verifyLink}}': currentLang === 'nl' ? 'Verificatie link (automatisch)' : 'Verification link (automatic)',
+      },
+    },
+    {
+      id: 'waitlist',
+      title: currentLang === 'nl' ? 'Wachtlijst Bevestiging' : 'Waitlist Confirmation',
+      description: currentLang === 'nl' 
+        ? 'E-mail die mensen ontvangen na aanmelding op de wachtlijst' 
+        : 'Email that people receive after joining the waitlist',
+      icon: <Mail className="w-5 h-5" />,
+      keys: ['waitlist_email_subject', 'waitlist_email_message'],
+      placeholders: {
+        '{{name}}': currentLang === 'nl' ? 'Naam van de aanmelder' : 'Name of the subscriber',
+      },
+    },
+    {
+      id: 'unsubscribe',
+      title: currentLang === 'nl' ? 'Uitschrijf Bevestiging' : 'Unsubscribe Confirmation',
+      description: currentLang === 'nl' 
+        ? 'E-mail die mensen ontvangen na uitschrijven' 
+        : 'Email that people receive after unsubscribing',
+      icon: <LogOut className="w-5 h-5" />,
+      keys: ['unsubscribe_email_subject', 'unsubscribe_email_message'],
+      placeholders: {
+        '{{name}}': currentLang === 'nl' ? 'Naam van de persoon' : 'Person\'s name',
+      },
+    },
+  ];
 
   useEffect(() => {
     fetchSettings();
@@ -70,6 +135,7 @@ export function SiteSettingsEditor() {
 
   const getSettingLabel = (key: string): { label: string; description: string } => {
     const labels: Record<string, { label: string; description: string }> = {
+      // Dashboard messages
       drop_teaser_title: {
         label: currentLang === 'nl' ? 'Teaser Titel' : 'Teaser Title',
         description: currentLang === 'nl' 
@@ -94,8 +160,54 @@ export function SiteSettingsEditor() {
           ? 'Welkomstbericht voor leden wanneer er geen drops zijn' 
           : 'Welcome message for members when there are no drops',
       },
+      // Welcome email
+      welcome_email_subject: {
+        label: currentLang === 'nl' ? 'E-mail Onderwerp' : 'Email Subject',
+        description: currentLang === 'nl' 
+          ? 'Onderwerp van de welkomst-/verificatie email' 
+          : 'Subject line of the welcome/verification email',
+      },
+      welcome_email_message: {
+        label: currentLang === 'nl' ? 'E-mail Bericht' : 'Email Message',
+        description: currentLang === 'nl' 
+          ? 'Inhoud van de welkomst-/verificatie email' 
+          : 'Content of the welcome/verification email',
+      },
+      // Waitlist email
+      waitlist_email_subject: {
+        label: currentLang === 'nl' ? 'E-mail Onderwerp' : 'Email Subject',
+        description: currentLang === 'nl' 
+          ? 'Onderwerp van de wachtlijst bevestigingsmail' 
+          : 'Subject line of the waitlist confirmation email',
+      },
+      waitlist_email_message: {
+        label: currentLang === 'nl' ? 'E-mail Bericht' : 'Email Message',
+        description: currentLang === 'nl' 
+          ? 'Inhoud van de wachtlijst bevestigingsmail' 
+          : 'Content of the waitlist confirmation email',
+      },
+      // Unsubscribe email
+      unsubscribe_email_subject: {
+        label: currentLang === 'nl' ? 'E-mail Onderwerp' : 'Email Subject',
+        description: currentLang === 'nl' 
+          ? 'Onderwerp van de uitschrijf bevestigingsmail' 
+          : 'Subject line of the unsubscribe confirmation email',
+      },
+      unsubscribe_email_message: {
+        label: currentLang === 'nl' ? 'E-mail Bericht' : 'Email Message',
+        description: currentLang === 'nl' 
+          ? 'Inhoud van de uitschrijf bevestigingsmail' 
+          : 'Content of the unsubscribe confirmation email',
+      },
     };
     return labels[key] || { label: key, description: '' };
+  };
+
+  const toggleSection = (sectionId: string) => {
+    setOpenSections(prev => ({
+      ...prev,
+      [sectionId]: !prev[sectionId],
+    }));
   };
 
   if (loading) {
@@ -111,13 +223,14 @@ export function SiteSettingsEditor() {
       {/* Header */}
       <div className="flex items-center justify-between">
         <div>
-          <h2 className="font-serif text-xl">
-            {currentLang === 'nl' ? 'Site Instellingen' : 'Site Settings'}
+          <h2 className="font-serif text-xl flex items-center gap-2">
+            <MessageSquare className="w-5 h-5" />
+            {currentLang === 'nl' ? 'Berichten Instellingen' : 'Message Settings'}
           </h2>
           <p className="text-sm text-muted-foreground mt-1">
             {currentLang === 'nl' 
-              ? 'Configureer berichten die leden zien op hun dashboard' 
-              : 'Configure messages that members see on their dashboard'}
+              ? 'Beheer alle berichten en e-mailtemplates op één plek' 
+              : 'Manage all messages and email templates in one place'}
           </p>
         </div>
         <button
@@ -152,37 +265,92 @@ export function SiteSettingsEditor() {
         </button>
       </div>
 
-      {/* Settings Form */}
-      <div className="bg-card border border-border divide-y divide-border">
-        {settings.map((setting) => {
-          const { label, description } = getSettingLabel(setting.key);
-          const value = editLang === 'en' ? setting.value_en : setting.value_nl;
-          const field = editLang === 'en' ? 'value_en' : 'value_nl';
-          const isTextArea = setting.key.includes('message');
+      {/* Sections */}
+      <div className="space-y-4">
+        {sections.map((section) => {
+          const sectionSettings = settings.filter(s => section.keys.includes(s.key));
+          const isOpen = openSections[section.id];
 
           return (
-            <div key={setting.id} className="p-6">
-              <label className="block">
-                <span className="font-medium">{label}</span>
-                <span className="block text-sm text-muted-foreground mb-3">{description}</span>
-                {isTextArea ? (
-                  <textarea
-                    value={value || ''}
-                    onChange={(e) => updateSetting(setting.key, field, e.target.value)}
-                    className="input-luxury w-full min-h-[100px] resize-y"
-                    placeholder={`${label} (${editLang.toUpperCase()})`}
-                  />
+            <Collapsible
+              key={section.id}
+              open={isOpen}
+              onOpenChange={() => toggleSection(section.id)}
+              className="bg-card border border-border"
+            >
+              <CollapsibleTrigger className="w-full p-4 flex items-center justify-between hover:bg-muted/50 transition-colors">
+                <div className="flex items-center gap-3">
+                  <div className="text-muted-foreground">{section.icon}</div>
+                  <div className="text-left">
+                    <h3 className="font-medium">{section.title}</h3>
+                    <p className="text-sm text-muted-foreground">{section.description}</p>
+                  </div>
+                </div>
+                {isOpen ? (
+                  <ChevronDown className="w-5 h-5 text-muted-foreground" />
                 ) : (
-                  <input
-                    type="text"
-                    value={value || ''}
-                    onChange={(e) => updateSetting(setting.key, field, e.target.value)}
-                    className="input-luxury w-full"
-                    placeholder={`${label} (${editLang.toUpperCase()})`}
-                  />
+                  <ChevronRight className="w-5 h-5 text-muted-foreground" />
                 )}
-              </label>
-            </div>
+              </CollapsibleTrigger>
+
+              <CollapsibleContent>
+                <div className="border-t border-border divide-y divide-border">
+                  {/* Placeholders info */}
+                  {section.placeholders && (
+                    <div className="p-4 bg-muted/30">
+                      <p className="text-sm font-medium mb-2">
+                        {currentLang === 'nl' ? 'Beschikbare placeholders:' : 'Available placeholders:'}
+                      </p>
+                      <div className="flex flex-wrap gap-2">
+                        {Object.entries(section.placeholders).map(([placeholder, desc]) => (
+                          <span
+                            key={placeholder}
+                            className="inline-flex items-center gap-1 px-2 py-1 bg-background border border-border text-xs"
+                            title={desc}
+                          >
+                            <code className="text-primary">{placeholder}</code>
+                            <span className="text-muted-foreground">- {desc}</span>
+                          </span>
+                        ))}
+                      </div>
+                    </div>
+                  )}
+
+                  {/* Settings fields */}
+                  {sectionSettings.map((setting) => {
+                    const { label, description } = getSettingLabel(setting.key);
+                    const value = editLang === 'en' ? setting.value_en : setting.value_nl;
+                    const field = editLang === 'en' ? 'value_en' : 'value_nl';
+                    const isTextArea = setting.key.includes('message');
+
+                    return (
+                      <div key={setting.id} className="p-4">
+                        <label className="block">
+                          <span className="font-medium">{label}</span>
+                          <span className="block text-sm text-muted-foreground mb-3">{description}</span>
+                          {isTextArea ? (
+                            <textarea
+                              value={value || ''}
+                              onChange={(e) => updateSetting(setting.key, field, e.target.value)}
+                              className="input-luxury w-full min-h-[120px] resize-y"
+                              placeholder={`${label} (${editLang.toUpperCase()})`}
+                            />
+                          ) : (
+                            <input
+                              type="text"
+                              value={value || ''}
+                              onChange={(e) => updateSetting(setting.key, field, e.target.value)}
+                              className="input-luxury w-full"
+                              placeholder={`${label} (${editLang.toUpperCase()})`}
+                            />
+                          )}
+                        </label>
+                      </div>
+                    );
+                  })}
+                </div>
+              </CollapsibleContent>
+            </Collapsible>
           );
         })}
       </div>
@@ -190,7 +358,7 @@ export function SiteSettingsEditor() {
       {/* Preview Section */}
       <div className="bg-muted/30 border border-border p-6">
         <h3 className="font-serif text-lg mb-4">
-          {currentLang === 'nl' ? 'Voorbeeld' : 'Preview'}
+          {currentLang === 'nl' ? 'Preview: Dashboard Berichten' : 'Preview: Dashboard Messages'}
         </h3>
         <div className="grid md:grid-cols-2 gap-6">
           <div className="bg-card border border-border p-4">

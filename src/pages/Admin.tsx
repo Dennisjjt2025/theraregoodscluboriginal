@@ -9,7 +9,7 @@ import { EmailComposer } from '@/components/admin/EmailComposer';
 import { DropEditor } from '@/components/admin/DropEditor';
 import { toast } from 'sonner';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
-import { Plus, Users, Wine, Clock, Check, X, RotateCcw, Minus, FileText, Save, Eye, Mail, MailCheck, Gift, Send, Globe, Lock, Trash2, Pencil, Copy, Settings, Heart } from 'lucide-react';
+import { Plus, Users, Wine, Clock, Check, X, RotateCcw, Minus, FileText, Save, Eye, Mail, MailCheck, Gift, Send, Globe, Lock, Trash2, Pencil, Copy, MessageSquare, Heart } from 'lucide-react';
 import { SiteSettingsEditor } from '@/components/admin/SiteSettingsEditor';
 import { PreferencesOverview } from '@/components/admin/PreferencesOverview';
 import { PreferenceCategoriesManager } from '@/components/admin/PreferenceCategoriesManager';
@@ -582,8 +582,8 @@ export default function Admin() {
                 {language === 'nl' ? 'Voorkeuren' : 'Preferences'}
               </TabsTrigger>
               <TabsTrigger value="settings" className="flex items-center gap-2">
-                <Settings className="w-4 h-4" />
-                {language === 'nl' ? 'Instellingen' : 'Settings'}
+                <MessageSquare className="w-4 h-4" />
+                {language === 'nl' ? 'Berichten' : 'Messages'}
               </TabsTrigger>
             </TabsList>
 
