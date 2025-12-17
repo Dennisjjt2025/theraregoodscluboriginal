@@ -8,3 +8,6 @@ verify_jwt = false
 
 [functions.send-waitlist-confirmation]
 verify_jwt = false
+
+[functions.send-unsubscribe-confirmation]
+verify_jwt = false
