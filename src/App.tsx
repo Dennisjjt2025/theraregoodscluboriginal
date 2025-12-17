@@ -16,6 +16,7 @@ import Archive from "./pages/Archive";
 import ArchiveDropDetail from "./pages/ArchiveDropDetail";
 import Admin from "./pages/Admin";
 import NotFound from "./pages/NotFound";
+import Unsubscribe from "./pages/Unsubscribe";
 
 const queryClient = new QueryClient();
 
@@ -38,6 +39,7 @@ const App = () => (
               <Route path="/archive" element={<Archive />} />
               <Route path="/archive/:dropId" element={<ArchiveDropDetail />} />
               <Route path="/admin" element={<Admin />} />
+              <Route path="/unsubscribe" element={<Unsubscribe />} />
               {/* ADD ALL CUSTOM ROUTES ABOVE THE CATCH-ALL "*" ROUTE */}
               <Route path="*" element={<NotFound />} />
             </Routes>
