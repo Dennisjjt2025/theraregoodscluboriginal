@@ -8,6 +8,7 @@ import { AuthProvider } from "@/contexts/AuthContext";
 import Index from "./pages/Index";
 import Auth from "./pages/Auth";
 import Dashboard from "./pages/Dashboard";
+import Membership from "./pages/Membership";
 import Drop from "./pages/Drop";
 import DropPreview from "./pages/DropPreview";
 import Manifesto from "./pages/Manifesto";
@@ -29,6 +30,7 @@ const App = () => (
             <Routes>
               <Route path="/" element={<Index />} />
               <Route path="/manifesto" element={<Manifesto />} />
+              <Route path="/membership" element={<Membership />} />
               <Route path="/auth" element={<Auth />} />
               <Route path="/dashboard" element={<Dashboard />} />
               <Route path="/drop" element={<Drop />} />

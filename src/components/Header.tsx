@@ -17,6 +17,7 @@ export function Header() {
 
   const publicLinks = [
     { href: '/manifesto', label: language === 'nl' ? 'Ons Verhaal' : 'Our Story' },
+    { href: '/membership', label: language === 'nl' ? 'Lidmaatschap' : 'Membership' },
   ];
 
   const memberLinks = user ? [
