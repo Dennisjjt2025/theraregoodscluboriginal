@@ -297,8 +297,9 @@ export function SiteSettingsEditor() {
         body: {
           email: user.email,
           name: 'Test User',
+          firstName: 'Test User',
+          userId: user.id,
           language: editLang,
-          ...(sectionId === 'welcome' && { verificationUrl: window.location.origin }),
         },
       });
 
