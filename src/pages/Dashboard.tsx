@@ -5,7 +5,7 @@ import { useAuth } from '@/contexts/AuthContext';
 import { supabase } from '@/integrations/supabase/client';
 import { Header } from '@/components/Header';
 import { toast } from 'sonner';
-import { Wine, Copy, Check, AlertTriangle, User, Shield, ShoppingBag } from 'lucide-react';
+import { Wine, Copy, Check, AlertTriangle, User, Shield, ShoppingBag, MessageSquare } from 'lucide-react';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { DropsTab } from '@/components/dashboard/DropsTab';
 
@@ -308,6 +308,17 @@ export default function Dashboard() {
     setTimeout(() => setCopiedCode(null), 2000);
   };
 
+  const [copiedMessage, setCopiedMessage] = useState<string | null>(null);
+
+  const copyShareMessage = async (code: string) => {
+    const inviteUrl = `${window.location.origin}/auth?invite=${code}`;
+    const fullMessage = `${t.dashboard.inviteShareText}\n\n${inviteUrl}`;
+    await navigator.clipboard.writeText(fullMessage);
+    setCopiedMessage(code);
+    toast.success(t.dashboard.messageCopied);
+    setTimeout(() => setCopiedMessage(null), 2000);
+  };
+
   if (authLoading || loading) {
     return (
       <div className="min-h-screen bg-background flex items-center justify-center">
@@ -458,17 +469,31 @@ export default function Dashboard() {
                         key={code.id}
                         className="flex items-center justify-between bg-muted/50 px-3 py-2 text-sm"
                       >
-                        <code className="font-mono">{code.code}</code>
-                        <button
-                          onClick={() => copyToClipboard(code.code)}
-                          className="text-muted-foreground hover:text-foreground transition-colors"
-                        >
-                          {copiedCode === code.code ? (
-                            <Check className="w-4 h-4 text-secondary" />
-                          ) : (
-                            <Copy className="w-4 h-4" />
-                          )}
-                        </button>
+                        <code className="font-mono text-xs sm:text-sm">{code.code}</code>
+                        <div className="flex items-center gap-1">
+                          <button
+                            onClick={() => copyToClipboard(code.code)}
+                            className="text-muted-foreground hover:text-foreground transition-colors p-1"
+                            title={t.dashboard.copyLink}
+                          >
+                            {copiedCode === code.code ? (
+                              <Check className="w-4 h-4 text-secondary" />
+                            ) : (
+                              <Copy className="w-4 h-4" />
+                            )}
+                          </button>
+                          <button
+                            onClick={() => copyShareMessage(code.code)}
+                            className="text-muted-foreground hover:text-foreground transition-colors p-1"
+                            title={t.dashboard.copyMessage}
+                          >
+                            {copiedMessage === code.code ? (
+                              <Check className="w-4 h-4 text-secondary" />
+                            ) : (
+                              <MessageSquare className="w-4 h-4" />
+                            )}
+                          </button>
+                        </div>
                       </div>
                     ))}
                   </div>
