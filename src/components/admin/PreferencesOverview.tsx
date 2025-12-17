@@ -5,20 +5,16 @@ import { BarChart3 } from 'lucide-react';
 
 interface PreferenceStats {
   key: string;
+  label: string;
   count: number;
   percentage: number;
 }
 
-const PREFERENCE_LABELS: Record<string, { en: string; nl: string }> = {
-  wine_spirits: { en: 'Wine & Spirits', nl: 'Wijn & Gedistilleerd' },
-  art_prints: { en: 'Art & Prints', nl: 'Kunst & Prints' },
-  regional_products: { en: 'Regional Products', nl: 'Streekproducten' },
-  farm_local: { en: 'Farm Fresh & Local', nl: 'Lokale Producten van de Boer' },
-  food_delicatessen: { en: 'Food & Delicatessen', nl: 'Delicatessen & Specialiteiten' },
-  fashion_accessories: { en: 'Fashion & Accessories', nl: 'Mode & Accessoires' },
-  home_design: { en: 'Home & Design', nl: 'Wonen & Design' },
-  collectibles: { en: 'Collectibles', nl: 'Verzamelobjecten' },
-};
+interface Category {
+  key: string;
+  label_en: string;
+  label_nl: string;
+}
 
 export function PreferencesOverview() {
   const { language } = useLanguage();
@@ -29,10 +25,19 @@ export function PreferencesOverview() {
 
   useEffect(() => {
     fetchStats();
-  }, []);
+  }, [language]);
 
   const fetchStats = async () => {
     try {
+      // Fetch categories from database
+      const { data: categoriesData } = await supabase
+        .from('preference_categories')
+        .select('key, label_en, label_nl')
+        .eq('is_active', true)
+        .order('sort_order');
+
+      const categories: Category[] = categoriesData || [];
+
       // Fetch all profiles with preferences
       const { data: profiles } = await supabase
         .from('profiles')
@@ -63,12 +68,13 @@ export function PreferencesOverview() {
 
       setMembersWithPrefs(withPrefs);
 
-      // Convert to stats array
-      const statsArray: PreferenceStats[] = Object.keys(PREFERENCE_LABELS).map(key => ({
-        key,
-        count: prefCounts[key] || 0,
+      // Convert to stats array using dynamic categories
+      const statsArray: PreferenceStats[] = categories.map(cat => ({
+        key: cat.key,
+        label: language === 'nl' ? cat.label_nl : cat.label_en,
+        count: prefCounts[cat.key] || 0,
         percentage: memberProfiles.length > 0 
-          ? Math.round((prefCounts[key] || 0) / memberProfiles.length * 100) 
+          ? Math.round((prefCounts[cat.key] || 0) / memberProfiles.length * 100) 
           : 0,
       }));
 
@@ -129,7 +135,7 @@ export function PreferencesOverview() {
         {stats.map(stat => (
           <div key={stat.key} className="space-y-1">
             <div className="flex items-center justify-between text-sm">
-              <span>{PREFERENCE_LABELS[stat.key]?.[language] || stat.key}</span>
+              <span>{stat.label}</span>
               <span className="text-muted-foreground">
                 {stat.count} ({stat.percentage}%)
               </span>
@@ -144,7 +150,13 @@ export function PreferencesOverview() {
         ))}
       </div>
 
-      {totalMembers === 0 && (
+      {stats.length === 0 && (
+        <p className="text-center text-muted-foreground py-8">
+          {language === 'nl' ? 'Nog geen categorieën' : 'No categories yet'}
+        </p>
+      )}
+
+      {totalMembers === 0 && stats.length > 0 && (
         <p className="text-center text-muted-foreground py-8">
           {language === 'nl' ? 'Nog geen leden' : 'No members yet'}
         </p>

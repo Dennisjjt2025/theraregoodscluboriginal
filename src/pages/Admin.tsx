@@ -12,6 +12,7 @@ import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { Plus, Users, Wine, Clock, Check, X, RotateCcw, Minus, FileText, Save, Eye, Mail, MailCheck, Gift, Send, Globe, Lock, Trash2, Pencil, Copy, Settings, Heart } from 'lucide-react';
 import { SiteSettingsEditor } from '@/components/admin/SiteSettingsEditor';
 import { PreferencesOverview } from '@/components/admin/PreferencesOverview';
+import { PreferenceCategoriesManager } from '@/components/admin/PreferenceCategoriesManager';
 
 interface Drop {
   id: string;
@@ -1123,6 +1124,7 @@ export default function Admin() {
             {/* Preferences Tab */}
             <TabsContent value="preferences" className="space-y-6">
               <PreferencesOverview />
+              <PreferenceCategoriesManager />
             </TabsContent>
 
             {/* Settings Tab */}
