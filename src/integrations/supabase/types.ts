@@ -49,6 +49,51 @@ export type Database = {
           },
         ]
       }
+      drop_interests: {
+        Row: {
+          created_at: string | null
+          drop_id: string
+          email: string
+          id: string
+          member_id: string | null
+          notified_at: string | null
+          user_id: string
+        }
+        Insert: {
+          created_at?: string | null
+          drop_id: string
+          email: string
+          id?: string
+          member_id?: string | null
+          notified_at?: string | null
+          user_id: string
+        }
+        Update: {
+          created_at?: string | null
+          drop_id?: string
+          email?: string
+          id?: string
+          member_id?: string | null
+          notified_at?: string | null
+          user_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "drop_interests_drop_id_fkey"
+            columns: ["drop_id"]
+            isOneToOne: false
+            referencedRelation: "drops"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "drop_interests_member_id_fkey"
+            columns: ["member_id"]
+            isOneToOne: false
+            referencedRelation: "members"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       drop_participation: {
         Row: {
           created_at: string | null

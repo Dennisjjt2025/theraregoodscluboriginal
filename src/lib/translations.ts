@@ -140,6 +140,15 @@ type TranslationContent = {
     claimed: string;
     readMore: string;
     showLess: string;
+    comingSoon: string;
+    notAvailableYet: string;
+    dropStartsIn: string;
+    interested: string;
+    removeInterest: string;
+    interestTitle: string;
+    interestDesc: string;
+    loginToRegisterInterest: string;
+    viewPreview: string;
   };
   admin: {
     title: string;
@@ -368,6 +377,15 @@ export const translations: Record<Language, TranslationContent> = {
       claimed: 'claimed',
       readMore: 'Read more',
       showLess: 'Show less',
+      comingSoon: 'Coming Soon',
+      notAvailableYet: 'Not available yet',
+      dropStartsIn: 'Drop starts in',
+      interested: "I'm interested",
+      removeInterest: 'Remove interest',
+      interestTitle: "Don't want to miss this drop?",
+      interestDesc: 'Click interested and receive a notification when this drop goes live.',
+      loginToRegisterInterest: 'Login to register interest',
+      viewPreview: 'View Preview',
     },
     admin: {
       title: 'Admin Dashboard',
@@ -594,6 +612,15 @@ export const translations: Record<Language, TranslationContent> = {
       claimed: 'geclaimd',
       readMore: 'Lees meer',
       showLess: 'Toon minder',
+      comingSoon: 'Komt Binnenkort',
+      notAvailableYet: 'Nog niet beschikbaar',
+      dropStartsIn: 'Drop begint over',
+      interested: 'Ik ben geïnteresseerd',
+      removeInterest: 'Niet meer geïnteresseerd',
+      interestTitle: 'Wil je deze drop niet missen?',
+      interestDesc: 'Klik op geïnteresseerd en ontvang een notificatie zodra de drop live gaat.',
+      loginToRegisterInterest: 'Log in om interesse te registreren',
+      viewPreview: 'Bekijk Preview',
     },
     admin: {
       title: 'Admin Dashboard',

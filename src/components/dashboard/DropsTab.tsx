@@ -2,7 +2,7 @@ import { Link } from 'react-router-dom';
 import { useLanguage } from '@/contexts/LanguageContext';
 import { CountdownTimer } from '@/components/CountdownTimer';
 import { StockIndicator } from '@/components/drop/StockIndicator';
-import { Wine, ArrowRight, Archive } from 'lucide-react';
+import { Wine, ArrowRight, Archive, Eye } from 'lucide-react';
 
 interface Drop {
   id: string;
@@ -109,34 +109,62 @@ export function DropsTab({ activeDrop, upcomingDrop, settings }: DropsTabProps) 
   if (upcomingDrop) {
     const teaserTitle = getSetting('drop_teaser_title');
     const teaserMessage = getSetting('drop_teaser_message');
+    const dropTitle = language === 'nl' ? upcomingDrop.title_nl : upcomingDrop.title_en;
     
     return (
       <div className="space-y-6">
-        <div className="bg-card border border-border p-8 md:p-12 text-center">
-          <div className="max-w-xl mx-auto space-y-6">
-            <Wine className="w-12 h-12 mx-auto text-secondary" />
-            
-            <h2 className="font-serif text-2xl md:text-3xl">
-              {teaserTitle || (language === 'nl' ? 'Er Komt Iets Bijzonders Aan' : 'Something Special is Coming')}
-            </h2>
-            
-            <p className="text-muted-foreground">
-              {teaserMessage || (language === 'nl' 
-                ? 'Onze curatoren bereiden de volgende exclusieve release voor.' 
-                : 'Our curators are preparing the next exclusive release.')}
-            </p>
-
-            <div className="py-6">
-              <p className="text-sm text-muted-foreground mb-4 uppercase tracking-wider">
-                {language === 'nl' ? 'Volgende drop over' : 'Next drop in'}
-              </p>
-              <CountdownTimer targetDate={new Date(upcomingDrop.starts_at)} />
+        <div className="bg-card border border-border overflow-hidden">
+          {/* Hero Section for upcoming drop preview */}
+          {upcomingDrop.image_url && (
+            <div className="relative aspect-[16/9] md:aspect-[21/9] bg-muted">
+              <img
+                src={upcomingDrop.image_url}
+                alt={dropTitle}
+                className="w-full h-full object-cover opacity-80"
+              />
+              {/* Coming Soon Badge */}
+              <div className="absolute top-4 left-4">
+                <span className="bg-accent text-accent-foreground px-3 py-1 text-sm font-sans uppercase tracking-wider">
+                  {language === 'nl' ? 'Binnenkort' : 'Coming Soon'}
+                </span>
+              </div>
             </div>
+          )}
+          
+          <div className="p-8 md:p-12 text-center">
+            <div className="max-w-xl mx-auto space-y-6">
+              {!upcomingDrop.image_url && (
+                <Wine className="w-12 h-12 mx-auto text-secondary" />
+              )}
+              
+              <h2 className="font-serif text-2xl md:text-3xl">
+                {dropTitle || teaserTitle || (language === 'nl' ? 'Er Komt Iets Bijzonders Aan' : 'Something Special is Coming')}
+              </h2>
+              
+              <p className="text-muted-foreground">
+                {teaserMessage || (language === 'nl' 
+                  ? 'Onze curatoren bereiden de volgende exclusieve release voor.' 
+                  : 'Our curators are preparing the next exclusive release.')}
+              </p>
 
-            <Link to="/archive" className="btn-outline-luxury inline-flex items-center gap-2">
-              <Archive className="w-4 h-4" />
-              {language === 'nl' ? 'Bekijk Archief' : 'Browse Archive'}
-            </Link>
+              <div className="py-6">
+                <p className="text-sm text-muted-foreground mb-4 uppercase tracking-wider">
+                  {language === 'nl' ? 'Volgende drop over' : 'Next drop in'}
+                </p>
+                <CountdownTimer targetDate={new Date(upcomingDrop.starts_at)} />
+              </div>
+
+              <div className="flex flex-col sm:flex-row gap-3 justify-center">
+                <Link to="/drop" className="btn-luxury inline-flex items-center justify-center gap-2">
+                  <Eye className="w-4 h-4" />
+                  {language === 'nl' ? 'Bekijk Preview' : 'View Preview'}
+                </Link>
+                <Link to="/archive" className="btn-outline-luxury inline-flex items-center justify-center gap-2">
+                  <Archive className="w-4 h-4" />
+                  {language === 'nl' ? 'Bekijk Archief' : 'Browse Archive'}
+                </Link>
+              </div>
+            </div>
           </div>
         </div>
       </div>
