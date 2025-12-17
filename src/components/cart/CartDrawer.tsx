@@ -30,11 +30,25 @@ export function CartDrawer() {
   const totalPrice = getTotalPrice();
 
   const handleCheckout = async () => {
+    // Open window direct tijdens user click (vóór await) - voorkomt Safari popup blocker
+    const newWindow = window.open('about:blank', '_blank');
+    
     try {
       const checkoutUrl = await createCheckout();
-      window.open(checkoutUrl, '_blank');
+      
+      if (newWindow) {
+        newWindow.location.href = checkoutUrl;
+      } else {
+        // Fallback: navigeer huidige pagina als popup geblokkeerd is
+        window.location.href = checkoutUrl;
+      }
+      
       setIsOpen(false);
     } catch (error) {
+      // Sluit het lege venster bij error
+      if (newWindow) {
+        newWindow.close();
+      }
       console.error('Checkout failed:', error);
       toast.error(
         language === 'nl'
