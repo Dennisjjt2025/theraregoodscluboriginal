@@ -9,7 +9,7 @@ import { EmailComposer } from '@/components/admin/EmailComposer';
 import { DropEditor } from '@/components/admin/DropEditor';
 import { toast } from 'sonner';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
-import { Plus, Users, Wine, Clock, Check, X, RotateCcw, Minus, FileText, Save, Eye, Mail, MailCheck, Gift, Send, Globe, Lock, Trash2, Pencil, Copy, MessageSquare, Heart } from 'lucide-react';
+import { Plus, Users, Wine, Clock, Check, X, RotateCcw, Minus, FileText, Save, Eye, Mail, MailCheck, Gift, Send, Globe, Lock, Trash2, Pencil, Copy, MessageSquare, Heart, Bell } from 'lucide-react';
 import { SiteSettingsEditor } from '@/components/admin/SiteSettingsEditor';
 import { PreferencesOverview } from '@/components/admin/PreferencesOverview';
 import { PreferenceCategoriesManager } from '@/components/admin/PreferenceCategoriesManager';
@@ -107,6 +107,10 @@ export default function Admin() {
   // Drop edit modal state
   const [showDropModal, setShowDropModal] = useState(false);
   const [selectedDropForEdit, setSelectedDropForEdit] = useState<Drop | null>(null);
+  
+  // Drop interest counts state
+  const [dropInterestCounts, setDropInterestCounts] = useState<Record<string, number>>({});
+  const [notifyingDropId, setNotifyingDropId] = useState<string | null>(null);
   const [dropModalMode, setDropModalMode] = useState<'create' | 'edit' | 'duplicate'>('create');
 
   useEffect(() => {
@@ -145,11 +149,12 @@ export default function Admin() {
 
   const fetchData = async () => {
     try {
-      const [dropsRes, membersRes, waitlistRes, emailsRes] = await Promise.all([
+      const [dropsRes, membersRes, waitlistRes, emailsRes, interestsRes] = await Promise.all([
         supabase.from('drops').select('*').order('created_at', { ascending: false }),
         supabase.from('members').select('*').order('created_at', { ascending: false }),
         supabase.from('waitlist').select('*').order('created_at', { ascending: false }),
         supabase.rpc('get_member_emails'),
+        supabase.from('drop_interests').select('drop_id, notified_at'),
       ]);
 
       setDrops(dropsRes.data || []);
@@ -164,6 +169,17 @@ export default function Admin() {
         });
       }
       setMemberEmails(emailMap);
+
+      // Build interest counts (only unnotified)
+      const interestCounts: Record<string, number> = {};
+      if (interestsRes.data) {
+        interestsRes.data.forEach((item: { drop_id: string; notified_at: string | null }) => {
+          if (!item.notified_at) {
+            interestCounts[item.drop_id] = (interestCounts[item.drop_id] || 0) + 1;
+          }
+        });
+      }
+      setDropInterestCounts(interestCounts);
     } catch (error) {
       console.error('Fetch error:', error);
     } finally {
@@ -443,6 +459,55 @@ export default function Admin() {
     }
   };
 
+  const notifyInterestedUsers = async (dropId: string, dropTitle: string) => {
+    const count = dropInterestCounts[dropId] || 0;
+    if (count === 0) {
+      toast.error(language === 'nl' 
+        ? 'Geen geïnteresseerden om te notificeren' 
+        : 'No interested users to notify');
+      return;
+    }
+
+    if (!confirm(language === 'nl'
+      ? `Wil je ${count} geïnteresseerde${count === 1 ? '' : 'n'} notificeren dat "${dropTitle}" nu live is?`
+      : `Do you want to notify ${count} interested user${count === 1 ? '' : 's'} that "${dropTitle}" is now live?`
+    )) return;
+
+    setNotifyingDropId(dropId);
+    try {
+      const { data: session } = await supabase.auth.getSession();
+      
+      const response = await fetch(
+        `${import.meta.env.VITE_SUPABASE_URL}/functions/v1/send-drop-live-notification`,
+        {
+          method: 'POST',
+          headers: {
+            'Content-Type': 'application/json',
+            'Authorization': `Bearer ${session?.session?.access_token}`,
+          },
+          body: JSON.stringify({ drop_id: dropId }),
+        }
+      );
+
+      const result = await response.json();
+
+      if (!response.ok) {
+        throw new Error(result.error || 'Failed to send notifications');
+      }
+
+      toast.success(language === 'nl'
+        ? `${result.sent} notificatie${result.sent === 1 ? '' : 's'} verzonden!`
+        : `${result.sent} notification${result.sent === 1 ? '' : 's'} sent!`
+      );
+      fetchData();
+    } catch (error: any) {
+      console.error('Notify interested error:', error);
+      toast.error(error?.message || t.common.error);
+    } finally {
+      setNotifyingDropId(null);
+    }
+  };
+
   const emailWaitlistAboutDrop = async (dropId: string, dropTitle: string) => {
     const publicDrops = drops.filter(d => d.is_public);
     if (publicDrops.length === 0) {
@@ -677,6 +742,23 @@ export default function Admin() {
                           >
                             {drop.is_public ? <Globe className="w-4 h-4" /> : <Lock className="w-4 h-4" />}
                           </button>
+                          {/* Notify Interested Button */}
+                          {dropInterestCounts[drop.id] > 0 && (
+                            <button
+                              onClick={() => notifyInterestedUsers(drop.id, language === 'nl' ? drop.title_nl : drop.title_en)}
+                              disabled={notifyingDropId === drop.id}
+                              className="relative p-2 min-h-[44px] min-w-[44px] flex items-center justify-center bg-primary/10 hover:bg-primary/20 text-primary rounded"
+                              title={language === 'nl' 
+                                ? `Notificeer ${dropInterestCounts[drop.id]} geïnteresseerde(n)`
+                                : `Notify ${dropInterestCounts[drop.id]} interested user(s)`
+                              }
+                            >
+                              <Bell className={`w-4 h-4 ${notifyingDropId === drop.id ? 'animate-pulse' : ''}`} />
+                              <span className="absolute -top-1 -right-1 bg-primary text-primary-foreground text-xs rounded-full w-5 h-5 flex items-center justify-center font-medium">
+                                {dropInterestCounts[drop.id]}
+                              </span>
+                            </button>
+                          )}
                         </div>
 
                         {/* Actions */}
