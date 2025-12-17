@@ -102,6 +102,18 @@ type TranslationContent = {
     country: string;
     profileSaved: string;
     completeProfile: string;
+    myInterests: string;
+    interestsSubtitle: string;
+    preferences: {
+      wine_spirits: string;
+      art_prints: string;
+      regional_products: string;
+      farm_local: string;
+      food_delicatessen: string;
+      fashion_accessories: string;
+      home_design: string;
+      collectibles: string;
+    };
   };
   drop: {
     currentDrop: string;
@@ -318,6 +330,18 @@ export const translations: Record<Language, TranslationContent> = {
       country: 'Country',
       profileSaved: 'Profile saved',
       completeProfile: 'Complete your profile to receive your orders',
+      myInterests: 'My Interests',
+      interestsSubtitle: 'Help us serve you better by selecting your interests',
+      preferences: {
+        wine_spirits: 'Wine & Spirits',
+        art_prints: 'Art & Prints',
+        regional_products: 'Regional Products',
+        farm_local: 'Farm Fresh & Local',
+        food_delicatessen: 'Food & Delicatessen',
+        fashion_accessories: 'Fashion & Accessories',
+        home_design: 'Home & Design',
+        collectibles: 'Collectibles',
+      },
     },
     drop: {
       currentDrop: 'Current Drop',
@@ -532,6 +556,18 @@ export const translations: Record<Language, TranslationContent> = {
       country: 'Land',
       profileSaved: 'Profiel opgeslagen',
       completeProfile: 'Vul je profiel aan om je bestellingen te ontvangen',
+      myInterests: 'Mijn Interesses',
+      interestsSubtitle: 'Help ons je beter te bedienen door je interesses te selecteren',
+      preferences: {
+        wine_spirits: 'Wijn & Gedistilleerd',
+        art_prints: 'Kunst & Prints',
+        regional_products: 'Streekproducten',
+        farm_local: 'Lokale Producten van de Boer',
+        food_delicatessen: 'Delicatessen & Specialiteiten',
+        fashion_accessories: 'Mode & Accessoires',
+        home_design: 'Wonen & Design',
+        collectibles: 'Verzamelobjecten',
+      },
     },
     drop: {
       currentDrop: 'Huidige Drop',

@@ -276,6 +276,7 @@ export type Database = {
           last_name: string | null
           phone: string | null
           postal_code: string | null
+          preferences: string[] | null
           street_address: string | null
           updated_at: string | null
           verification_token: string | null
@@ -292,6 +293,7 @@ export type Database = {
           last_name?: string | null
           phone?: string | null
           postal_code?: string | null
+          preferences?: string[] | null
           street_address?: string | null
           updated_at?: string | null
           verification_token?: string | null
@@ -308,6 +310,7 @@ export type Database = {
           last_name?: string | null
           phone?: string | null
           postal_code?: string | null
+          preferences?: string[] | null
           street_address?: string | null
           updated_at?: string | null
           verification_token?: string | null

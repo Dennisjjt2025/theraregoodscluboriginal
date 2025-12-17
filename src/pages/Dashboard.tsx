@@ -65,7 +65,19 @@ interface Profile {
   postal_code: string | null;
   city: string | null;
   country: string | null;
+  preferences: string[];
 }
+
+const PREFERENCE_KEYS = [
+  'wine_spirits',
+  'art_prints',
+  'regional_products',
+  'farm_local',
+  'food_delicatessen',
+  'fashion_accessories',
+  'home_design',
+  'collectibles',
+] as const;
 
 export default function Dashboard() {
   const { t, language } = useLanguage();
@@ -87,6 +99,7 @@ export default function Dashboard() {
     postal_code: '',
     city: '',
     country: 'Nederland',
+    preferences: [],
   });
   const [loading, setLoading] = useState(true);
   const [savingProfile, setSavingProfile] = useState(false);
@@ -145,6 +158,7 @@ export default function Dashboard() {
           postal_code: profileData.postal_code || '',
           city: profileData.city || '',
           country: profileData.country || 'Nederland',
+          preferences: profileData.preferences || [],
         });
       }
 
@@ -548,6 +562,35 @@ export default function Dashboard() {
                         onChange={(e) => setProfile({ ...profile, country: e.target.value })}
                         className="input-luxury w-full"
                       />
+                    </div>
+                  </div>
+
+                  {/* Preferences Section */}
+                  <div className="border-t border-border pt-6 mt-6">
+                    <h3 className="font-serif text-lg mb-2">{t.dashboard.myInterests}</h3>
+                    <p className="text-sm text-muted-foreground mb-4">{t.dashboard.interestsSubtitle}</p>
+                    
+                    <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
+                      {PREFERENCE_KEYS.map((key) => (
+                        <label
+                          key={key}
+                          className="flex items-center gap-3 p-3 bg-muted/30 border border-border rounded cursor-pointer hover:bg-muted/50 transition-colors"
+                        >
+                          <input
+                            type="checkbox"
+                            checked={profile.preferences.includes(key)}
+                            onChange={(e) => {
+                              if (e.target.checked) {
+                                setProfile({ ...profile, preferences: [...profile.preferences, key] });
+                              } else {
+                                setProfile({ ...profile, preferences: profile.preferences.filter(p => p !== key) });
+                              }
+                            }}
+                            className="w-4 h-4 accent-secondary"
+                          />
+                          <span className="text-sm">{t.dashboard.preferences[key]}</span>
+                        </label>
+                      ))}
                     </div>
                   </div>
 
