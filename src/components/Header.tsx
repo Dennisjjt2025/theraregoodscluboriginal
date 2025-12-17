@@ -4,6 +4,7 @@ import { Menu, X } from 'lucide-react';
 import { useLanguage } from '@/contexts/LanguageContext';
 import { useAuth } from '@/contexts/AuthContext';
 import { LanguageToggle } from './LanguageToggle';
+import { ThemeToggle } from './ThemeToggle';
 import { CartDrawer } from './cart/CartDrawer';
 import { cn } from '@/lib/utils';
 import logo from '@/assets/logo.png';
@@ -59,7 +60,10 @@ export function Header() {
               </Link>
             ))}
             
-            <LanguageToggle />
+            <div className="flex items-center gap-1">
+              <LanguageToggle />
+              <ThemeToggle />
+            </div>
             
             {user && <CartDrawer />}
 
@@ -86,8 +90,9 @@ export function Header() {
           </nav>
 
           {/* Mobile Menu Button */}
-          <div className="flex items-center gap-2 md:hidden">
+          <div className="flex items-center gap-1 md:hidden">
             <LanguageToggle />
+            <ThemeToggle />
             {user && <CartDrawer />}
             <button
               onClick={() => setIsMenuOpen(!isMenuOpen)}

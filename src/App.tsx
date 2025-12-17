@@ -3,6 +3,7 @@ import { Toaster as Sonner } from "@/components/ui/sonner";
 import { TooltipProvider } from "@/components/ui/tooltip";
 import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
 import { BrowserRouter, Routes, Route } from "react-router-dom";
+import { ThemeProvider } from "next-themes";
 import { LanguageProvider } from "@/contexts/LanguageContext";
 import { AuthProvider } from "@/contexts/AuthContext";
 import Index from "./pages/Index";
@@ -21,33 +22,35 @@ import Unsubscribe from "./pages/Unsubscribe";
 const queryClient = new QueryClient();
 
 const App = () => (
-  <QueryClientProvider client={queryClient}>
-    <LanguageProvider>
-      <AuthProvider>
-        <TooltipProvider>
-          <Toaster />
-          <Sonner />
-          <BrowserRouter>
-            <Routes>
-              <Route path="/" element={<Index />} />
-              <Route path="/manifesto" element={<Manifesto />} />
-              <Route path="/membership" element={<Membership />} />
-              <Route path="/auth" element={<Auth />} />
-              <Route path="/dashboard" element={<Dashboard />} />
-              <Route path="/drop" element={<Drop />} />
-              <Route path="/drop/preview" element={<DropPreview />} />
-              <Route path="/archive" element={<Archive />} />
-              <Route path="/archive/:dropId" element={<ArchiveDropDetail />} />
-              <Route path="/admin" element={<Admin />} />
-              <Route path="/unsubscribe" element={<Unsubscribe />} />
-              {/* ADD ALL CUSTOM ROUTES ABOVE THE CATCH-ALL "*" ROUTE */}
-              <Route path="*" element={<NotFound />} />
-            </Routes>
-          </BrowserRouter>
-        </TooltipProvider>
-      </AuthProvider>
-    </LanguageProvider>
-  </QueryClientProvider>
+  <ThemeProvider attribute="class" defaultTheme="light" enableSystem={false}>
+    <QueryClientProvider client={queryClient}>
+      <LanguageProvider>
+        <AuthProvider>
+          <TooltipProvider>
+            <Toaster />
+            <Sonner />
+            <BrowserRouter>
+              <Routes>
+                <Route path="/" element={<Index />} />
+                <Route path="/manifesto" element={<Manifesto />} />
+                <Route path="/membership" element={<Membership />} />
+                <Route path="/auth" element={<Auth />} />
+                <Route path="/dashboard" element={<Dashboard />} />
+                <Route path="/drop" element={<Drop />} />
+                <Route path="/drop/preview" element={<DropPreview />} />
+                <Route path="/archive" element={<Archive />} />
+                <Route path="/archive/:dropId" element={<ArchiveDropDetail />} />
+                <Route path="/admin" element={<Admin />} />
+                <Route path="/unsubscribe" element={<Unsubscribe />} />
+                {/* ADD ALL CUSTOM ROUTES ABOVE THE CATCH-ALL "*" ROUTE */}
+                <Route path="*" element={<NotFound />} />
+              </Routes>
+            </BrowserRouter>
+          </TooltipProvider>
+        </AuthProvider>
+      </LanguageProvider>
+    </QueryClientProvider>
+  </ThemeProvider>
 );
 
 export default App;
