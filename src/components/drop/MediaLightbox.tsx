@@ -353,47 +353,36 @@ export function MediaHero({
           </div>
         )}
 
-        {/* Mobile swipe hint - only show on first image */}
-        {hasMultipleImages && currentIndex === 0 && (
-          <div className="absolute bottom-14 left-1/2 -translate-x-1/2 md:hidden bg-background/70 backdrop-blur-sm px-3 py-1 text-xs font-sans tracking-wide border border-border/50 animate-pulse">
-            ← Swipe →
-          </div>
-        )}
       </div>
 
-      {/* Thumbnail strip below hero - larger touch targets */}
+      {/* Thumbnail strip below hero */}
       {(hasMultipleImages || videoUrl) && (
-        <div className="container mx-auto max-w-4xl px-4 -mt-8 relative z-20">
-          <div className="flex gap-2 md:gap-3 overflow-x-auto pb-2 scrollbar-hide">
-            {images.map((img, index) => (
-              <button
-                key={img.id}
-                onClick={() => {
-                  setCurrentIndex(index);
-                  onOpenLightbox(index);
-                }}
-                className={`flex-shrink-0 w-18 h-18 md:w-20 md:h-20 rounded overflow-hidden border-2 transition-all min-w-[72px] min-h-[72px] ${
-                  currentIndex === index
-                    ? 'border-primary'
-                    : 'border-border hover:border-primary/50'
-                }`}
-              >
-                <img
-                  src={img.image_url}
-                  alt={img.alt_text || `${title} - Image ${index + 1}`}
-                  className="w-full h-full object-cover"
-                />
-              </button>
-            ))}
-            {videoUrl && (
-              <button
-                onClick={handleVideoClick}
-                className="flex-shrink-0 w-18 h-18 md:w-20 md:h-20 rounded overflow-hidden border-2 border-border hover:border-primary/50 flex items-center justify-center bg-muted min-w-[72px] min-h-[72px]"
-              >
-                <Play className="w-6 h-6" />
-              </button>
-            )}
-          </div>
+        <div className="flex justify-center gap-2 px-4 mt-4">
+          {images.map((img, index) => (
+            <button
+              key={img.id}
+              onClick={() => setCurrentIndex(index)}
+              className={`flex-shrink-0 w-14 h-14 md:w-16 md:h-16 rounded overflow-hidden border-2 transition-all ${
+                currentIndex === index
+                  ? 'border-primary'
+                  : 'border-border hover:border-primary/50'
+              }`}
+            >
+              <img
+                src={img.image_url}
+                alt={img.alt_text || `${title} - Image ${index + 1}`}
+                className="w-full h-full object-cover"
+              />
+            </button>
+          ))}
+          {videoUrl && (
+            <button
+              onClick={handleVideoClick}
+              className="flex-shrink-0 w-14 h-14 md:w-16 md:h-16 rounded overflow-hidden border-2 border-border hover:border-primary/50 flex items-center justify-center bg-muted"
+            >
+              <Play className="w-5 h-5" />
+            </button>
+          )}
         </div>
       )}
     </div>
