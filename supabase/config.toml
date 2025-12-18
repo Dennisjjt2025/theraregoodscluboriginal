@@ -14,3 +14,6 @@ verify_jwt = false
 
 [functions.send-drop-live-notification]
 verify_jwt = false
+
+[functions.delete-auth-user]
+verify_jwt = false
