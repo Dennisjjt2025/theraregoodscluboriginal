@@ -255,6 +255,7 @@ export default function Auth() {
     try {
       const redirectUrl = `${window.location.origin}/`;
       
+      // SECURITY: Pass invite code in metadata - server-side trigger validates and marks as used
       const { data: signUpData, error: signUpError } = await supabase.auth.signUp({
         email,
         password,
@@ -263,6 +264,7 @@ export default function Auth() {
           data: {
             first_name: firstName,
             last_name: lastName,
+            invite_code: validatedInviteCode, // Server-side trigger validates this
           },
         },
       });
@@ -270,19 +272,8 @@ export default function Auth() {
       if (signUpError) throw signUpError;
 
       if (signUpData.user) {
-        // Mark invite code as used IMMEDIATELY (prevents others from stealing it)
-        const { error: inviteUpdateError } = await supabase
-          .from('invite_codes')
-          .update({
-            used_by: signUpData.user.id,
-            used_at: new Date().toISOString(),
-          })
-          .eq('code', validatedInviteCode);
-
-        if (inviteUpdateError) {
-          console.error('Error marking invite code as used:', inviteUpdateError);
-        }
-
+        // Invite code is now marked as used by the database trigger (server-side, atomic)
+        
         // Send verification email - members record will be created after verification
         const sent = await sendVerificationEmail(signUpData.user.id, email, firstName);
         
