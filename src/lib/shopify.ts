@@ -1,8 +1,8 @@
 // Shopify Storefront API Configuration
 export const SHOPIFY_API_VERSION = '2025-07';
-export const SHOPIFY_STORE_PERMANENT_DOMAIN = 'lovable-project-hxhh1.myshopify.com';
+export const SHOPIFY_STORE_PERMANENT_DOMAIN = 'theraregoodsclub.myshopify.com';
 export const SHOPIFY_STOREFRONT_URL = `https://${SHOPIFY_STORE_PERMANENT_DOMAIN}/api/${SHOPIFY_API_VERSION}/graphql.json`;
-export const SHOPIFY_STOREFRONT_TOKEN = '6b201b469f795a6de77a5cd456ce346d';
+export const SHOPIFY_STOREFRONT_TOKEN = '0eefe488ca8f356f890c82f1d313f616';
 
 // Buyer identity interface for pre-filling checkout
 export interface BuyerIdentity {
