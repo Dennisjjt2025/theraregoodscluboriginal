@@ -105,6 +105,39 @@ export function IncompleteAccountsManager() {
     }
   };
 
+  const deleteAccount = async (account: IncompleteAccount) => {
+    if (!confirm(language === 'nl' 
+      ? `Weet je zeker dat je ${account.email} volledig wilt verwijderen? Dit kan niet ongedaan worden gemaakt. De gebruikte invite code wordt weer beschikbaar.`
+      : `Are you sure you want to permanently delete ${account.email}? This cannot be undone. The used invite code will become available again.`
+    )) return;
+
+    setActionLoading(account.id);
+    try {
+      const { data: sessionData } = await supabase.auth.getSession();
+      
+      const response = await supabase.functions.invoke('delete-auth-user', {
+        body: { userId: account.id },
+      });
+
+      if (response.error) {
+        console.error('Delete user error:', response.error);
+        throw new Error(response.error.message || 'Failed to delete user');
+      }
+
+      toast.success(language === 'nl' 
+        ? 'Account volledig verwijderd' 
+        : 'Account permanently deleted');
+      fetchIncompleteAccounts();
+    } catch (error: any) {
+      console.error('Delete account error:', error);
+      toast.error(language === 'nl' 
+        ? `Fout bij verwijderen: ${error.message}` 
+        : `Error deleting: ${error.message}`);
+    } finally {
+      setActionLoading(null);
+    }
+  };
+
   if (loading) {
     return (
       <div className="flex items-center justify-center py-12">
@@ -208,17 +241,25 @@ export function IncompleteAccountsManager() {
                         <Mail className="w-4 h-4" />
                       </button>
                     )}
-                    <button
-                      onClick={() => createMemberRecord(account)}
-                      disabled={actionLoading === account.id}
-                      className="p-1.5 hover:bg-secondary hover:text-secondary-foreground rounded transition-colors disabled:opacity-50"
-                      title={language === 'nl' ? 'Member maken' : 'Create member'}
-                    >
-                      <UserPlus className="w-4 h-4" />
-                    </button>
-                  </div>
-                </td>
-              </tr>
+                              <button
+                                      onClick={() => createMemberRecord(account)}
+                                      disabled={actionLoading === account.id}
+                                      className="p-1.5 hover:bg-secondary hover:text-secondary-foreground rounded transition-colors disabled:opacity-50"
+                                      title={language === 'nl' ? 'Member maken' : 'Create member'}
+                                    >
+                                      <UserPlus className="w-4 h-4" />
+                                    </button>
+                                    <button
+                                      onClick={() => deleteAccount(account)}
+                                      disabled={actionLoading === account.id}
+                                      className="p-1.5 hover:bg-destructive/10 text-destructive/70 hover:text-destructive rounded transition-colors disabled:opacity-50"
+                                      title={language === 'nl' ? 'Volledig verwijderen' : 'Delete permanently'}
+                                    >
+                                      <Trash2 className="w-4 h-4" />
+                                    </button>
+                                  </div>
+                                </td>
+                              </tr>
             ))}
           </tbody>
         </table>
