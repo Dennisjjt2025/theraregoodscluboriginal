@@ -28,7 +28,6 @@ interface Drop {
   quantity_sold: number;
   image_url: string | null;
   video_url: string | null;
-  shopify_product_id: string | null;
   starts_at: string;
   ends_at: string | null;
   is_public: boolean | null;
@@ -235,7 +234,7 @@ export default function Drop() {
   const addItem = useCartStore((state) => state.addItem);
 
   const handleAddToCart = async () => {
-    if (!drop?.shopify_product_id) {
+    if (!drop) {
       toast.error('Product not available');
       return;
     }
@@ -246,7 +245,7 @@ export default function Drop() {
       
       addItem({
         dropId: drop.id,
-        variantId: drop.shopify_product_id,
+        variantId: drop.id, // Use drop.id as unique identifier
         title,
         price: drop.price,
         imageUrl: drop.image_url,
@@ -258,8 +257,8 @@ export default function Drop() {
           : 'Added to cart!',
         {
           description: language === 'nl'
-            ? 'Klik op het winkelwagen icoon om af te rekenen.'
-            : 'Click the cart icon to checkout.',
+            ? 'Klik op het winkelwagen icoon om je items te bekijken.'
+            : 'Click the cart icon to view your items.',
         }
       );
     } catch (error) {
