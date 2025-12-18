@@ -256,13 +256,6 @@ export type Database = {
             referencedRelation: "members"
             referencedColumns: ["id"]
           },
-          {
-            foreignKeyName: "invite_codes_used_by_fkey"
-            columns: ["used_by"]
-            isOneToOne: false
-            referencedRelation: "members"
-            referencedColumns: ["id"]
-          },
         ]
       }
       members: {
