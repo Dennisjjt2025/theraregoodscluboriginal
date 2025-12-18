@@ -7,10 +7,9 @@ import { Header } from '@/components/Header';
 import { CountdownTimer } from '@/components/CountdownTimer';
 import { MediaLightbox, MediaHero } from '@/components/drop/MediaLightbox';
 import { StockIndicator } from '@/components/drop/StockIndicator';
-import { CollapsibleStory } from '@/components/drop/CollapsibleStory';
 import { useCartStore } from '@/stores/cartStore';
 import { toast } from 'sonner';
-import { MapPin, Calendar, Sparkles, Lock, Bell, BellOff, Clock } from 'lucide-react';
+import { MapPin, Calendar, Sparkles, Lock, Bell, BellOff, Clock, ShoppingCart } from 'lucide-react';
 
 interface Drop {
   id: string;
@@ -196,7 +195,6 @@ export default function Drop() {
         );
       } else {
         // Add interest
-        // First get member_id if exists
         const { data: memberData } = await supabase
           .from('members')
           .select('id')
@@ -307,6 +305,8 @@ export default function Drop() {
   const tastingNotes = language === 'nl' ? drop.tasting_notes_nl : drop.tasting_notes_en;
   const soldOut = drop.quantity_sold >= drop.quantity_available;
   const hasAttributes = drop.origin || drop.vintage;
+  const remaining = drop.quantity_available - drop.quantity_sold;
+  const percentageClaimed = Math.round((drop.quantity_sold / drop.quantity_available) * 100);
 
   // Combine main image with gallery images
   const allImages: GalleryImage[] = [
@@ -316,179 +316,6 @@ export default function Drop() {
       ? [{ id: 'main', image_url: drop.image_url, alt_text: title, sort_order: 0 }]
       : []),
   ];
-
-  // Interest Section for upcoming drops
-  const InterestSection = () => {
-    if (!isUpcoming) return null;
-    
-    return (
-      <div className="bg-secondary/10 border border-secondary/30 p-6 mb-8 text-center">
-        <Bell className="w-8 h-8 mx-auto mb-3 text-secondary" />
-        <h3 className="font-serif text-xl mb-2">
-          {language === 'nl' ? 'Wil je deze drop niet missen?' : "Don't want to miss this drop?"}
-        </h3>
-        <p className="text-muted-foreground text-sm mb-4">
-          {language === 'nl' 
-            ? 'Klik op geïnteresseerd en ontvang een notificatie zodra de drop live gaat.'
-            : 'Click interested and receive a notification when this drop goes live.'}
-        </p>
-        {user ? (
-          <button
-            onClick={handleToggleInterest}
-            disabled={interestLoading}
-            className={`btn-luxury flex items-center gap-2 mx-auto ${isInterested ? 'bg-secondary hover:bg-secondary/90' : ''}`}
-          >
-            {interestLoading ? (
-              t.common.loading
-            ) : isInterested ? (
-              <>
-                <BellOff className="w-4 h-4" />
-                {language === 'nl' ? 'Niet meer geïnteresseerd' : 'Remove interest'}
-              </>
-            ) : (
-              <>
-                <Bell className="w-4 h-4" />
-                {language === 'nl' ? 'Ik ben geïnteresseerd' : "I'm interested"}
-              </>
-            )}
-          </button>
-        ) : (
-          <p className="text-sm text-muted-foreground">
-            <Link to="/auth" className="underline hover:text-foreground transition-colors">
-              {language === 'nl' ? 'Log in om interesse te registreren' : 'Login to register interest'}
-            </Link>
-          </p>
-        )}
-      </div>
-    );
-  };
-
-  // Purchase section component
-  const PurchaseSection = ({ mobile = false }: { mobile?: boolean }) => {
-    if (memberLoading || authLoading) {
-      return (
-        <div className={mobile ? "fixed bottom-0 left-0 right-0 md:hidden bg-background border-t border-border p-4 z-50" : "hidden md:block bg-card border border-border p-6"}>
-          <div className="animate-pulse h-12 bg-muted rounded" />
-        </div>
-      );
-    }
-
-    // Show "Coming Soon" for upcoming drops
-    if (isUpcoming) {
-      if (mobile) {
-        return (
-          <div className="fixed bottom-0 left-0 right-0 md:hidden bg-background border-t border-border p-4 z-50">
-            <div className="flex items-center justify-between gap-4">
-              <div>
-                <p className="font-serif text-2xl">€{drop.price.toFixed(2)}</p>
-                <p className="text-xs text-muted-foreground">
-                  {language === 'nl' ? 'Nog niet beschikbaar' : 'Not available yet'}
-                </p>
-              </div>
-              <button
-                disabled
-                className="btn-luxury flex-1 opacity-50 cursor-not-allowed flex items-center justify-center gap-2"
-              >
-                <Clock className="w-4 h-4" />
-                {language === 'nl' ? 'Komt Binnenkort' : 'Coming Soon'}
-              </button>
-            </div>
-          </div>
-        );
-      }
-
-      return (
-        <div className="hidden md:flex items-center justify-between bg-card border border-border p-6">
-          <div>
-            <p className="font-serif text-3xl">€{drop.price.toFixed(2)}</p>
-            <p className="text-sm text-muted-foreground">
-              {language === 'nl' ? 'Nog niet beschikbaar' : 'Not available yet'}
-            </p>
-          </div>
-          <button
-            disabled
-            className="btn-luxury opacity-50 cursor-not-allowed flex items-center gap-2"
-          >
-            <Clock className="w-4 h-4" />
-            {language === 'nl' ? 'Komt Binnenkort' : 'Coming Soon'}
-          </button>
-        </div>
-      );
-    }
-
-    if (!canPurchase) {
-      return (
-        <div className={mobile ? "fixed bottom-0 left-0 right-0 md:hidden bg-background border-t border-border p-4 z-50" : "hidden md:block bg-card border border-border p-6"}>
-          <div className="flex items-center gap-3 justify-center">
-            <Lock className="w-5 h-5 text-muted-foreground" />
-            <p className="text-muted-foreground text-sm">
-              {t.drop.membersOnlyMessage}
-            </p>
-          </div>
-          <div className={`flex flex-wrap gap-3 ${mobile ? 'mt-3 justify-center' : 'mt-4 justify-center'}`}>
-            {user ? (
-              <Link to="/auth" className="btn-outline-luxury text-sm">
-                {t.drop.becomeMember}
-              </Link>
-            ) : (
-              <>
-                <Link to="/auth" className="btn-luxury text-sm">
-                  {t.drop.loginToPurchase}
-                </Link>
-                <Link to="/auth" className="btn-outline-luxury text-sm">
-                  {t.drop.becomeMember}
-                </Link>
-                <a href="/#waitlist" className="btn-outline-luxury text-sm">
-                  {t.landing.joinWaitlist}
-                </a>
-              </>
-            )}
-          </div>
-        </div>
-      );
-    }
-
-    // Can purchase - show buy section
-    if (mobile) {
-      return (
-        <div className="fixed bottom-0 left-0 right-0 md:hidden bg-background border-t border-border p-4 z-50">
-          <div className="flex items-center justify-between gap-4">
-            <div>
-              <p className="font-serif text-2xl">€{drop.price.toFixed(2)}</p>
-              <p className="text-xs text-muted-foreground">
-                {drop.quantity_available - drop.quantity_sold} {t.drop.remaining}
-              </p>
-            </div>
-            <button
-              onClick={handleAddToCart}
-              disabled={soldOut || addingToCart}
-              className="btn-luxury flex-1 disabled:opacity-50 disabled:cursor-not-allowed"
-            >
-              {soldOut ? t.drop.soldOut : addingToCart ? t.common.loading : t.drop.addToCart}
-            </button>
-          </div>
-        </div>
-      );
-    }
-
-    return (
-      <div className="hidden md:flex items-center justify-between bg-card border border-border p-6">
-        <div>
-          <p className="font-serif text-3xl">€{drop.price.toFixed(2)}</p>
-          <p className="text-sm text-muted-foreground">
-            {drop.quantity_available - drop.quantity_sold} {t.drop.remaining}
-          </p>
-        </div>
-        <button
-          onClick={handleAddToCart}
-          disabled={soldOut || addingToCart}
-          className="btn-luxury disabled:opacity-50 disabled:cursor-not-allowed"
-        >
-          {soldOut ? t.drop.soldOut : addingToCart ? t.common.loading : t.drop.addToCart}
-        </button>
-      </div>
-    );
-  };
 
   // Badges for hero
   const heroBadges = (
@@ -510,6 +337,165 @@ export default function Drop() {
     </>
   );
 
+  // CTA Section Component - Conversion Optimized
+  const CTASection = ({ mobile = false }: { mobile?: boolean }) => {
+    if (memberLoading || authLoading) {
+      return (
+        <div className="animate-pulse space-y-3">
+          <div className="h-12 bg-muted rounded" />
+        </div>
+      );
+    }
+
+    // Upcoming drop - Coming Soon
+    if (isUpcoming) {
+      return (
+        <div className="space-y-4">
+          <button
+            disabled
+            className="btn-luxury w-full opacity-50 cursor-not-allowed flex items-center justify-center gap-2"
+          >
+            <Clock className="w-4 h-4" />
+            {language === 'nl' ? 'Komt Binnenkort' : 'Coming Soon'}
+          </button>
+          
+          {/* Interest button for upcoming drops */}
+          {user ? (
+            <button
+              onClick={handleToggleInterest}
+              disabled={interestLoading}
+              className={`btn-outline-luxury w-full flex items-center justify-center gap-2 ${isInterested ? 'bg-secondary/10' : ''}`}
+            >
+              {interestLoading ? (
+                t.common.loading
+              ) : isInterested ? (
+                <>
+                  <BellOff className="w-4 h-4" />
+                  {language === 'nl' ? 'Interesse verwijderen' : 'Remove interest'}
+                </>
+              ) : (
+                <>
+                  <Bell className="w-4 h-4" />
+                  {language === 'nl' ? 'Laat me weten wanneer live' : 'Notify me when live'}
+                </>
+              )}
+            </button>
+          ) : (
+            <p className="text-sm text-muted-foreground text-center">
+              <Link to="/auth" className="underline hover:text-foreground transition-colors">
+                {language === 'nl' ? 'Log in om een notificatie te ontvangen' : 'Login to get notified'}
+              </Link>
+            </p>
+          )}
+        </div>
+      );
+    }
+
+    // Not logged in - Show "Exclusief voor leden" box
+    if (!user) {
+      return (
+        <div className="space-y-4">
+          <div className="bg-card border border-border p-4 text-center">
+            <Lock className="w-5 h-5 mx-auto mb-2 text-muted-foreground" />
+            <p className="text-sm text-muted-foreground">
+              {language === 'nl' ? 'Deze drop is exclusief voor leden' : 'This drop is exclusive to members'}
+            </p>
+          </div>
+          <Link to="/auth" className="btn-luxury w-full block text-center">
+            {language === 'nl' ? 'Word Lid om te Kopen' : 'Become a Member to Buy'}
+          </Link>
+          <p className="text-sm text-center text-muted-foreground">
+            {language === 'nl' ? 'Al lid? ' : 'Already a member? '}
+            <Link to="/auth" className="underline hover:text-foreground transition-colors">
+              {language === 'nl' ? 'Log in' : 'Log in'}
+            </Link>
+          </p>
+        </div>
+      );
+    }
+
+    // Logged in but not a member (and not public drop)
+    if (!canPurchase) {
+      return (
+        <div className="space-y-4">
+          <div className="bg-card border border-border p-4 text-center">
+            <Lock className="w-5 h-5 mx-auto mb-2 text-muted-foreground" />
+            <p className="text-sm text-muted-foreground">
+              {language === 'nl' ? 'Deze drop is exclusief voor leden' : 'This drop is exclusive to members'}
+            </p>
+          </div>
+          <Link to="/membership" className="btn-luxury w-full block text-center">
+            {t.drop.becomeMember}
+          </Link>
+        </div>
+      );
+    }
+
+    // Can purchase - show Add to Cart
+    return (
+      <button
+        onClick={handleAddToCart}
+        disabled={soldOut || addingToCart}
+        className="btn-luxury w-full disabled:opacity-50 disabled:cursor-not-allowed flex items-center justify-center gap-2"
+      >
+        <ShoppingCart className="w-4 h-4" />
+        {soldOut ? t.drop.soldOut : addingToCart ? t.common.loading : t.drop.addToCart}
+      </button>
+    );
+  };
+
+  // Mobile Sticky CTA
+  const MobileCTA = () => {
+    if (memberLoading || authLoading) {
+      return (
+        <div className="fixed bottom-0 left-0 right-0 md:hidden bg-background border-t border-border p-4 z-50">
+          <div className="animate-pulse h-12 bg-muted rounded" />
+        </div>
+      );
+    }
+
+    return (
+      <div className="fixed bottom-0 left-0 right-0 md:hidden bg-background border-t border-border p-4 z-50">
+        <div className="flex items-center justify-between gap-4">
+          <div className="flex-shrink-0">
+            <p className="font-serif text-2xl">€{drop.price.toFixed(2)}</p>
+            <p className="text-xs text-muted-foreground">
+              {remaining} {t.drop.remaining}
+            </p>
+          </div>
+          <div className="flex-1">
+            {isUpcoming ? (
+              <button
+                disabled
+                className="btn-luxury w-full opacity-50 cursor-not-allowed flex items-center justify-center gap-2 text-sm"
+              >
+                <Clock className="w-4 h-4" />
+                {language === 'nl' ? 'Binnenkort' : 'Coming Soon'}
+              </button>
+            ) : !user ? (
+              <Link to="/auth" className="btn-luxury w-full block text-center text-sm">
+                {language === 'nl' ? 'Word Lid' : 'Become Member'}
+              </Link>
+            ) : !canPurchase ? (
+              <Link to="/membership" className="btn-luxury w-full block text-center text-sm">
+                {t.drop.becomeMember}
+              </Link>
+            ) : (
+              <button
+                onClick={handleAddToCart}
+                disabled={soldOut || addingToCart}
+                className="btn-luxury w-full disabled:opacity-50 disabled:cursor-not-allowed flex items-center justify-center gap-2 text-sm"
+              >
+                <ShoppingCart className="w-4 h-4" />
+                {soldOut ? t.drop.soldOut : addingToCart ? '...' : t.drop.addToCart}
+              </button>
+            )}
+          </div>
+        </div>
+      </div>
+    );
+  };
+
   return (
     <div className="min-h-screen bg-background pb-24 md:pb-12">
       <Header />
@@ -525,117 +511,185 @@ export default function Drop() {
       />
 
       <main className="pt-20 md:pt-24">
-        {/* Hero Image with Gallery */}
-        <MediaHero
-          images={allImages}
-          videoUrl={drop.video_url}
-          title={title}
-          onOpenLightbox={openLightbox}
-          badges={heroBadges}
-          tapToEnlargeText={drop.video_url ? t.drop.playVideo : t.drop.tapToEnlarge}
-        />
-
-        <div className={`container mx-auto max-w-4xl px-4 ${allImages.length > 1 ? 'mt-4' : '-mt-20'} relative z-10`}>
-          {/* Title & Description */}
-          <div className="mb-8">
-            <h1 className="font-serif text-4xl md:text-5xl lg:text-6xl mb-4">{title}</h1>
-            {description && (
-              <p className="text-lg text-muted-foreground max-w-2xl">{description}</p>
-            )}
-          </div>
-
-          {/* Product Attributes - Only show if data exists */}
-          {hasAttributes && (
-            <div className="grid grid-cols-2 gap-4 mb-8">
-              {drop.origin && (
-                <div className="flex items-center gap-3 p-4 bg-card border border-border">
-                  <MapPin className="w-5 h-5 text-muted-foreground shrink-0" />
-                  <div>
-                    <p className="text-xs text-muted-foreground uppercase tracking-wider">{t.drop.origin}</p>
-                    <p className="font-medium">{drop.origin}</p>
-                  </div>
-                </div>
-              )}
-              {drop.vintage && (
-                <div className="flex items-center gap-3 p-4 bg-card border border-border">
-                  <Calendar className="w-5 h-5 text-muted-foreground shrink-0" />
-                  <div>
-                    <p className="text-xs text-muted-foreground uppercase tracking-wider">{t.drop.vintage}</p>
-                    <p className="font-medium">{drop.vintage}</p>
-                  </div>
-                </div>
-              )}
+        {/* HERO SECTION - Split Screen on Desktop */}
+        <div className="container mx-auto max-w-7xl px-4">
+          <div className="grid grid-cols-1 lg:grid-cols-2 gap-8 lg:gap-12">
+            
+            {/* LEFT: Product Media */}
+            <div className="lg:sticky lg:top-24 lg:self-start">
+              <MediaHero
+                images={allImages}
+                videoUrl={drop.video_url}
+                title={title}
+                onOpenLightbox={openLightbox}
+                badges={heroBadges}
+                tapToEnlargeText={drop.video_url ? t.drop.playVideo : t.drop.tapToEnlarge}
+                aspectRatio="square"
+              />
             </div>
-          )}
 
-          {/* Interest Section for upcoming drops */}
-          <InterestSection />
+            {/* RIGHT: Product Info & CTA */}
+            <div className="space-y-6">
+              {/* Badges - Mobile only (desktop shows on image) */}
+              <div className="flex flex-wrap gap-2 lg:hidden">
+                {isUpcoming ? (
+                  <span className="bg-accent text-accent-foreground px-3 py-1.5 text-xs font-sans uppercase tracking-wider">
+                    {language === 'nl' ? 'Binnenkort' : 'Coming Soon'}
+                  </span>
+                ) : (
+                  <span className="bg-muted text-foreground px-3 py-1.5 text-xs font-sans uppercase tracking-wider border border-border">
+                    {t.drop.limited}
+                  </span>
+                )}
+                {!drop.is_public && (
+                  <span className="bg-accent text-accent-foreground px-3 py-1.5 text-xs font-sans uppercase tracking-wider">
+                    {t.drop.membersOnly}
+                  </span>
+                )}
+              </div>
 
-          {/* Stock/Countdown Section */}
-          <div className="bg-card border border-border p-6 mb-8">
-            {isUpcoming ? (
-              <>
-                <p className="font-sans text-sm uppercase tracking-widest text-muted-foreground mb-4 text-center">
-                  {language === 'nl' ? 'Drop begint over' : 'Drop starts in'}
-                </p>
-                <CountdownTimer targetDate={new Date(drop.starts_at)} />
-                <div className="mt-6 pt-6 border-t border-border">
-                  <StockIndicator 
-                    quantityAvailable={drop.quantity_available} 
-                    quantitySold={drop.quantity_sold} 
+              {/* Title */}
+              <h1 className="font-serif text-3xl md:text-4xl lg:text-5xl leading-tight">{title}</h1>
+              
+              {/* Description */}
+              {description && (
+                <p className="text-muted-foreground text-lg leading-relaxed">{description}</p>
+              )}
+
+              {/* Price & Stock - Always Visible */}
+              <div className="border-t border-b border-border py-6 space-y-4">
+                <div className="flex items-baseline justify-between">
+                  <p className="font-serif text-3xl md:text-4xl">€{drop.price.toFixed(2)}</p>
+                  {isUpcoming && (
+                    <span className="text-sm text-muted-foreground">
+                      {language === 'nl' ? 'Nog niet beschikbaar' : 'Not available yet'}
+                    </span>
+                  )}
+                </div>
+                
+                {/* Stock Indicator */}
+                <div className="space-y-2">
+                  <div className="flex items-center justify-between text-sm">
+                    <span className="text-muted-foreground">
+                      <span className="font-serif text-foreground font-medium">{remaining}</span> {t.drop.remaining}
+                    </span>
+                    <span className="text-muted-foreground">
+                      {percentageClaimed}% {t.drop.claimed}
+                    </span>
+                  </div>
+                  <div className="relative h-1.5 bg-muted rounded-full overflow-hidden">
+                    <div 
+                      className="absolute left-0 top-0 h-full rounded-full bg-secondary transition-all duration-500"
+                      style={{ width: `${percentageClaimed}%` }}
+                    />
+                  </div>
+                </div>
+              </div>
+
+              {/* Countdown for Live/Upcoming drops */}
+              {(isUpcoming || drop.ends_at) && (
+                <div className="bg-card border border-border p-4">
+                  <p className="font-sans text-xs uppercase tracking-widest text-muted-foreground mb-3 text-center">
+                    {isUpcoming 
+                      ? (language === 'nl' ? 'Drop begint over' : 'Drop starts in')
+                      : t.drop.endsIn
+                    }
+                  </p>
+                  <CountdownTimer 
+                    targetDate={new Date(isUpcoming ? drop.starts_at : drop.ends_at!)} 
+                    isLive={!isUpcoming} 
                   />
                 </div>
-              </>
-            ) : drop.ends_at ? (
-              <>
-                <p className="font-sans text-sm uppercase tracking-widest text-muted-foreground mb-4 text-center">
-                  {t.drop.endsIn}
-                </p>
-                <CountdownTimer targetDate={new Date(drop.ends_at)} isLive={true} />
-                <div className="mt-6 pt-6 border-t border-border">
-                  <StockIndicator 
-                    quantityAvailable={drop.quantity_available} 
-                    quantitySold={drop.quantity_sold} 
-                  />
-                </div>
-              </>
-            ) : (
-              <>
-                <p className="font-sans text-sm uppercase tracking-widest text-muted-foreground mb-4 text-center">
-                  {t.drop.whileSuppliesLast}
-                </p>
-                <StockIndicator 
-                  quantityAvailable={drop.quantity_available} 
-                  quantitySold={drop.quantity_sold} 
-                />
-              </>
-            )}
+              )}
+
+              {/* CTA Section - Desktop */}
+              <div className="hidden md:block">
+                <CTASection />
+              </div>
+            </div>
           </div>
+        </div>
 
-          {/* Story Section - Collapsible on mobile */}
+        {/* BELOW THE FOLD - Full Width Sections */}
+        <div className="container mx-auto max-w-4xl px-4 mt-16 space-y-12">
+          
+          {/* Story Section with Attribute Cards */}
           {story && (
-            <div className="mb-8">
-              <CollapsibleStory story={story} title={t.drop.theStory} />
-            </div>
+            <section>
+              <h2 className="font-serif text-2xl md:text-3xl mb-6">{t.drop.theStory}</h2>
+              <div className="flex flex-col lg:flex-row gap-8">
+                {/* Story Text */}
+                <div className="flex-1">
+                  <p className="text-muted-foreground leading-relaxed whitespace-pre-line">{story}</p>
+                </div>
+                
+                {/* Attribute Cards - Next to story on desktop */}
+                {hasAttributes && (
+                  <div className="lg:w-64 flex-shrink-0 space-y-4">
+                    {drop.origin && (
+                      <div className="flex items-center gap-3 p-4 bg-card border border-border">
+                        <MapPin className="w-5 h-5 text-muted-foreground shrink-0" />
+                        <div>
+                          <p className="text-xs text-muted-foreground uppercase tracking-wider">{t.drop.origin}</p>
+                          <p className="font-medium">{drop.origin}</p>
+                        </div>
+                      </div>
+                    )}
+                    {drop.vintage && (
+                      <div className="flex items-center gap-3 p-4 bg-card border border-border">
+                        <Calendar className="w-5 h-5 text-muted-foreground shrink-0" />
+                        <div>
+                          <p className="text-xs text-muted-foreground uppercase tracking-wider">{t.drop.vintage}</p>
+                          <p className="font-medium">{drop.vintage}</p>
+                        </div>
+                      </div>
+                    )}
+                  </div>
+                )}
+              </div>
+            </section>
           )}
 
-          {/* Details Section (formerly Tasting Notes) - Only show if content exists */}
+          {/* Attribute Cards - If no story, show standalone */}
+          {!story && hasAttributes && (
+            <section>
+              <div className="grid grid-cols-2 gap-4">
+                {drop.origin && (
+                  <div className="flex items-center gap-3 p-4 bg-card border border-border">
+                    <MapPin className="w-5 h-5 text-muted-foreground shrink-0" />
+                    <div>
+                      <p className="text-xs text-muted-foreground uppercase tracking-wider">{t.drop.origin}</p>
+                      <p className="font-medium">{drop.origin}</p>
+                    </div>
+                  </div>
+                )}
+                {drop.vintage && (
+                  <div className="flex items-center gap-3 p-4 bg-card border border-border">
+                    <Calendar className="w-5 h-5 text-muted-foreground shrink-0" />
+                    <div>
+                      <p className="text-xs text-muted-foreground uppercase tracking-wider">{t.drop.vintage}</p>
+                      <p className="font-medium">{drop.vintage}</p>
+                    </div>
+                  </div>
+                )}
+              </div>
+            </section>
+          )}
+
+          {/* Details Section */}
           {tastingNotes && (
-            <div className="mb-8 bg-card border border-border p-6">
+            <section className="bg-card border border-border p-6">
               <div className="flex items-center gap-2 mb-4">
                 <Sparkles className="w-5 h-5 text-accent" />
                 <h2 className="font-serif text-xl">{t.drop.details}</h2>
               </div>
               <p className="text-muted-foreground whitespace-pre-line leading-relaxed">{tastingNotes}</p>
-            </div>
+            </section>
           )}
-
-          {/* Price (desktop) */}
-          <PurchaseSection />
         </div>
 
-        {/* Sticky Buy Button (mobile) */}
-        <PurchaseSection mobile />
+        {/* Mobile Sticky CTA */}
+        <MobileCTA />
       </main>
     </div>
   );

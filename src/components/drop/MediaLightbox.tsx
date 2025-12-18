@@ -198,20 +198,26 @@ interface MediaHeroProps {
   onOpenLightbox: (index?: number) => void;
   badges?: React.ReactNode;
   tapToEnlargeText: string;
+  aspectRatio?: 'hero' | 'square';
 }
 
-export function MediaHero({ images, videoUrl, title, onOpenLightbox, badges, tapToEnlargeText }: MediaHeroProps) {
+export function MediaHero({ images, videoUrl, title, onOpenLightbox, badges, tapToEnlargeText, aspectRatio = 'hero' }: MediaHeroProps) {
   const mainImage = images[0];
   
   if (!mainImage) return null;
 
   const hasMultipleImages = images.length > 1;
+  
+  // Aspect ratio classes
+  const aspectClasses = aspectRatio === 'square' 
+    ? 'aspect-square' 
+    : 'h-[50vh] md:h-[60vh]';
 
   return (
     <div className="relative">
       {/* Main hero image */}
       <div 
-        className="relative h-[50vh] md:h-[60vh] overflow-hidden cursor-pointer group"
+        className={`relative ${aspectClasses} overflow-hidden cursor-pointer group`}
         onClick={() => onOpenLightbox(0)}
         role="button"
         tabIndex={0}
@@ -224,8 +230,10 @@ export function MediaHero({ images, videoUrl, title, onOpenLightbox, badges, tap
           className="w-full h-full object-cover transition-transform duration-500 group-hover:scale-105"
         />
         
-        {/* Gradient overlay */}
-        <div className="absolute inset-0 bg-gradient-to-t from-background via-background/20 to-transparent" />
+        {/* Gradient overlay - only for hero aspect */}
+        {aspectRatio === 'hero' && (
+          <div className="absolute inset-0 bg-gradient-to-t from-background via-background/20 to-transparent" />
+        )}
         
         {/* Media indicator overlay */}
         <div className="absolute inset-0 flex items-center justify-center opacity-0 group-hover:opacity-100 transition-opacity duration-300">
