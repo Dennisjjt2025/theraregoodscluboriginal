@@ -4,7 +4,23 @@ export const SHOPIFY_STORE_PERMANENT_DOMAIN = 'lovable-project-hxhh1.myshopify.c
 export const SHOPIFY_STOREFRONT_URL = `https://${SHOPIFY_STORE_PERMANENT_DOMAIN}/api/${SHOPIFY_API_VERSION}/graphql.json`;
 export const SHOPIFY_STOREFRONT_TOKEN = '6b201b469f795a6de77a5cd456ce346d';
 
-// GraphQL mutation for creating a cart (checkout)
+// Buyer identity interface for pre-filling checkout
+export interface BuyerIdentity {
+  email?: string;
+  phone?: string;
+  deliveryAddressPreferences?: Array<{
+    deliveryAddress: {
+      firstName?: string;
+      lastName?: string;
+      address1?: string;
+      city?: string;
+      zip?: string;
+      countryCode?: string;
+    };
+  }>;
+}
+
+// GraphQL mutation for creating a cart (checkout) with buyer identity
 const CART_CREATE_MUTATION = `
   mutation cartCreate($input: CartInput!) {
     cartCreate(input: $input) {
@@ -51,14 +67,46 @@ export async function storefrontApiRequest<T>(query: string, variables: Record<s
   return data;
 }
 
+// Country name to ISO code mapping
+const COUNTRY_CODE_MAP: Record<string, string> = {
+  'nederland': 'NL',
+  'netherlands': 'NL',
+  'the netherlands': 'NL',
+  'belgium': 'BE',
+  'belgië': 'BE',
+  'belgie': 'BE',
+  'germany': 'DE',
+  'duitsland': 'DE',
+  'france': 'FR',
+  'frankrijk': 'FR',
+  'united kingdom': 'GB',
+  'uk': 'GB',
+  'united states': 'US',
+  'usa': 'US',
+};
+
+function getCountryCode(countryName: string | null | undefined): string {
+  if (!countryName) return 'NL'; // Default to Netherlands
+  const normalized = countryName.toLowerCase().trim();
+  return COUNTRY_CODE_MAP[normalized] || 'NL';
+}
+
 // Create a checkout and return the URL
 export async function createStorefrontCheckout(
-  items: Array<{ variantId: string; quantity: number }>
+  items: Array<{ variantId: string; quantity: number }>,
+  buyerIdentity?: BuyerIdentity
 ): Promise<string> {
   const lines = items.map((item) => ({
     quantity: item.quantity,
     merchandiseId: item.variantId,
   }));
+
+  const input: { lines: typeof lines; buyerIdentity?: BuyerIdentity } = { lines };
+  
+  // Add buyer identity if provided
+  if (buyerIdentity) {
+    input.buyerIdentity = buyerIdentity;
+  }
 
   const response = await storefrontApiRequest<{
     data: {
@@ -67,7 +115,7 @@ export async function createStorefrontCheckout(
         userErrors: Array<{ field: string; message: string }>;
       };
     };
-  }>(CART_CREATE_MUTATION, { input: { lines } });
+  }>(CART_CREATE_MUTATION, { input });
 
   if (response.data.cartCreate.userErrors.length > 0) {
     throw new Error(
@@ -86,3 +134,6 @@ export async function createStorefrontCheckout(
   
   return url.toString();
 }
+
+// Export helper for country code conversion
+export { getCountryCode };
