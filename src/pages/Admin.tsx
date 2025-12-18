@@ -274,6 +274,27 @@ export default function Admin() {
     }
   };
 
+  const deleteMember = async (memberId: string, memberEmail: string) => {
+    if (!confirm(language === 'nl' 
+      ? `Weet je zeker dat je ${memberEmail} wilt verwijderen? Dit kan niet ongedaan worden gemaakt.`
+      : `Are you sure you want to delete ${memberEmail}? This cannot be undone.`
+    )) return;
+    
+    try {
+      const { error } = await supabase
+        .from('members')
+        .delete()
+        .eq('id', memberId);
+
+      if (error) throw error;
+      toast.success(language === 'nl' ? 'Member verwijderd' : 'Member deleted');
+      fetchData();
+    } catch (error) {
+      console.error('Delete member error:', error);
+      toast.error(t.common.error);
+    }
+  };
+
   const addStrike = async (memberId: string, currentStrikes: number) => {
     if (currentStrikes >= 3) {
       toast.error('Member already has maximum strikes');
@@ -1017,6 +1038,13 @@ export default function Admin() {
                                   <Check className="w-4 h-4" />
                                 </button>
                               )}
+                              <button
+                                onClick={() => deleteMember(member.id, memberEmails[member.id]?.email || '')}
+                                className="p-1 text-destructive/60 hover:text-destructive"
+                                title={language === 'nl' ? 'Verwijderen' : 'Delete'}
+                              >
+                                <Trash2 className="w-4 h-4" />
+                              </button>
                             </div>
                           </td>
                         </tr>
@@ -1168,6 +1196,12 @@ export default function Admin() {
                               <Check className="w-5 h-5" />
                             </button>
                           )}
+                          <button
+                            onClick={() => deleteMember(member.id, memberEmails[member.id]?.email || '')}
+                            className="p-2 min-h-[44px] min-w-[44px] flex items-center justify-center text-destructive/60 hover:text-destructive"
+                          >
+                            <Trash2 className="w-5 h-5" />
+                          </button>
                         </div>
                       </div>
                     </div>
