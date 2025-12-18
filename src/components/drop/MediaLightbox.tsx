@@ -1,4 +1,4 @@
-import { useState, useEffect, useCallback } from 'react';
+import { useState, useEffect, useCallback, useRef } from 'react';
 import { X, Play, ZoomIn, ChevronLeft, ChevronRight } from 'lucide-react';
 import { Dialog, DialogContent, DialogTitle } from '@/components/ui/dialog';
 
@@ -16,6 +16,7 @@ interface MediaLightboxProps {
   videoUrl: string | null;
   title: string;
   initialIndex?: number;
+  initialShowVideo?: boolean;
 }
 
 // Helper to convert YouTube URL to embed URL
@@ -33,30 +34,75 @@ const isYouTubeUrl = (url: string): boolean => {
   return url.includes('youtube.com') || url.includes('youtu.be');
 };
 
-export function MediaLightbox({ isOpen, onClose, images, videoUrl, title, initialIndex = 0 }: MediaLightboxProps) {
+// Swipe hook for touch gestures
+function useSwipe(onSwipeLeft: () => void, onSwipeRight: () => void) {
+  const touchStart = useRef<number | null>(null);
+  const touchEnd = useRef<number | null>(null);
+  const minSwipeDistance = 50;
+
+  const onTouchStart = (e: React.TouchEvent) => {
+    touchEnd.current = null;
+    touchStart.current = e.targetTouches[0].clientX;
+  };
+
+  const onTouchMove = (e: React.TouchEvent) => {
+    touchEnd.current = e.targetTouches[0].clientX;
+  };
+
+  const onTouchEnd = () => {
+    if (!touchStart.current || !touchEnd.current) return;
+    
+    const distance = touchStart.current - touchEnd.current;
+    const isLeftSwipe = distance > minSwipeDistance;
+    const isRightSwipe = distance < -minSwipeDistance;
+
+    if (isLeftSwipe) onSwipeLeft();
+    if (isRightSwipe) onSwipeRight();
+  };
+
+  return { onTouchStart, onTouchMove, onTouchEnd };
+}
+
+export function MediaLightbox({ 
+  isOpen, 
+  onClose, 
+  images, 
+  videoUrl, 
+  title, 
+  initialIndex = 0,
+  initialShowVideo = false 
+}: MediaLightboxProps) {
   const [currentIndex, setCurrentIndex] = useState(initialIndex);
-  const [showVideo, setShowVideo] = useState(false);
+  const [showVideo, setShowVideo] = useState(initialShowVideo);
 
   // Reset state when opening
   useEffect(() => {
     if (isOpen) {
       setCurrentIndex(initialIndex);
-      setShowVideo(false);
+      setShowVideo(initialShowVideo);
     }
-  }, [isOpen, initialIndex]);
+  }, [isOpen, initialIndex, initialShowVideo]);
+
+  const goToPrevious = useCallback(() => {
+    setCurrentIndex((prev) => (prev > 0 ? prev - 1 : images.length - 1));
+    setShowVideo(false);
+  }, [images.length]);
+
+  const goToNext = useCallback(() => {
+    setCurrentIndex((prev) => (prev < images.length - 1 ? prev + 1 : 0));
+    setShowVideo(false);
+  }, [images.length]);
 
   // Handle keyboard navigation
   const handleKeyDown = useCallback((e: KeyboardEvent) => {
     if (e.key === 'Escape') {
       onClose();
     } else if (e.key === 'ArrowLeft') {
-      setCurrentIndex((prev) => (prev > 0 ? prev - 1 : images.length - 1));
-      setShowVideo(false);
+      goToPrevious();
     } else if (e.key === 'ArrowRight') {
-      setCurrentIndex((prev) => (prev < images.length - 1 ? prev + 1 : 0));
-      setShowVideo(false);
+      goToNext();
     }
-  }, [onClose, images.length]);
+  }, [onClose, goToPrevious, goToNext]);
 
   useEffect(() => {
     if (isOpen) {
@@ -65,85 +111,87 @@ export function MediaLightbox({ isOpen, onClose, images, videoUrl, title, initia
     }
   }, [isOpen, handleKeyDown]);
 
+  // Swipe handlers
+  const { onTouchStart, onTouchMove, onTouchEnd } = useSwipe(goToNext, goToPrevious);
+
   const currentImage = images[currentIndex];
   const embedUrl = videoUrl ? getYouTubeEmbedUrl(videoUrl) : null;
   const isYouTube = videoUrl ? isYouTubeUrl(videoUrl) : false;
   const hasMultipleImages = images.length > 1;
-
-  const goToPrevious = () => {
-    setCurrentIndex((prev) => (prev > 0 ? prev - 1 : images.length - 1));
-    setShowVideo(false);
-  };
-
-  const goToNext = () => {
-    setCurrentIndex((prev) => (prev < images.length - 1 ? prev + 1 : 0));
-    setShowVideo(false);
-  };
 
   return (
     <Dialog open={isOpen} onOpenChange={(open) => !open && onClose()}>
       <DialogContent className="max-w-[95vw] max-h-[95vh] w-auto h-auto p-0 bg-background/95 backdrop-blur-md border-border overflow-hidden">
         <DialogTitle className="sr-only">{title}</DialogTitle>
         
-        {/* Close button */}
+        {/* Close button - larger touch target */}
         <button
           onClick={onClose}
-          className="absolute top-4 right-4 z-50 p-2 bg-background/80 hover:bg-background border border-border rounded-full transition-colors"
+          className="absolute top-4 right-4 z-50 p-3 bg-background/80 hover:bg-background border border-border rounded-full transition-colors min-w-[48px] min-h-[48px] flex items-center justify-center"
           aria-label="Close"
         >
-          <X className="w-5 h-5" />
+          <X className="w-6 h-6" />
         </button>
 
-        <div className="relative flex items-center justify-center min-h-[50vh]">
-          {/* Navigation arrows */}
+        <div 
+          className="relative flex items-center justify-center min-h-[50vh]"
+          onTouchStart={onTouchStart}
+          onTouchMove={onTouchMove}
+          onTouchEnd={onTouchEnd}
+        >
+          {/* Navigation arrows - larger touch targets */}
           {hasMultipleImages && !showVideo && (
             <>
               <button
                 onClick={goToPrevious}
-                className="absolute left-4 z-50 p-3 bg-background/80 hover:bg-background border border-border rounded-full transition-colors"
+                className="absolute left-2 md:left-4 z-50 p-3 md:p-4 bg-background/80 hover:bg-background border border-border rounded-full transition-colors min-w-[48px] min-h-[48px] flex items-center justify-center"
                 aria-label="Previous image"
               >
-                <ChevronLeft className="w-6 h-6" />
+                <ChevronLeft className="w-6 h-6 md:w-7 md:h-7" />
               </button>
               <button
                 onClick={goToNext}
-                className="absolute right-4 z-50 p-3 bg-background/80 hover:bg-background border border-border rounded-full transition-colors"
+                className="absolute right-2 md:right-4 z-50 p-3 md:p-4 bg-background/80 hover:bg-background border border-border rounded-full transition-colors min-w-[48px] min-h-[48px] flex items-center justify-center"
                 aria-label="Next image"
               >
-                <ChevronRight className="w-6 h-6" />
+                <ChevronRight className="w-6 h-6 md:w-7 md:h-7" />
               </button>
             </>
           )}
 
           {showVideo && videoUrl ? (
-            isYouTube && embedUrl ? (
-              <iframe
-                src={embedUrl}
-                className="w-[90vw] h-[80vh] max-w-5xl"
-                allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture"
-                allowFullScreen
-                title={title}
-              />
-            ) : (
-              <video
-                src={videoUrl}
-                className="max-w-[90vw] max-h-[80vh] object-contain"
-                controls
-                autoPlay
-              />
-            )
+            <div className="animate-fade-in">
+              {isYouTube && embedUrl ? (
+                <iframe
+                  src={embedUrl}
+                  className="w-[90vw] h-[80vh] max-w-5xl"
+                  allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture"
+                  allowFullScreen
+                  title={title}
+                />
+              ) : (
+                <video
+                  src={videoUrl}
+                  className="max-w-[90vw] max-h-[80vh] object-contain"
+                  controls
+                  autoPlay
+                  playsInline
+                />
+              )}
+            </div>
           ) : currentImage ? (
             <img
+              key={`${currentImage.id}-${currentIndex}`}
               src={currentImage.image_url}
               alt={currentImage.alt_text || title}
-              className="max-w-[90vw] max-h-[85vh] object-contain animate-scale-in"
+              className="max-w-[90vw] max-h-[85vh] object-contain animate-fade-in"
             />
           ) : null}
         </div>
 
-        {/* Thumbnail strip & video button */}
+        {/* Thumbnail strip & video button - larger touch targets */}
         {(hasMultipleImages || videoUrl) && !showVideo && (
-          <div className="absolute bottom-4 left-1/2 -translate-x-1/2 flex items-center gap-2 bg-background/80 backdrop-blur-sm p-2 rounded-lg border border-border">
+          <div className="absolute bottom-4 left-1/2 -translate-x-1/2 flex items-center gap-2 md:gap-3 bg-background/80 backdrop-blur-sm p-2 md:p-3 rounded-lg border border-border max-w-[90vw] overflow-x-auto">
             {images.map((img, index) => (
               <button
                 key={img.id}
@@ -151,7 +199,7 @@ export function MediaLightbox({ isOpen, onClose, images, videoUrl, title, initia
                   setCurrentIndex(index);
                   setShowVideo(false);
                 }}
-                className={`w-12 h-12 rounded overflow-hidden border-2 transition-all ${
+                className={`flex-shrink-0 w-14 h-14 md:w-16 md:h-16 rounded overflow-hidden border-2 transition-all ${
                   currentIndex === index && !showVideo
                     ? 'border-primary ring-2 ring-primary/30'
                     : 'border-transparent hover:border-border'
@@ -167,13 +215,13 @@ export function MediaLightbox({ isOpen, onClose, images, videoUrl, title, initia
             {videoUrl && (
               <button
                 onClick={() => setShowVideo(true)}
-                className={`w-12 h-12 rounded overflow-hidden border-2 transition-all flex items-center justify-center bg-muted ${
+                className={`flex-shrink-0 w-14 h-14 md:w-16 md:h-16 rounded overflow-hidden border-2 transition-all flex items-center justify-center bg-muted ${
                   showVideo
                     ? 'border-primary ring-2 ring-primary/30'
                     : 'border-transparent hover:border-border'
                 }`}
               >
-                <Play className="w-5 h-5" />
+                <Play className="w-6 h-6" />
               </button>
             )}
           </div>
@@ -196,13 +244,24 @@ interface MediaHeroProps {
   videoUrl: string | null;
   title: string;
   onOpenLightbox: (index?: number) => void;
+  onOpenVideo?: () => void;
   badges?: React.ReactNode;
   tapToEnlargeText: string;
   aspectRatio?: 'hero' | 'square';
 }
 
-export function MediaHero({ images, videoUrl, title, onOpenLightbox, badges, tapToEnlargeText, aspectRatio = 'hero' }: MediaHeroProps) {
-  const mainImage = images[0];
+export function MediaHero({ 
+  images, 
+  videoUrl, 
+  title, 
+  onOpenLightbox, 
+  onOpenVideo,
+  badges, 
+  tapToEnlargeText, 
+  aspectRatio = 'hero' 
+}: MediaHeroProps) {
+  const [currentIndex, setCurrentIndex] = useState(0);
+  const mainImage = images[currentIndex] || images[0];
   
   if (!mainImage) return null;
 
@@ -213,21 +272,49 @@ export function MediaHero({ images, videoUrl, title, onOpenLightbox, badges, tap
     ? 'aspect-square' 
     : 'h-[50vh] md:h-[60vh]';
 
+  // Swipe to navigate through images in hero
+  const goToNext = () => {
+    if (hasMultipleImages) {
+      setCurrentIndex((prev) => (prev < images.length - 1 ? prev + 1 : 0));
+    }
+  };
+
+  const goToPrevious = () => {
+    if (hasMultipleImages) {
+      setCurrentIndex((prev) => (prev > 0 ? prev - 1 : images.length - 1));
+    }
+  };
+
+  const { onTouchStart, onTouchMove, onTouchEnd } = useSwipe(goToNext, goToPrevious);
+
+  const handleVideoClick = (e: React.MouseEvent) => {
+    e.stopPropagation();
+    if (onOpenVideo) {
+      onOpenVideo();
+    } else {
+      onOpenLightbox(0);
+    }
+  };
+
   return (
     <div className="relative">
-      {/* Main hero image */}
+      {/* Main hero image with swipe support */}
       <div 
         className={`relative ${aspectClasses} overflow-hidden cursor-pointer group`}
-        onClick={() => onOpenLightbox(0)}
+        onClick={() => onOpenLightbox(currentIndex)}
+        onTouchStart={onTouchStart}
+        onTouchMove={onTouchMove}
+        onTouchEnd={onTouchEnd}
         role="button"
         tabIndex={0}
-        onKeyDown={(e) => e.key === 'Enter' && onOpenLightbox(0)}
+        onKeyDown={(e) => e.key === 'Enter' && onOpenLightbox(currentIndex)}
         aria-label={`${tapToEnlargeText}: ${title}`}
       >
         <img
+          key={mainImage.id}
           src={mainImage.image_url}
           alt={mainImage.alt_text || title}
-          className="w-full h-full object-cover transition-transform duration-500 group-hover:scale-105"
+          className="w-full h-full object-cover transition-all duration-300 group-hover:scale-105"
         />
         
         {/* Gradient overlay - only for hero aspect */}
@@ -262,21 +349,31 @@ export function MediaHero({ images, videoUrl, title, onOpenLightbox, badges, tap
         {/* Image count indicator */}
         {hasMultipleImages && (
           <div className="absolute bottom-4 left-4 bg-background/70 backdrop-blur-sm px-3 py-1.5 text-xs font-sans tracking-wide border border-border/50">
-            1 / {images.length}
+            {currentIndex + 1} / {images.length}
+          </div>
+        )}
+
+        {/* Mobile swipe hint - only show on first image */}
+        {hasMultipleImages && currentIndex === 0 && (
+          <div className="absolute bottom-14 left-1/2 -translate-x-1/2 md:hidden bg-background/70 backdrop-blur-sm px-3 py-1 text-xs font-sans tracking-wide border border-border/50 animate-pulse">
+            ← Swipe →
           </div>
         )}
       </div>
 
-      {/* Thumbnail strip below hero */}
-      {hasMultipleImages && (
+      {/* Thumbnail strip below hero - larger touch targets */}
+      {(hasMultipleImages || videoUrl) && (
         <div className="container mx-auto max-w-4xl px-4 -mt-8 relative z-20">
-          <div className="flex gap-2 overflow-x-auto pb-2 scrollbar-hide">
+          <div className="flex gap-2 md:gap-3 overflow-x-auto pb-2 scrollbar-hide">
             {images.map((img, index) => (
               <button
                 key={img.id}
-                onClick={() => onOpenLightbox(index)}
-                className={`flex-shrink-0 w-16 h-16 md:w-20 md:h-20 rounded overflow-hidden border-2 transition-all ${
-                  index === 0
+                onClick={() => {
+                  setCurrentIndex(index);
+                  onOpenLightbox(index);
+                }}
+                className={`flex-shrink-0 w-18 h-18 md:w-20 md:h-20 rounded overflow-hidden border-2 transition-all min-w-[72px] min-h-[72px] ${
+                  currentIndex === index
                     ? 'border-primary'
                     : 'border-border hover:border-primary/50'
                 }`}
@@ -290,8 +387,8 @@ export function MediaHero({ images, videoUrl, title, onOpenLightbox, badges, tap
             ))}
             {videoUrl && (
               <button
-                onClick={() => onOpenLightbox(0)}
-                className="flex-shrink-0 w-16 h-16 md:w-20 md:h-20 rounded overflow-hidden border-2 border-border hover:border-primary/50 flex items-center justify-center bg-muted"
+                onClick={handleVideoClick}
+                className="flex-shrink-0 w-18 h-18 md:w-20 md:h-20 rounded overflow-hidden border-2 border-border hover:border-primary/50 flex items-center justify-center bg-muted min-w-[72px] min-h-[72px]"
               >
                 <Play className="w-6 h-6" />
               </button>

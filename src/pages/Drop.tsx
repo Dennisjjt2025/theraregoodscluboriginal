@@ -53,6 +53,7 @@ export default function Drop() {
   const [memberLoading, setMemberLoading] = useState(true);
   const [lightboxOpen, setLightboxOpen] = useState(false);
   const [lightboxIndex, setLightboxIndex] = useState(0);
+  const [lightboxShowVideo, setLightboxShowVideo] = useState(false);
   
   // Upcoming drop states
   const [isUpcoming, setIsUpcoming] = useState(false);
@@ -271,6 +272,13 @@ export default function Drop() {
 
   const openLightbox = (index: number = 0) => {
     setLightboxIndex(index);
+    setLightboxShowVideo(false);
+    setLightboxOpen(true);
+  };
+
+  const openVideo = () => {
+    setLightboxIndex(0);
+    setLightboxShowVideo(true);
     setLightboxOpen(true);
   };
 
@@ -508,6 +516,7 @@ export default function Drop() {
         videoUrl={drop.video_url}
         title={title}
         initialIndex={lightboxIndex}
+        initialShowVideo={lightboxShowVideo}
       />
 
       <main className="pt-20 md:pt-24">
@@ -522,6 +531,7 @@ export default function Drop() {
                 videoUrl={drop.video_url}
                 title={title}
                 onOpenLightbox={openLightbox}
+                onOpenVideo={openVideo}
                 badges={heroBadges}
                 tapToEnlargeText={drop.video_url ? t.drop.playVideo : t.drop.tapToEnlarge}
                 aspectRatio="square"
