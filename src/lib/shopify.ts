@@ -15,7 +15,7 @@ export interface BuyerIdentity {
       address1?: string;
       city?: string;
       zip?: string;
-      countryCode?: string;
+      country?: string;
     };
   }>;
 }

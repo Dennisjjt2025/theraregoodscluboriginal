@@ -60,7 +60,7 @@ async function getUserBuyerIdentity(): Promise<BuyerIdentity | undefined> {
           address1: address1 || undefined,
           city: profile.city || undefined,
           zip: profile.postal_code || undefined,
-          countryCode: getCountryCode(profile.country),
+          country: getCountryCode(profile.country),
         },
       }];
     }
