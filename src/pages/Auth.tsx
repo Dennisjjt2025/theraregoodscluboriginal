@@ -80,6 +80,29 @@ export default function Auth() {
 
       if (updateError) throw updateError;
 
+      // Now create the members record - the invite code was already marked as used during signup
+      // Find the invite code that was used by this user
+      const { data: inviteCode } = await supabase
+        .from('invite_codes')
+        .select('member_id')
+        .eq('used_by', profile.id)
+        .maybeSingle();
+
+      // Create members record for the verified user
+      const { error: memberError } = await supabase
+        .from('members')
+        .insert({
+          user_id: profile.id,
+          status: 'active',
+          invited_by: inviteCode?.member_id || null,
+          invites_remaining: 3,
+        });
+
+      if (memberError) {
+        console.error('Error creating member record after verification:', memberError);
+        // Don't fail the whole flow, user can still log in and admin can fix
+      }
+
       setAuthMode('verified');
       toast.success(t.auth.emailVerified);
     } catch (error) {
@@ -247,15 +270,8 @@ export default function Auth() {
       if (signUpError) throw signUpError;
 
       if (signUpData.user) {
-        // Get the invite code owner's member_id for invited_by tracking
-        const { data: inviteData } = await supabase
-          .from('invite_codes')
-          .select('member_id')
-          .eq('code', validatedInviteCode)
-          .single();
-
-        // Mark invite code as used
-        await supabase
+        // Mark invite code as used IMMEDIATELY (prevents others from stealing it)
+        const { error: inviteUpdateError } = await supabase
           .from('invite_codes')
           .update({
             used_by: signUpData.user.id,
@@ -263,28 +279,24 @@ export default function Auth() {
           })
           .eq('code', validatedInviteCode);
 
-        // Create members record for the new user
-        const { error: memberError } = await supabase
-          .from('members')
-          .insert({
-            user_id: signUpData.user.id,
-            status: 'active',
-            invited_by: inviteData?.member_id || null,
-            invites_remaining: 3,
-          });
-
-        if (memberError) {
-          console.error('Error creating member record:', memberError);
+        if (inviteUpdateError) {
+          console.error('Error marking invite code as used:', inviteUpdateError);
         }
 
-        // Auto-verify email for users with valid invite code
-        await supabase
-          .from('profiles')
-          .update({ email_verified: true })
-          .eq('id', signUpData.user.id);
-
-        toast.success(t.auth.accountCreated);
-        setAuthMode('login-password');
+        // Send verification email - members record will be created after verification
+        const sent = await sendVerificationEmail(signUpData.user.id, email, firstName);
+        
+        if (sent) {
+          setPendingUserId(signUpData.user.id);
+          setAuthMode('verify-pending');
+          toast.success(t.auth.verifyEmailSent);
+        } else {
+          // Email failed, but account exists - show pending state anyway
+          setPendingUserId(signUpData.user.id);
+          setAuthMode('verify-pending');
+          toast.error('Account aangemaakt, maar verificatie email kon niet worden verzonden. Probeer opnieuw.');
+        }
+        
         setPassword('');
         setConfirmPassword('');
       }

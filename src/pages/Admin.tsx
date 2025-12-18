@@ -13,6 +13,7 @@ import { Plus, Users, Wine, Clock, Check, X, RotateCcw, Minus, FileText, Save, E
 import { SiteSettingsEditor } from '@/components/admin/SiteSettingsEditor';
 import { PreferencesOverview } from '@/components/admin/PreferencesOverview';
 import { PreferenceCategoriesManager } from '@/components/admin/PreferenceCategoriesManager';
+import { IncompleteAccountsManager } from '@/components/admin/IncompleteAccountsManager';
 
 interface Drop {
   id: string;
@@ -1176,6 +1177,11 @@ export default function Admin() {
                 {members.length === 0 && (
                   <p className="text-muted-foreground text-center py-8">No members yet</p>
                 )}
+              </div>
+
+              {/* Incomplete Accounts Section */}
+              <div className="mt-6 bg-card border border-border p-4 sm:p-6">
+                <IncompleteAccountsManager />
               </div>
             </TabsContent>
 

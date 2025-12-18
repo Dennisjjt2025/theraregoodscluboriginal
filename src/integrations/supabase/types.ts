@@ -484,6 +484,19 @@ export type Database = {
           was_interested: boolean
         }[]
       }
+      get_incomplete_accounts: {
+        Args: never
+        Returns: {
+          created_at: string
+          email: string
+          email_verified: boolean
+          first_name: string
+          id: string
+          invite_code_used: string
+          inviter_email: string
+          last_name: string
+        }[]
+      }
       get_member_emails: {
         Args: never
         Returns: {
