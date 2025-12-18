@@ -21,6 +21,7 @@ export interface DropFormData {
   quantity_sold: number;
   image_url: string;
   video_url: string;
+  shopify_product_id: string;
   starts_at: string;
   ends_at: string;
   is_draft: boolean;
@@ -318,6 +319,16 @@ export function DropEditorForm({ form, setForm, mode, dropId }: DropEditorFormPr
                 className={`input-luxury w-full ${form.noEndDate ? 'opacity-50 cursor-not-allowed' : ''}`}
               />
             </div>
+
+            <FormField label="Shopify Product ID" hint="For checkout integration">
+              <input
+                type="text"
+                value={form.shopify_product_id}
+                onChange={(e) => updateForm('shopify_product_id', e.target.value)}
+                placeholder="gid://shopify/Product/..."
+                className="input-luxury w-full"
+              />
+            </FormField>
 
             <div className="pt-4 border-t border-border space-y-3">
               <label className="flex items-center gap-3 cursor-pointer p-3 rounded-lg hover:bg-muted/50 transition-colors">

@@ -24,6 +24,7 @@ interface Drop {
   quantity_sold?: number;
   image_url?: string;
   video_url?: string;
+  shopify_product_id?: string;
   starts_at: string;
   ends_at?: string;
   is_active: boolean;
@@ -54,6 +55,7 @@ const initialFormData: DropFormData = {
   quantity_sold: 0,
   image_url: '',
   video_url: '',
+  shopify_product_id: '',
   starts_at: '',
   ends_at: '',
   is_draft: false,
@@ -94,6 +96,7 @@ export function DropEditor({ drop, onClose, onSave, mode }: DropEditorProps) {
         quantity_sold: drop.quantity_sold || 0,
         image_url: drop.image_url || '',
         video_url: drop.video_url || '',
+        shopify_product_id: drop.shopify_product_id || '',
         starts_at: drop.starts_at ? formatDateForInput(drop.starts_at) : '',
         ends_at: drop.ends_at ? formatDateForInput(drop.ends_at) : '',
         is_draft: drop.is_draft || false,
@@ -138,6 +141,7 @@ export function DropEditor({ drop, onClose, onSave, mode }: DropEditorProps) {
         quantity_available: parseInt(form.quantity_available),
         image_url: form.image_url || null,
         video_url: form.video_url || null,
+        shopify_product_id: form.shopify_product_id || null,
         starts_at: form.starts_at,
         ends_at: form.noEndDate ? null : form.ends_at || null,
         is_draft: form.is_draft,
