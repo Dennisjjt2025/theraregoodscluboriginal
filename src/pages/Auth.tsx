@@ -208,6 +208,14 @@ export default function Auth() {
 
   const handleSignUp = async (e: React.FormEvent) => {
     e.preventDefault();
+    
+    // SECURITY: Block signup without valid invite code
+    if (!validatedInviteCode) {
+      toast.error('Een geldige invite code is vereist om een account aan te maken.');
+      setAuthMode('invite');
+      return;
+    }
+    
     if (!email || !password || !firstName || !lastName) return;
 
     if (password.length < 6) {
@@ -239,38 +247,46 @@ export default function Auth() {
       if (signUpError) throw signUpError;
 
       if (signUpData.user) {
-        // If we have a validated invite code, mark it as used and auto-verify
-        if (validatedInviteCode) {
-          await supabase
-            .from('invite_codes')
-            .update({
-              used_by: signUpData.user.id,
-              used_at: new Date().toISOString(),
-            })
-            .eq('code', validatedInviteCode);
+        // Get the invite code owner's member_id for invited_by tracking
+        const { data: inviteData } = await supabase
+          .from('invite_codes')
+          .select('member_id')
+          .eq('code', validatedInviteCode)
+          .single();
 
-          // Auto-verify email for users with valid invite code (they're already validated)
-          await supabase
-            .from('profiles')
-            .update({ email_verified: true })
-            .eq('id', signUpData.user.id);
+        // Mark invite code as used
+        await supabase
+          .from('invite_codes')
+          .update({
+            used_by: signUpData.user.id,
+            used_at: new Date().toISOString(),
+          })
+          .eq('code', validatedInviteCode);
 
-          toast.success(t.auth.accountCreated);
-          setAuthMode('login-password');
-          setPassword('');
-          setConfirmPassword('');
-        } else {
-          // No invite code - require email verification
-          const sent = await sendVerificationEmail(signUpData.user.id, email, firstName);
-          
-          if (sent) {
-            setPendingUserId(signUpData.user.id);
-            setAuthMode('verify-pending');
-            toast.success(t.auth.verifyEmailSent);
-          } else {
-            toast.error('Failed to send verification email. Please try again.');
-          }
+        // Create members record for the new user
+        const { error: memberError } = await supabase
+          .from('members')
+          .insert({
+            user_id: signUpData.user.id,
+            status: 'active',
+            invited_by: inviteData?.member_id || null,
+            invites_remaining: 3,
+          });
+
+        if (memberError) {
+          console.error('Error creating member record:', memberError);
         }
+
+        // Auto-verify email for users with valid invite code
+        await supabase
+          .from('profiles')
+          .update({ email_verified: true })
+          .eq('id', signUpData.user.id);
+
+        toast.success(t.auth.accountCreated);
+        setAuthMode('login-password');
+        setPassword('');
+        setConfirmPassword('');
       }
     } catch (error: any) {
       console.error('Signup error:', error);
