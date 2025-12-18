@@ -17,3 +17,6 @@ verify_jwt = false
 
 [functions.delete-auth-user]
 verify_jwt = false
+
+[functions.shopify-order-webhook]
+verify_jwt = false
