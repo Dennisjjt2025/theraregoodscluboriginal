@@ -1,5 +1,5 @@
 import { useState } from 'react';
-import { ShoppingCart, Minus, Plus, Trash2, ExternalLink, Loader2 } from 'lucide-react';
+import { ShoppingCart, Minus, Plus, Trash2 } from 'lucide-react';
 import { useCartStore } from '@/stores/cartStore';
 import { useLanguage } from '@/contexts/LanguageContext';
 import {
@@ -11,52 +11,20 @@ import {
   SheetTrigger,
 } from '@/components/ui/sheet';
 import { Button } from '@/components/ui/button';
-import { toast } from 'sonner';
 
 export function CartDrawer() {
   const [isOpen, setIsOpen] = useState(false);
   const { language } = useLanguage();
   const {
     items,
-    isLoading,
     updateQuantity,
     removeItem,
-    createCheckout,
     getTotalItems,
     getTotalPrice,
   } = useCartStore();
 
   const totalItems = getTotalItems();
   const totalPrice = getTotalPrice();
-
-  const handleCheckout = async () => {
-    // Open window direct tijdens user click (vóór await) - voorkomt Safari popup blocker
-    const newWindow = window.open('about:blank', '_blank');
-    
-    try {
-      const checkoutUrl = await createCheckout();
-      
-      if (newWindow) {
-        newWindow.location.href = checkoutUrl;
-      } else {
-        // Fallback: navigeer huidige pagina als popup geblokkeerd is
-        window.location.href = checkoutUrl;
-      }
-      
-      setIsOpen(false);
-    } catch (error) {
-      // Sluit het lege venster bij error
-      if (newWindow) {
-        newWindow.close();
-      }
-      console.error('Checkout failed:', error);
-      toast.error(
-        language === 'nl'
-          ? 'Checkout mislukt. Probeer het opnieuw.'
-          : 'Checkout failed. Please try again.'
-      );
-    }
-  };
 
   const t = {
     cart: language === 'nl' ? 'Winkelwagen' : 'Shopping Cart',
@@ -66,8 +34,9 @@ export function CartDrawer() {
         ? `${n} ${n === 1 ? 'item' : 'items'} in je winkelwagen`
         : `${n} ${n === 1 ? 'item' : 'items'} in your cart`,
     total: language === 'nl' ? 'Totaal' : 'Total',
-    checkout: language === 'nl' ? 'Afrekenen via Shopify' : 'Checkout with Shopify',
-    creatingCheckout: language === 'nl' ? 'Checkout aanmaken...' : 'Creating checkout...',
+    checkoutInfo: language === 'nl' 
+      ? 'Checkout is momenteel niet beschikbaar' 
+      : 'Checkout is currently not available',
   };
 
   return (
@@ -160,31 +129,16 @@ export function CartDrawer() {
                 ))}
               </div>
 
-              {/* Fixed checkout section */}
+              {/* Fixed total section */}
               <div className="flex-shrink-0 space-y-4 pt-4 border-t border-border bg-background">
                 <div className="flex justify-between items-center">
                   <span className="text-lg font-semibold">{t.total}</span>
                   <span className="text-xl font-serif font-bold">€{totalPrice.toFixed(2)}</span>
                 </div>
 
-                <Button
-                  onClick={handleCheckout}
-                  className="w-full btn-luxury"
-                  size="lg"
-                  disabled={items.length === 0 || isLoading}
-                >
-                  {isLoading ? (
-                    <>
-                      <Loader2 className="w-4 h-4 mr-2 animate-spin" />
-                      {t.creatingCheckout}
-                    </>
-                  ) : (
-                    <>
-                      <ExternalLink className="w-4 h-4 mr-2" />
-                      {t.checkout}
-                    </>
-                  )}
-                </Button>
+                <p className="text-sm text-muted-foreground text-center py-2">
+                  {t.checkoutInfo}
+                </p>
               </div>
             </>
           )}
