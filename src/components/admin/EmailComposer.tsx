@@ -167,7 +167,7 @@ export function EmailComposer({ onClose, preselectedEmail, preselectedType }: Em
             <label className="block text-sm font-medium mb-2">
               {language === 'nl' ? 'Email Type' : 'Email Type'}
             </label>
-            <div className="grid grid-cols-5 gap-2">
+            <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-5 gap-2">
               {EMAIL_TYPES.map((type) => {
                 const Icon = type.icon;
                 return (
@@ -179,7 +179,7 @@ export function EmailComposer({ onClose, preselectedEmail, preselectedType }: Em
                         // Only set placeholder if message is empty
                       }
                     }}
-                    className={`flex flex-col items-center gap-1 p-3 border ${
+                    className={`flex flex-col items-center gap-1 p-3 min-h-[60px] border ${
                       emailType === type.id
                         ? 'bg-muted border-primary'
                         : 'border-border hover:bg-muted/50'
@@ -251,8 +251,8 @@ export function EmailComposer({ onClose, preselectedEmail, preselectedType }: Em
         </div>
 
         {/* Footer */}
-        <div className="p-6 border-t border-border flex items-center justify-between">
-          <p className="text-sm text-muted-foreground">
+        <div className="p-4 sm:p-6 border-t border-border flex flex-col sm:flex-row items-stretch sm:items-center justify-between gap-3">
+          <p className="text-sm text-muted-foreground text-center sm:text-left">
             {sendType === 'bulk' 
               ? (language === 'nl' ? '⚠️ Dit stuurt naar ALLE actieve leden' : '⚠️ This will send to ALL active members')
               : recipients.split(',').filter(e => e.trim()).length > 0
@@ -260,14 +260,14 @@ export function EmailComposer({ onClose, preselectedEmail, preselectedType }: Em
                 : ''
             }
           </p>
-          <div className="flex gap-3">
-            <button onClick={onClose} className="btn-outline-luxury">
+          <div className="flex flex-col sm:flex-row gap-2 sm:gap-3">
+            <button onClick={onClose} className="btn-outline-luxury min-h-[44px]">
               {t.common.cancel}
             </button>
             <button
               onClick={handleSend}
               disabled={sending || !subject.trim() || !message.trim()}
-              className="btn-luxury flex items-center gap-2 disabled:opacity-50"
+              className="btn-luxury flex items-center justify-center gap-2 disabled:opacity-50 min-h-[44px]"
             >
               {sending ? (
                 <>
