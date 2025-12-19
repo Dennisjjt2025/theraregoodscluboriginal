@@ -255,7 +255,7 @@ const handler = async (req: Request): Promise<Response> => {
         "Content-Type": "application/json",
       },
       body: JSON.stringify({
-        from: "The Rare Goods Club <onboarding@resend.dev>",
+        from: "The Rare Goods Club <hello@connect.theraregoodsclub.com>",
         to: [email],
         subject: emailSubject,
         html: htmlEmail,
