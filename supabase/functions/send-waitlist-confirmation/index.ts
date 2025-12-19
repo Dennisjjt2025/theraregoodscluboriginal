@@ -201,8 +201,8 @@ const handler = async (req: Request): Promise<Response> => {
     subject = replacePlaceholders(subject, placeholderData);
     const message = replacePlaceholders(messageTemplate, placeholderData);
 
-    // Get site URL
-    const siteUrl = Deno.env.get("SITE_URL") || "https://preview--raregoodsclub.lovable.app";
+    // Get site URL and remove trailing slashes
+    const siteUrl = (Deno.env.get("SITE_URL") || "https://theraregoodsclub.com").replace(/\/+$/, '');
 
     // Generate HTML email
     const htmlContent = getBaseEmailTemplate(message, language, siteUrl);
