@@ -123,6 +123,8 @@ type TranslationContent = {
       home_design: string;
       collectibles: string;
     };
+    notMemberTitle: string;
+    notMemberDesc: string;
   };
   drop: {
     currentDrop: string;
@@ -369,6 +371,8 @@ export const translations: Record<Language, TranslationContent> = {
         home_design: 'Home & Design',
         collectibles: 'Collectibles',
       },
+      notMemberTitle: 'Not a Member Yet',
+      notMemberDesc: "Your account exists but you're not yet a member. You may need an invite code or admin approval.",
     },
     drop: {
       currentDrop: 'Current Drop',
@@ -613,6 +617,8 @@ export const translations: Record<Language, TranslationContent> = {
         home_design: 'Wonen & Design',
         collectibles: 'Verzamelobjecten',
       },
+      notMemberTitle: 'Nog Geen Lid',
+      notMemberDesc: 'Je account bestaat, maar je bent nog geen lid. Mogelijk heb je een uitnodigingscode nodig of admin goedkeuring.',
     },
     drop: {
       currentDrop: 'Huidige Drop',

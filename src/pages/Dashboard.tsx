@@ -66,6 +66,7 @@ interface Profile {
   city: string | null;
   country: string | null;
   preferences: string[];
+  email_verified: boolean | null;
 }
 
 interface PreferenceCategory {
@@ -96,6 +97,7 @@ export default function Dashboard() {
     city: '',
     country: 'Nederland',
     preferences: [],
+    email_verified: null,
   });
   const [loading, setLoading] = useState(true);
   const [savingProfile, setSavingProfile] = useState(false);
@@ -165,6 +167,7 @@ export default function Dashboard() {
           city: profileData.city || '',
           country: profileData.country || 'Nederland',
           preferences: profileData.preferences || [],
+          email_verified: profileData.email_verified ?? null,
         });
       }
 
@@ -368,18 +371,34 @@ export default function Dashboard() {
   }
 
   if (!member) {
+    const emailNotVerified = profile && !profile.email_verified;
+    
     return (
       <div className="min-h-screen bg-background">
         <Header />
         <main className="pt-24 px-4">
           <div className="max-w-md mx-auto text-center py-24">
-            <h1 className="font-serif text-3xl mb-4">Not a Member Yet</h1>
-            <p className="text-muted-foreground mb-8">
-              Your account exists but you're not yet a member. You may need an invite code or admin approval.
-            </p>
-            <Link to="/" className="btn-outline-luxury">
-              Back to Home
-            </Link>
+            {emailNotVerified ? (
+              <>
+                <h1 className="font-serif text-3xl mb-4">{t.auth.verifyEmail}</h1>
+                <p className="text-muted-foreground mb-8">
+                  {t.auth.verifyEmailDesc}
+                </p>
+                <Link to="/auth" className="btn-outline-luxury">
+                  {t.auth.resendVerification}
+                </Link>
+              </>
+            ) : (
+              <>
+                <h1 className="font-serif text-3xl mb-4">{t.dashboard.notMemberTitle}</h1>
+                <p className="text-muted-foreground mb-8">
+                  {t.dashboard.notMemberDesc}
+                </p>
+                <Link to="/" className="btn-outline-luxury">
+                  {t.common.back}
+                </Link>
+              </>
+            )}
           </div>
         </main>
       </div>
