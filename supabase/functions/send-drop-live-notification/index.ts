@@ -236,13 +236,12 @@ const handler = async (req: Request): Promise<Response> => {
     console.log(`Found ${interests.length} interested users to notify`);
 
     const resendApiKey = Deno.env.get("RESEND_API_KEY");
-    const siteUrl = Deno.env.get("SUPABASE_URL")?.replace('.supabase.co', '') || 'https://theraregoodsclub.com';
     
-    // Use a better site URL - derive from the request origin or use a configured value
-    const origin = req.headers.get('origin') || 'https://theraregoodsclub.com';
+    // Get site URL and remove trailing slashes
+    const siteUrl = (Deno.env.get("SITE_URL") || "https://theraregoodsclub.com").replace(/\/+$/, '');
     
     const dropTitle = drop.title_nl || drop.title_en;
-    const htmlContent = getEmailTemplate(dropTitle, drop.price, drop.image_url, origin);
+    const htmlContent = getEmailTemplate(dropTitle, drop.price, drop.image_url, siteUrl);
 
     // Send emails and track results
     const results = [];

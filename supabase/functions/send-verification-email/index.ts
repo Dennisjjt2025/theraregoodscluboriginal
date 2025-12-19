@@ -203,7 +203,7 @@ const handler = async (req: Request): Promise<Response> => {
       throw new Error("Failed to store verification token");
     }
 
-    const siteUrl = Deno.env.get("SITE_URL") || "https://theraregoodsclub.com";
+    const siteUrl = (Deno.env.get("SITE_URL") || "https://theraregoodsclub.com").replace(/\/+$/, '');
     const verificationUrl = `${siteUrl}/auth?verify=${verificationToken}`;
 
     // Get email template from database
