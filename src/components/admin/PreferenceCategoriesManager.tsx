@@ -219,7 +219,7 @@ export function PreferenceCategoriesManager() {
 
   return (
     <div className="bg-card border border-border p-6">
-      <div className="flex items-center justify-between mb-6">
+      <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3 mb-6">
         <h2 className="font-serif text-xl">
           {language === 'nl' ? 'Categorieën Beheren' : 'Manage Categories'}
         </h2>
@@ -229,7 +229,7 @@ export function PreferenceCategoriesManager() {
             setShowAddDialog(true);
           }}
           size="sm"
-          className="gap-2"
+          className="gap-2 min-h-[44px] w-full sm:w-auto"
         >
           <Plus className="w-4 h-4" />
           {language === 'nl' ? 'Toevoegen' : 'Add'}
@@ -241,20 +241,20 @@ export function PreferenceCategoriesManager() {
         {activeCategories.map((category, index) => (
           <div
             key={category.id}
-            className="flex items-center gap-3 p-3 bg-muted/30 border border-border rounded"
+            className="flex items-center gap-2 sm:gap-3 p-3 bg-muted/30 border border-border rounded"
           >
-            <div className="flex flex-col gap-1">
+            <div className="flex flex-col gap-0.5">
               <button
                 onClick={() => moveCategory(category, 'up')}
                 disabled={index === 0}
-                className="p-0.5 hover:bg-muted rounded disabled:opacity-30"
+                className="p-1.5 min-h-[36px] min-w-[36px] flex items-center justify-center hover:bg-muted rounded disabled:opacity-30"
               >
                 <GripVertical className="w-4 h-4 rotate-180" />
               </button>
               <button
                 onClick={() => moveCategory(category, 'down')}
                 disabled={index === activeCategories.length - 1}
-                className="p-0.5 hover:bg-muted rounded disabled:opacity-30"
+                className="p-1.5 min-h-[36px] min-w-[36px] flex items-center justify-center hover:bg-muted rounded disabled:opacity-30"
               >
                 <GripVertical className="w-4 h-4" />
               </button>
@@ -264,9 +264,9 @@ export function PreferenceCategoriesManager() {
               <p className="font-medium text-sm truncate">
                 {language === 'nl' ? category.label_nl : category.label_en}
               </p>
-              <p className="text-xs text-muted-foreground">
-                {language === 'nl' ? category.label_en : category.label_nl}
-                <span className="mx-2">•</span>
+              <p className="text-xs text-muted-foreground truncate">
+                <span className="hidden sm:inline">{language === 'nl' ? category.label_en : category.label_nl}</span>
+                <span className="hidden sm:inline mx-2">•</span>
                 <code className="text-xs">{category.key}</code>
               </p>
             </div>
@@ -276,7 +276,7 @@ export function PreferenceCategoriesManager() {
                 variant="ghost"
                 size="icon"
                 onClick={() => openEditDialog(category)}
-                className="h-8 w-8"
+                className="h-10 w-10 min-h-[44px] min-w-[44px]"
               >
                 <Pencil className="w-4 h-4" />
               </Button>
@@ -284,7 +284,7 @@ export function PreferenceCategoriesManager() {
                 variant="ghost"
                 size="icon"
                 onClick={() => setDeleteCategory(category)}
-                className="h-8 w-8 text-destructive hover:text-destructive"
+                className="h-10 w-10 min-h-[44px] min-w-[44px] text-destructive hover:text-destructive"
               >
                 <Trash2 className="w-4 h-4" />
               </Button>

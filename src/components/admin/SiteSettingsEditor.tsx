@@ -329,7 +329,7 @@ export function SiteSettingsEditor() {
   return (
     <div className="space-y-6">
       {/* Header */}
-      <div className="flex items-center justify-between">
+      <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4">
         <div>
           <h2 className="font-serif text-xl flex items-center gap-2">
             <MessageSquare className="w-5 h-5" />
@@ -344,7 +344,7 @@ export function SiteSettingsEditor() {
         <button
           onClick={handleSave}
           disabled={saving}
-          className="btn-luxury flex items-center gap-2"
+          className="btn-luxury flex items-center justify-center gap-2 w-full sm:w-auto min-h-[44px]"
         >
           <Save className="w-4 h-4" />
           {saving ? t.common.loading : t.common.save}
@@ -352,10 +352,10 @@ export function SiteSettingsEditor() {
       </div>
 
       {/* Language Toggle */}
-      <div className="flex items-center gap-2 border border-border p-1 w-fit bg-card">
+      <div className="flex flex-wrap items-center gap-2 border border-border p-1 w-fit bg-card">
         <button
           onClick={() => setEditLang('en')}
-          className={`px-3 py-1.5 text-sm flex items-center gap-2 transition-colors ${
+          className={`px-3 py-2 min-h-[44px] text-sm flex items-center gap-2 transition-colors ${
             editLang === 'en' ? 'bg-primary text-primary-foreground' : 'hover:bg-muted'
           }`}
         >
@@ -364,7 +364,7 @@ export function SiteSettingsEditor() {
         </button>
         <button
           onClick={() => setEditLang('nl')}
-          className={`px-3 py-1.5 text-sm flex items-center gap-2 transition-colors ${
+          className={`px-3 py-2 min-h-[44px] text-sm flex items-center gap-2 transition-colors ${
             editLang === 'nl' ? 'bg-primary text-primary-foreground' : 'hover:bg-muted'
           }`}
         >
@@ -409,15 +409,15 @@ export function SiteSettingsEditor() {
                       <p className="text-sm font-medium mb-2">
                         {currentLang === 'nl' ? 'Beschikbare placeholders:' : 'Available placeholders:'}
                       </p>
-                      <div className="flex flex-wrap gap-2">
+                      <div className="flex flex-wrap gap-2 max-h-32 overflow-y-auto">
                         {Object.entries(section.placeholders).map(([placeholder, desc]) => (
                           <span
                             key={placeholder}
                             className="inline-flex items-center gap-1 px-2 py-1 bg-background border border-border text-xs"
                             title={desc}
                           >
-                            <code className="text-primary">{placeholder}</code>
-                            <span className="text-muted-foreground">- {desc}</span>
+                            <code className="text-primary text-xs">{placeholder}</code>
+                            <span className="text-muted-foreground hidden sm:inline">- {desc}</span>
                           </span>
                         ))}
                       </div>

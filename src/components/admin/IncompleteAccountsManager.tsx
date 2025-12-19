@@ -168,7 +168,7 @@ export function IncompleteAccountsManager() {
         </h3>
         <button
           onClick={fetchIncompleteAccounts}
-          className="p-2 hover:bg-muted rounded transition-colors"
+          className="p-2 min-h-[44px] min-w-[44px] flex items-center justify-center hover:bg-muted rounded transition-colors"
           title={language === 'nl' ? 'Vernieuwen' : 'Refresh'}
         >
           <RefreshCw className="w-4 h-4" />
@@ -181,7 +181,8 @@ export function IncompleteAccountsManager() {
           : 'These accounts have no member record. This can happen if signup was not completed properly.'}
       </p>
 
-      <div className="border border-border rounded-lg overflow-hidden">
+      {/* Desktop Table - Hidden on mobile */}
+      <div className="hidden sm:block border border-border rounded-lg overflow-hidden">
         <table className="w-full text-sm">
           <thead className="bg-muted/50">
             <tr>
@@ -241,28 +242,93 @@ export function IncompleteAccountsManager() {
                         <Mail className="w-4 h-4" />
                       </button>
                     )}
-                              <button
-                                      onClick={() => createMemberRecord(account)}
-                                      disabled={actionLoading === account.id}
-                                      className="p-1.5 hover:bg-secondary hover:text-secondary-foreground rounded transition-colors disabled:opacity-50"
-                                      title={language === 'nl' ? 'Member maken' : 'Create member'}
-                                    >
-                                      <UserPlus className="w-4 h-4" />
-                                    </button>
-                                    <button
-                                      onClick={() => deleteAccount(account)}
-                                      disabled={actionLoading === account.id}
-                                      className="p-1.5 hover:bg-destructive/10 text-destructive/70 hover:text-destructive rounded transition-colors disabled:opacity-50"
-                                      title={language === 'nl' ? 'Volledig verwijderen' : 'Delete permanently'}
-                                    >
-                                      <Trash2 className="w-4 h-4" />
-                                    </button>
-                                  </div>
-                                </td>
-                              </tr>
+                    <button
+                      onClick={() => createMemberRecord(account)}
+                      disabled={actionLoading === account.id}
+                      className="p-1.5 hover:bg-secondary hover:text-secondary-foreground rounded transition-colors disabled:opacity-50"
+                      title={language === 'nl' ? 'Member maken' : 'Create member'}
+                    >
+                      <UserPlus className="w-4 h-4" />
+                    </button>
+                    <button
+                      onClick={() => deleteAccount(account)}
+                      disabled={actionLoading === account.id}
+                      className="p-1.5 hover:bg-destructive/10 text-destructive/70 hover:text-destructive rounded transition-colors disabled:opacity-50"
+                      title={language === 'nl' ? 'Volledig verwijderen' : 'Delete permanently'}
+                    >
+                      <Trash2 className="w-4 h-4" />
+                    </button>
+                  </div>
+                </td>
+              </tr>
             ))}
           </tbody>
         </table>
+      </div>
+
+      {/* Mobile Cards - Visible only on mobile */}
+      <div className="sm:hidden space-y-3">
+        {accounts.map((account) => (
+          <div key={account.id} className="bg-muted/30 border border-border p-4 rounded-lg space-y-3">
+            {/* Header: Email + Status */}
+            <div className="flex items-start justify-between gap-2">
+              <div className="min-w-0 flex-1">
+                <p className="text-sm font-mono truncate">{account.email}</p>
+                {(account.first_name || account.last_name) && (
+                  <p className="text-sm text-muted-foreground">
+                    {`${account.first_name || ''} ${account.last_name || ''}`.trim()}
+                  </p>
+                )}
+              </div>
+              {account.email_verified ? (
+                <span className="text-green-600 text-xs px-2 py-1 bg-green-500/10 rounded">✓ Verified</span>
+              ) : (
+                <span className="text-amber-600 text-xs px-2 py-1 bg-amber-500/10 rounded">⏳ Pending</span>
+              )}
+            </div>
+
+            {/* Info Row */}
+            <div className="flex items-center gap-4 text-xs text-muted-foreground">
+              <span>{new Date(account.created_at).toLocaleDateString()}</span>
+              {account.invite_code_used && (
+                <span className="font-mono">
+                  {account.invite_code_used}
+                  {account.inviter_email && ` (via ${account.inviter_email.split('@')[0]}...)`}
+                </span>
+              )}
+            </div>
+
+            {/* Actions */}
+            <div className="flex items-center justify-end gap-2 pt-2 border-t border-border">
+              {!account.email_verified && (
+                <button
+                  onClick={() => verifyEmail(account.id)}
+                  disabled={actionLoading === account.id}
+                  className="p-2 min-h-[44px] min-w-[44px] flex items-center justify-center hover:bg-muted rounded transition-colors disabled:opacity-50"
+                  title={language === 'nl' ? 'Email verifiëren' : 'Verify email'}
+                >
+                  <Mail className="w-5 h-5" />
+                </button>
+              )}
+              <button
+                onClick={() => createMemberRecord(account)}
+                disabled={actionLoading === account.id}
+                className="p-2 min-h-[44px] min-w-[44px] flex items-center justify-center bg-secondary/10 hover:bg-secondary/20 text-secondary rounded transition-colors disabled:opacity-50"
+                title={language === 'nl' ? 'Member maken' : 'Create member'}
+              >
+                <UserPlus className="w-5 h-5" />
+              </button>
+              <button
+                onClick={() => deleteAccount(account)}
+                disabled={actionLoading === account.id}
+                className="p-2 min-h-[44px] min-w-[44px] flex items-center justify-center bg-destructive/10 hover:bg-destructive/20 text-destructive rounded transition-colors disabled:opacity-50"
+                title={language === 'nl' ? 'Volledig verwijderen' : 'Delete permanently'}
+              >
+                <Trash2 className="w-5 h-5" />
+              </button>
+            </div>
+          </div>
+        ))}
       </div>
     </div>
   );
