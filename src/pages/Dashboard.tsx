@@ -120,123 +120,125 @@ export default function Dashboard() {
 
   const fetchData = async () => {
     try {
-      // Fetch preference categories
-      const { data: categoriesData } = await supabase
-        .from('preference_categories')
-        .select('id, key, label_en, label_nl')
-        .eq('is_active', true)
-        .order('sort_order');
+      // Phase 1: Fetch independent data in parallel
+      const [
+        categoriesResult,
+        adminRoleResult,
+        memberResult,
+        profileResult,
+        settingsResult,
+      ] = await Promise.all([
+        supabase
+          .from('preference_categories')
+          .select('id, key, label_en, label_nl')
+          .eq('is_active', true)
+          .order('sort_order'),
+        supabase
+          .from('user_roles')
+          .select('role')
+          .eq('user_id', user?.id)
+          .eq('role', 'admin')
+          .maybeSingle(),
+        supabase
+          .from('members')
+          .select('*')
+          .eq('user_id', user?.id)
+          .maybeSingle(),
+        supabase
+          .from('profiles')
+          .select('*')
+          .eq('id', user?.id)
+          .maybeSingle(),
+        supabase
+          .from('site_settings')
+          .select('key, value_en, value_nl'),
+      ]);
+
+      // Set immediate state updates
+      setPreferenceCategories(categoriesResult.data || []);
+      setIsAdmin(!!adminRoleResult.data);
+      setSiteSettings(settingsResult.data || []);
       
-      setPreferenceCategories(categoriesData || []);
-
-      // Check if user is admin
-      const { data: adminRole } = await supabase
-        .from('user_roles')
-        .select('role')
-        .eq('user_id', user?.id)
-        .eq('role', 'admin')
-        .maybeSingle();
-      
-      setIsAdmin(!!adminRole);
-
-      // Fetch member data
-      const { data: memberData, error: memberError } = await supabase
-        .from('members')
-        .select('*')
-        .eq('user_id', user?.id)
-        .maybeSingle();
-
-      if (memberError) throw memberError;
+      const memberData = memberResult.data;
+      if (memberResult.error) throw memberResult.error;
       setMember(memberData);
 
-      // Fetch profile data
-      const { data: profileData } = await supabase
-        .from('profiles')
-        .select('*')
-        .eq('id', user?.id)
-        .maybeSingle();
-
-      if (profileData) {
+      if (profileResult.data) {
         setProfile({
-          first_name: profileData.first_name || '',
-          last_name: profileData.last_name || '',
-          phone: profileData.phone || '',
-          street_address: profileData.street_address || '',
-          house_number: profileData.house_number || '',
-          postal_code: profileData.postal_code || '',
-          city: profileData.city || '',
-          country: profileData.country || 'Nederland',
-          preferences: profileData.preferences || [],
-          email_verified: profileData.email_verified ?? null,
+          first_name: profileResult.data.first_name || '',
+          last_name: profileResult.data.last_name || '',
+          phone: profileResult.data.phone || '',
+          street_address: profileResult.data.street_address || '',
+          house_number: profileResult.data.house_number || '',
+          postal_code: profileResult.data.postal_code || '',
+          city: profileResult.data.city || '',
+          country: profileResult.data.country || 'Nederland',
+          preferences: profileResult.data.preferences || [],
+          email_verified: profileResult.data.email_verified ?? null,
         });
       }
 
+      // Phase 2: Fetch member-dependent data in parallel (if member exists)
       if (memberData) {
-        // Fetch invite codes
-        const { data: codes } = await supabase
-          .from('invite_codes')
-          .select('*')
-          .eq('member_id', memberData.id)
-          .order('created_at', { ascending: false });
-
-        setInviteCodes(codes || []);
-
-        // Fetch current active drop (live now - started and not ended or no end date)
         const now = new Date().toISOString();
-        const { data: activeDropData } = await supabase
-          .from('drops')
-          .select('*')
-          .eq('is_active', true)
-          .eq('is_draft', false)
-          .lt('starts_at', now)
-          .order('starts_at', { ascending: false })
-          .limit(1);
+        
+        const [
+          codesResult,
+          activeDropResult,
+          upcomingDropResult,
+          ordersResult,
+        ] = await Promise.all([
+          supabase
+            .from('invite_codes')
+            .select('*')
+            .eq('member_id', memberData.id)
+            .order('created_at', { ascending: false }),
+          supabase
+            .from('drops')
+            .select('*')
+            .eq('is_active', true)
+            .eq('is_draft', false)
+            .lt('starts_at', now)
+            .order('starts_at', { ascending: false })
+            .limit(1),
+          supabase
+            .from('drops')
+            .select('*')
+            .eq('is_active', true)
+            .eq('is_draft', false)
+            .gt('starts_at', now)
+            .order('starts_at', { ascending: true })
+            .limit(1)
+            .maybeSingle(),
+          supabase
+            .from('drop_participation')
+            .select(`
+              id,
+              drop_id,
+              purchased,
+              quantity,
+              created_at,
+              drops (
+                title_en,
+                title_nl,
+                price,
+                image_url
+              )
+            `)
+            .eq('member_id', memberData.id)
+            .eq('purchased', true)
+            .order('created_at', { ascending: false }),
+        ]);
 
+        setInviteCodes(codesResult.data || []);
+        
         // Filter to find truly active drop (either no end date or end date in future)
-        const activeDrop = activeDropData?.find(d => !d.ends_at || new Date(d.ends_at) > new Date());
+        const activeDrop = activeDropResult.data?.find(d => !d.ends_at || new Date(d.ends_at) > new Date());
         setActiveDrop(activeDrop || null);
-
-        // Fetch upcoming drop (starts in future)
-        const { data: upcomingDropData } = await supabase
-          .from('drops')
-          .select('*')
-          .eq('is_active', true)
-          .eq('is_draft', false)
-          .gt('starts_at', now)
-          .order('starts_at', { ascending: true })
-          .limit(1)
-          .maybeSingle();
-
-        setUpcomingDrop(upcomingDropData);
-
-        // Fetch site settings
-        const { data: settingsData } = await supabase
-          .from('site_settings')
-          .select('key, value_en, value_nl');
-
-        setSiteSettings(settingsData || []);
-
-        // Fetch order history (purchased items)
-        const { data: orderData } = await supabase
-          .from('drop_participation')
-          .select(`
-            id,
-            drop_id,
-            purchased,
-            quantity,
-            created_at,
-            drops (
-              title_en,
-              title_nl,
-              price,
-              image_url
-            )
-          `)
-          .eq('member_id', memberData.id)
-          .eq('purchased', true)
-          .order('created_at', { ascending: false });
-
-        setOrders((orderData || []).map((o: any) => ({
+        
+        setUpcomingDrop(upcomingDropResult.data);
+        
+        setOrders((ordersResult.data || []).map((o: any) => ({
           ...o,
           drop: o.drops
         })));

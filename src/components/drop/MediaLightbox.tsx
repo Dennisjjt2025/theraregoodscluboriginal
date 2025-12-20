@@ -1,6 +1,7 @@
 import { useState, useEffect, useCallback, useRef } from 'react';
 import { X, Play, ZoomIn, ChevronLeft, ChevronRight } from 'lucide-react';
 import { Dialog, DialogContent, DialogTitle } from '@/components/ui/dialog';
+import { getOptimizedImageUrl } from '@/lib/imageUtils';
 
 interface GalleryImage {
   id: string;
@@ -168,6 +169,7 @@ export function MediaLightbox({
                   allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture"
                   allowFullScreen
                   title={title}
+                  loading="lazy"
                 />
               ) : (
                 <video
@@ -182,7 +184,7 @@ export function MediaLightbox({
           ) : currentImage ? (
             <img
               key={`${currentImage.id}-${currentIndex}`}
-              src={currentImage.image_url}
+              src={getOptimizedImageUrl(currentImage.image_url, { width: 1200, quality: 90 })}
               alt={currentImage.alt_text || title}
               className="max-w-[90vw] max-h-[85vh] object-contain animate-fade-in"
             />
@@ -206,9 +208,10 @@ export function MediaLightbox({
                 }`}
               >
                 <img
-                  src={img.image_url}
+                  src={getOptimizedImageUrl(img.image_url, { width: 100, quality: 70 })}
                   alt={img.alt_text || `Image ${index + 1}`}
                   className="w-full h-full object-cover"
+                  loading="lazy"
                 />
               </button>
             ))}
@@ -312,7 +315,7 @@ export function MediaHero({
       >
         <img
           key={mainImage.id}
-          src={mainImage.image_url}
+          src={getOptimizedImageUrl(mainImage.image_url, { width: 800, quality: 85 })}
           alt={mainImage.alt_text || title}
           className="w-full h-full object-cover transition-all duration-300 group-hover:scale-105"
         />
@@ -369,9 +372,10 @@ export function MediaHero({
               }`}
             >
               <img
-                src={img.image_url}
+                src={getOptimizedImageUrl(img.image_url, { width: 100, quality: 70 })}
                 alt={img.alt_text || `${title} - Image ${index + 1}`}
                 className="w-full h-full object-cover"
+                loading="lazy"
               />
             </button>
           ))}
