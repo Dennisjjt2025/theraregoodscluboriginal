@@ -3,6 +3,7 @@ import { useLanguage } from '@/contexts/LanguageContext';
 import { CountdownTimer } from '@/components/CountdownTimer';
 import { StockIndicator } from '@/components/drop/StockIndicator';
 import { Wine, ArrowRight, Archive, Eye } from 'lucide-react';
+import { getOptimizedImageUrl } from '@/lib/imageUtils';
 
 interface Drop {
   id: string;
@@ -49,7 +50,7 @@ export function DropsTab({ activeDrop, upcomingDrop, settings }: DropsTabProps) 
           <div className="relative aspect-[16/9] md:aspect-[21/9] bg-muted">
             {activeDrop.image_url ? (
               <img
-                src={activeDrop.image_url}
+                src={getOptimizedImageUrl(activeDrop.image_url, { width: 1200, quality: 85 })}
                 alt={dropTitle}
                 className="w-full h-full object-cover"
               />
@@ -118,9 +119,10 @@ export function DropsTab({ activeDrop, upcomingDrop, settings }: DropsTabProps) 
           {upcomingDrop.image_url && (
             <div className="relative aspect-[16/9] md:aspect-[21/9] bg-muted">
               <img
-                src={upcomingDrop.image_url}
+                src={getOptimizedImageUrl(upcomingDrop.image_url, { width: 1200, quality: 80 })}
                 alt={dropTitle}
                 className="w-full h-full object-cover opacity-80"
+                loading="lazy"
               />
               {/* Coming Soon Badge */}
               <div className="absolute top-4 left-4">

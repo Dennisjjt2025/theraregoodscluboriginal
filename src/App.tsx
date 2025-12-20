@@ -1,3 +1,4 @@
+import { lazy, Suspense } from 'react';
 import { Toaster } from "@/components/ui/toaster";
 import { Toaster as Sonner } from "@/components/ui/sonner";
 import { TooltipProvider } from "@/components/ui/tooltip";
@@ -6,20 +7,32 @@ import { BrowserRouter, Routes, Route } from "react-router-dom";
 import { ThemeProvider } from "next-themes";
 import { LanguageProvider } from "@/contexts/LanguageContext";
 import { AuthProvider } from "@/contexts/AuthContext";
-import Index from "./pages/Index";
-import Auth from "./pages/Auth";
-import Dashboard from "./pages/Dashboard";
-import Membership from "./pages/Membership";
-import Drop from "./pages/Drop";
-import DropPreview from "./pages/DropPreview";
-import Manifesto from "./pages/Manifesto";
-import Archive from "./pages/Archive";
-import ArchiveDropDetail from "./pages/ArchiveDropDetail";
-import Admin from "./pages/Admin";
-import NotFound from "./pages/NotFound";
-import Unsubscribe from "./pages/Unsubscribe";
+import { PageLoader, DashboardSkeleton, DropSkeleton } from "@/components/PageLoader";
 
-const queryClient = new QueryClient();
+// Eagerly load the index page for fast initial render
+import Index from "./pages/Index";
+
+// Lazy load all other pages
+const Auth = lazy(() => import("./pages/Auth"));
+const Dashboard = lazy(() => import("./pages/Dashboard"));
+const Membership = lazy(() => import("./pages/Membership"));
+const Drop = lazy(() => import("./pages/Drop"));
+const DropPreview = lazy(() => import("./pages/DropPreview"));
+const Manifesto = lazy(() => import("./pages/Manifesto"));
+const Archive = lazy(() => import("./pages/Archive"));
+const ArchiveDropDetail = lazy(() => import("./pages/ArchiveDropDetail"));
+const Admin = lazy(() => import("./pages/Admin"));
+const NotFound = lazy(() => import("./pages/NotFound"));
+const Unsubscribe = lazy(() => import("./pages/Unsubscribe"));
+
+const queryClient = new QueryClient({
+  defaultOptions: {
+    queries: {
+      staleTime: 1000 * 60, // 1 minute
+      gcTime: 1000 * 60 * 5, // 5 minutes (formerly cacheTime)
+    },
+  },
+});
 
 const App = () => (
   <ThemeProvider attribute="class" defaultTheme="light" enableSystem={false}>
@@ -32,18 +45,62 @@ const App = () => (
             <BrowserRouter>
               <Routes>
                 <Route path="/" element={<Index />} />
-                <Route path="/manifesto" element={<Manifesto />} />
-                <Route path="/membership" element={<Membership />} />
-                <Route path="/auth" element={<Auth />} />
-                <Route path="/dashboard" element={<Dashboard />} />
-                <Route path="/drop" element={<Drop />} />
-                <Route path="/drop/preview" element={<DropPreview />} />
-                <Route path="/archive" element={<Archive />} />
-                <Route path="/archive/:dropId" element={<ArchiveDropDetail />} />
-                <Route path="/admin" element={<Admin />} />
-                <Route path="/unsubscribe" element={<Unsubscribe />} />
+                <Route path="/manifesto" element={
+                  <Suspense fallback={<PageLoader />}>
+                    <Manifesto />
+                  </Suspense>
+                } />
+                <Route path="/membership" element={
+                  <Suspense fallback={<PageLoader />}>
+                    <Membership />
+                  </Suspense>
+                } />
+                <Route path="/auth" element={
+                  <Suspense fallback={<PageLoader />}>
+                    <Auth />
+                  </Suspense>
+                } />
+                <Route path="/dashboard" element={
+                  <Suspense fallback={<DashboardSkeleton />}>
+                    <Dashboard />
+                  </Suspense>
+                } />
+                <Route path="/drop" element={
+                  <Suspense fallback={<DropSkeleton />}>
+                    <Drop />
+                  </Suspense>
+                } />
+                <Route path="/drop/preview" element={
+                  <Suspense fallback={<DropSkeleton />}>
+                    <DropPreview />
+                  </Suspense>
+                } />
+                <Route path="/archive" element={
+                  <Suspense fallback={<PageLoader />}>
+                    <Archive />
+                  </Suspense>
+                } />
+                <Route path="/archive/:dropId" element={
+                  <Suspense fallback={<DropSkeleton />}>
+                    <ArchiveDropDetail />
+                  </Suspense>
+                } />
+                <Route path="/admin" element={
+                  <Suspense fallback={<DashboardSkeleton />}>
+                    <Admin />
+                  </Suspense>
+                } />
+                <Route path="/unsubscribe" element={
+                  <Suspense fallback={<PageLoader />}>
+                    <Unsubscribe />
+                  </Suspense>
+                } />
                 {/* ADD ALL CUSTOM ROUTES ABOVE THE CATCH-ALL "*" ROUTE */}
-                <Route path="*" element={<NotFound />} />
+                <Route path="*" element={
+                  <Suspense fallback={<PageLoader />}>
+                    <NotFound />
+                  </Suspense>
+                } />
               </Routes>
             </BrowserRouter>
           </TooltipProvider>
