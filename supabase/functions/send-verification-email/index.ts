@@ -7,10 +7,10 @@ const corsHeaders = {
   "Access-Control-Allow-Headers": "authorization, x-client-info, apikey, content-type",
 };
 
-// Input validation schemas
+// Input validation schemas - email is now optional, we can fetch from profile
 const VerificationRequestSchema = z.object({
-  email: z.string().email().max(255),
-  firstName: z.string().min(1).max(100).regex(/^[a-zA-ZÀ-ÿ\s\-']+$/),
+  email: z.string().email().max(255).optional(),
+  firstName: z.string().min(1).max(100).regex(/^[a-zA-ZÀ-ÿ\s\-']+$/).optional(),
   userId: z.string().uuid(),
   language: z.enum(['en', 'nl']).optional().default('en'),
 });
@@ -163,28 +163,23 @@ const handler = async (req: Request): Promise<Response> => {
       );
     }
 
-    const { email, firstName, userId, language } = validationResult.data;
+    let { email, firstName, userId, language } = validationResult.data;
     
     console.log("=== VERIFICATION EMAIL DEBUG ===");
-    console.log("Sending verification email to:", email, "language:", language);
     console.log("User ID:", userId);
-    console.log("First Name:", firstName);
-
-    const verificationToken = crypto.randomUUID();
-    const expiresAt = new Date(Date.now() + 24 * 60 * 60 * 1000);
-    
-    console.log("Generated verification token:", verificationToken);
-    console.log("Token expires at:", expiresAt.toISOString());
+    console.log("Provided email:", email);
+    console.log("Provided firstName:", firstName);
+    console.log("Language:", language);
 
     const supabaseAdmin = createClient(
       Deno.env.get("SUPABASE_URL") ?? "",
       Deno.env.get("SUPABASE_SERVICE_ROLE_KEY") ?? ""
     );
 
-    // Verify that the userId matches the profile being updated (security check)
+    // Fetch profile data - always get it to ensure we have email and firstName
     const { data: profile, error: profileError } = await supabaseAdmin
       .from("profiles")
-      .select("id")
+      .select("id, first_name, email")
       .eq("id", userId)
       .single();
 
@@ -195,6 +190,38 @@ const handler = async (req: Request): Promise<Response> => {
         { status: 404, headers: { "Content-Type": "application/json", ...corsHeaders } }
       );
     }
+
+    // Use provided values or fall back to profile data
+    const userEmail = email || profile.email;
+    const userFirstName = firstName || profile.first_name || 'Member';
+    
+    // If still no email, try to get from auth.users
+    let finalEmail = userEmail;
+    if (!finalEmail) {
+      const { data: authUser, error: authError } = await supabaseAdmin.auth.admin.getUserById(userId);
+      if (authError) {
+        console.error("Error fetching auth user:", authError);
+      } else {
+        finalEmail = authUser?.user?.email;
+      }
+    }
+    
+    if (!finalEmail) {
+      console.error("No email found for user:", userId);
+      return new Response(
+        JSON.stringify({ error: 'No email address found for user' }),
+        { status: 400, headers: { "Content-Type": "application/json", ...corsHeaders } }
+      );
+    }
+
+    console.log("Final email to send to:", finalEmail);
+    console.log("Final firstName:", userFirstName);
+
+    const verificationToken = crypto.randomUUID();
+    const expiresAt = new Date(Date.now() + 24 * 60 * 60 * 1000);
+    
+    console.log("Generated verification token:", verificationToken);
+    console.log("Token expires at:", expiresAt.toISOString());
 
     const { error: updateError } = await supabaseAdmin
       .from("profiles")
@@ -221,7 +248,7 @@ const handler = async (req: Request): Promise<Response> => {
     
     // Replace placeholders
     const replacements = {
-      firstName,
+      firstName: userFirstName,
       verifyLink: verificationUrl,
     };
     
@@ -266,7 +293,7 @@ const handler = async (req: Request): Promise<Response> => {
       },
       body: JSON.stringify({
         from: "The Rare Goods Club <hello@connect.theraregoodsclub.com>",
-        to: [email],
+        to: [finalEmail],
         subject: emailSubject,
         html: htmlEmail,
       }),

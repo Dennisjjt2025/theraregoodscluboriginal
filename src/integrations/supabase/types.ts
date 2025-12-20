@@ -337,6 +337,7 @@ export type Database = {
           city: string | null
           country: string | null
           created_at: string | null
+          email: string | null
           email_verified: boolean | null
           first_name: string | null
           house_number: string | null
@@ -354,6 +355,7 @@ export type Database = {
           city?: string | null
           country?: string | null
           created_at?: string | null
+          email?: string | null
           email_verified?: boolean | null
           first_name?: string | null
           house_number?: string | null
@@ -371,6 +373,7 @@ export type Database = {
           city?: string | null
           country?: string | null
           created_at?: string | null
+          email?: string | null
           email_verified?: boolean | null
           first_name?: string | null
           house_number?: string | null

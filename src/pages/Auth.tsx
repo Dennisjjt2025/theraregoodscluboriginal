@@ -332,38 +332,36 @@ export default function Auth() {
     setLoading(true);
     
     try {
-      // Fetch firstName and email from profile if not in state
-      let nameToUse = firstName;
+      // Use email from state first (set during signup), otherwise fetch from profile
       let emailToUse = email;
+      let nameToUse = firstName;
       
-      if (!nameToUse || !emailToUse) {
+      // If email not in state, fetch from profiles table (we now store email there)
+      if (!emailToUse) {
         const { data: profile, error: profileError } = await supabase
           .from('profiles')
-          .select('first_name')
+          .select('first_name, email')
           .eq('id', pendingUserId)
           .single();
         
         if (profileError) {
           console.error('Error fetching profile for resend:', profileError);
+          toast.error('Kon profielgegevens niet ophalen. Probeer opnieuw.');
+          setLoading(false);
+          return;
         }
         
+        emailToUse = profile?.email || '';
         nameToUse = profile?.first_name || 'Member';
         
-        // If we don't have email, we can't resend
         if (!emailToUse) {
-          // Try to get email from auth session or stored value
-          const { data: session } = await supabase.auth.getSession();
-          emailToUse = session?.session?.user?.email || '';
-          
-          if (!emailToUse) {
-            toast.error('Geen e-mailadres gevonden. Probeer opnieuw in te loggen.');
-            setLoading(false);
-            return;
-          }
+          toast.error('Geen e-mailadres gevonden. Neem contact op met support.');
+          setLoading(false);
+          return;
         }
       }
       
-      const sent = await sendVerificationEmail(pendingUserId, emailToUse, nameToUse);
+      const sent = await sendVerificationEmail(pendingUserId, emailToUse, nameToUse || 'Member');
       
       if (sent) {
         toast.success(t.auth.verifyEmailSent);
