@@ -3,7 +3,7 @@ import { supabase } from '@/integrations/supabase/client';
 import { useLanguage } from '@/contexts/LanguageContext';
 import { useAuth } from '@/contexts/AuthContext';
 import { toast } from 'sonner';
-import { Save, Globe, MessageSquare, UserPlus, Mail, LogOut, ChevronDown, ChevronRight, LayoutDashboard, Eye, Send } from 'lucide-react';
+import { Save, Globe, MessageSquare, UserPlus, Mail, LogOut, ChevronDown, ChevronRight, LayoutDashboard, Eye, Send, PartyPopper } from 'lucide-react';
 import { Collapsible, CollapsibleContent, CollapsibleTrigger } from '@/components/ui/collapsible';
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger } from '@/components/ui/dialog';
 
@@ -93,6 +93,7 @@ export function SiteSettingsEditor() {
   const [openSections, setOpenSections] = useState<Record<string, boolean>>({
     dashboard: true,
     welcome: false,
+    welcome_confirmed: false,
     waitlist: false,
     unsubscribe: false,
   });
@@ -119,6 +120,20 @@ export function SiteSettingsEditor() {
       placeholders: {
         '{{firstName}}': currentLang === 'nl' ? 'Voornaam van het lid' : "Member's first name",
         '{{verifyLink}}': currentLang === 'nl' ? 'Verificatie link (automatisch)' : 'Verification link (automatic)',
+      },
+    },
+    {
+      id: 'welcome_confirmed',
+      title: currentLang === 'nl' ? 'Welkomst Bevestiging' : 'Welcome Confirmation',
+      description: currentLang === 'nl' 
+        ? 'E-mail die leden ontvangen na succesvolle verificatie' 
+        : 'Email that members receive after successful verification',
+      icon: <PartyPopper className="w-5 h-5" />,
+      keys: ['welcome_confirmed_email_subject', 'welcome_confirmed_email_message'],
+      isEmail: true,
+      placeholders: {
+        '{{firstName}}': currentLang === 'nl' ? 'Voornaam van het lid' : "Member's first name",
+        '{{dashboardLink}}': currentLang === 'nl' ? 'Link naar dashboard (automatisch)' : 'Dashboard link (automatic)',
       },
     },
     {
@@ -254,6 +269,19 @@ export function SiteSettingsEditor() {
           ? 'Inhoud van de wachtlijst bevestigingsmail' 
           : 'Content of the waitlist confirmation email',
       },
+      // Welcome confirmed email
+      welcome_confirmed_email_subject: {
+        label: currentLang === 'nl' ? 'E-mail Onderwerp' : 'Email Subject',
+        description: currentLang === 'nl' 
+          ? 'Onderwerp van de welkomst bevestigingsmail' 
+          : 'Subject line of the welcome confirmation email',
+      },
+      welcome_confirmed_email_message: {
+        label: currentLang === 'nl' ? 'E-mail Bericht' : 'Email Message',
+        description: currentLang === 'nl' 
+          ? 'Inhoud van de welkomst bevestigingsmail' 
+          : 'Content of the welcome confirmation email',
+      },
       // Unsubscribe email
       unsubscribe_email_subject: {
         label: currentLang === 'nl' ? 'E-mail Onderwerp' : 'Email Subject',
@@ -288,6 +316,7 @@ export function SiteSettingsEditor() {
     try {
       let functionName = '';
       if (sectionId === 'welcome') functionName = 'send-verification-email';
+      else if (sectionId === 'welcome_confirmed') functionName = 'send-welcome-email';
       else if (sectionId === 'waitlist') functionName = 'send-waitlist-confirmation';
       else if (sectionId === 'unsubscribe') functionName = 'send-unsubscribe-confirmation';
 
