@@ -51,11 +51,12 @@ export default function Auth() {
       // Find profile with this token
       const { data: profile, error } = await supabase
         .from('profiles')
-        .select('id, verification_token_expires_at')
+        .select('id, first_name, verification_token_expires_at')
         .eq('verification_token', token)
         .maybeSingle();
 
       if (error || !profile) {
+        console.error('Verification token not found or error:', error, 'token:', token);
         toast.error(t.auth.invalidVerificationToken);
         setAuthMode('choose');
         return;
@@ -63,6 +64,7 @@ export default function Auth() {
 
       // Check if token expired
       if (new Date(profile.verification_token_expires_at!) < new Date()) {
+        console.error('Verification token expired:', profile.verification_token_expires_at);
         toast.error(t.auth.invalidVerificationToken);
         setAuthMode('choose');
         return;
@@ -101,6 +103,28 @@ export default function Auth() {
       if (memberError) {
         console.error('Error creating member record after verification:', memberError);
         // Don't fail the whole flow, user can still log in and admin can fix
+      }
+
+      // Send welcome email after successful verification
+      try {
+        const { data: authUser } = await supabase.auth.admin?.getUserById?.(profile.id) || {};
+        // Use a database function to get the email since we can't access auth.users directly
+        const { data: memberEmails } = await supabase.rpc('get_member_emails');
+        const userEmail = memberEmails?.find((m: any) => m.user_id === profile.id)?.email;
+        
+        if (userEmail) {
+          await supabase.functions.invoke('send-welcome-email', {
+            body: {
+              userId: profile.id,
+              email: userEmail,
+              firstName: profile.first_name || 'Member',
+              language: localStorage.getItem('language') || 'en',
+            },
+          });
+        }
+      } catch (welcomeError) {
+        // Don't fail the verification if welcome email fails
+        console.error('Error sending welcome email:', welcomeError);
       }
 
       setAuthMode('verified');
@@ -300,16 +324,57 @@ export default function Auth() {
   };
 
   const handleResendVerification = async () => {
-    if (!pendingUserId || !email || !firstName) return;
+    if (!pendingUserId) {
+      toast.error('Geen gebruiker gevonden om verificatie opnieuw te versturen.');
+      return;
+    }
     
     setLoading(true);
-    const sent = await sendVerificationEmail(pendingUserId, email, firstName);
-    setLoading(false);
     
-    if (sent) {
-      toast.success(t.auth.verifyEmailSent);
-    } else {
+    try {
+      // Fetch firstName and email from profile if not in state
+      let nameToUse = firstName;
+      let emailToUse = email;
+      
+      if (!nameToUse || !emailToUse) {
+        const { data: profile, error: profileError } = await supabase
+          .from('profiles')
+          .select('first_name')
+          .eq('id', pendingUserId)
+          .single();
+        
+        if (profileError) {
+          console.error('Error fetching profile for resend:', profileError);
+        }
+        
+        nameToUse = profile?.first_name || 'Member';
+        
+        // If we don't have email, we can't resend
+        if (!emailToUse) {
+          // Try to get email from auth session or stored value
+          const { data: session } = await supabase.auth.getSession();
+          emailToUse = session?.session?.user?.email || '';
+          
+          if (!emailToUse) {
+            toast.error('Geen e-mailadres gevonden. Probeer opnieuw in te loggen.');
+            setLoading(false);
+            return;
+          }
+        }
+      }
+      
+      const sent = await sendVerificationEmail(pendingUserId, emailToUse, nameToUse);
+      
+      if (sent) {
+        toast.success(t.auth.verifyEmailSent);
+      } else {
+        toast.error('Kon verificatie email niet versturen. Probeer het later opnieuw.');
+      }
+    } catch (error) {
+      console.error('Error in handleResendVerification:', error);
       toast.error(t.common.error);
+    } finally {
+      setLoading(false);
     }
   };
 
