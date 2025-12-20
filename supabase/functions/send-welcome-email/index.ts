@@ -7,10 +7,10 @@ const corsHeaders = {
   "Access-Control-Allow-Headers": "authorization, x-client-info, apikey, content-type",
 };
 
-// Input validation schemas
-const VerificationRequestSchema = z.object({
+// Input validation schema
+const WelcomeRequestSchema = z.object({
   email: z.string().email().max(255),
-  firstName: z.string().min(1).max(100).regex(/^[a-zA-ZÀ-ÿ\s\-']+$/),
+  firstName: z.string().min(1).max(100),
   userId: z.string().uuid(),
   language: z.enum(['en', 'nl']).optional().default('en'),
 });
@@ -22,20 +22,44 @@ interface EmailTemplate {
 
 const defaultTemplates = {
   en: {
-    subject: "Verify your email - The Rare Goods Club",
-    message: `Welcome, {{firstName}}
+    subject: "Welcome to The Rare Goods Club",
+    message: `Dear {{firstName}},
 
-Thank you for joining The Rare Goods Club. To complete your registration and activate your membership, please verify your email address.
+Your email has been verified and your membership is now active.
 
-Click the button below to verify your email:`,
+Welcome to The Rare Goods Club - an exclusive community for lovers of rare wines, spirits, and culinary treasures.
+
+What awaits you:
+• Exclusive drops of rare finds, available only to members
+• Early access to limited editions
+• The ability to invite others to join our community
+
+Visit your dashboard to discover what's currently available and set your preferences.
+
+We're excited to have you with us.
+
+With warm regards,
+The Rare Goods Club`,
   },
   nl: {
-    subject: "Bevestig je e-mail - The Rare Goods Club",
-    message: `Welkom, {{firstName}}
+    subject: "Welkom bij The Rare Goods Club",
+    message: `Beste {{firstName}},
 
-Bedankt voor je aanmelding bij The Rare Goods Club. Om je registratie te voltooien en je lidmaatschap te activeren, bevestig je e-mailadres.
+Je e-mail is geverifieerd en je lidmaatschap is nu actief.
 
-Klik op de onderstaande knop om je e-mail te bevestigen:`,
+Welkom bij The Rare Goods Club - een exclusieve community voor liefhebbers van zeldzame wijnen, spirits en culinaire schatten.
+
+Wat je kunt verwachten:
+• Exclusieve drops van zeldzame vondsten, alleen beschikbaar voor leden
+• Vroege toegang tot limited editions
+• De mogelijkheid om anderen uit te nodigen voor onze community
+
+Bezoek je dashboard om te ontdekken wat er momenteel beschikbaar is en stel je voorkeuren in.
+
+We zijn blij dat je er bij bent.
+
+Met warme groet,
+The Rare Goods Club`,
   },
 };
 
@@ -44,15 +68,15 @@ async function getEmailTemplate(supabaseAdmin: any, language: string): Promise<E
     const { data: settings, error } = await supabaseAdmin
       .from("site_settings")
       .select("key, value_en, value_nl")
-      .in("key", ["welcome_email_subject", "welcome_email_message"]);
+      .in("key", ["welcome_confirmed_email_subject", "welcome_confirmed_email_message"]);
 
     if (error) {
       console.error("Error fetching email templates:", error);
       return defaultTemplates[language as keyof typeof defaultTemplates] || defaultTemplates.en;
     }
 
-    const subjectSetting = settings?.find((s: any) => s.key === "welcome_email_subject");
-    const messageSetting = settings?.find((s: any) => s.key === "welcome_email_message");
+    const subjectSetting = settings?.find((s: any) => s.key === "welcome_confirmed_email_subject");
+    const messageSetting = settings?.find((s: any) => s.key === "welcome_confirmed_email_message");
 
     const isNl = language === "nl";
     const subject = isNl 
@@ -153,7 +177,7 @@ const handler = async (req: Request): Promise<Response> => {
   try {
     // Parse and validate input
     const rawBody = await req.json();
-    const validationResult = VerificationRequestSchema.safeParse(rawBody);
+    const validationResult = WelcomeRequestSchema.safeParse(rawBody);
     
     if (!validationResult.success) {
       console.error("Validation error:", validationResult.error.errors);
@@ -165,56 +189,16 @@ const handler = async (req: Request): Promise<Response> => {
 
     const { email, firstName, userId, language } = validationResult.data;
     
-    console.log("=== VERIFICATION EMAIL DEBUG ===");
-    console.log("Sending verification email to:", email, "language:", language);
-    console.log("User ID:", userId);
-    console.log("First Name:", firstName);
-
-    const verificationToken = crypto.randomUUID();
-    const expiresAt = new Date(Date.now() + 24 * 60 * 60 * 1000);
-    
-    console.log("Generated verification token:", verificationToken);
-    console.log("Token expires at:", expiresAt.toISOString());
+    console.log("Sending welcome email to:", email, "language:", language);
 
     const supabaseAdmin = createClient(
       Deno.env.get("SUPABASE_URL") ?? "",
       Deno.env.get("SUPABASE_SERVICE_ROLE_KEY") ?? ""
     );
 
-    // Verify that the userId matches the profile being updated (security check)
-    const { data: profile, error: profileError } = await supabaseAdmin
-      .from("profiles")
-      .select("id")
-      .eq("id", userId)
-      .single();
-
-    if (profileError || !profile) {
-      console.error("Profile not found:", profileError);
-      return new Response(
-        JSON.stringify({ error: 'Profile not found' }),
-        { status: 404, headers: { "Content-Type": "application/json", ...corsHeaders } }
-      );
-    }
-
-    const { error: updateError } = await supabaseAdmin
-      .from("profiles")
-      .update({
-        verification_token: verificationToken,
-        verification_token_expires_at: expiresAt.toISOString(),
-      })
-      .eq("id", userId);
-
-    if (updateError) {
-      console.error("Error storing verification token:", updateError);
-      throw new Error("Failed to store verification token");
-    }
-
+    // Get site URL
     const siteUrl = (Deno.env.get("SITE_URL") || "https://theraregoodsclub.com").replace(/\/+$/, '');
-    const verificationUrl = `${siteUrl}/auth?verify=${verificationToken}`;
-    
-    console.log("Site URL:", siteUrl);
-    console.log("Full verification URL:", verificationUrl);
-    console.log("=== END VERIFICATION EMAIL DEBUG ===");
+    const dashboardUrl = `${siteUrl}/dashboard`;
 
     // Get email template from database
     const template = await getEmailTemplate(supabaseAdmin, language);
@@ -222,7 +206,7 @@ const handler = async (req: Request): Promise<Response> => {
     // Replace placeholders
     const replacements = {
       firstName,
-      verifyLink: verificationUrl,
+      dashboardLink: dashboardUrl,
     };
     
     const emailSubject = replacePlaceholders(template.subject, replacements);
@@ -231,26 +215,41 @@ const handler = async (req: Request): Promise<Response> => {
     // Convert message to HTML paragraphs
     const messageHtml = emailMessage
       .split("\n\n")
-      .map((paragraph) => `<p style="margin: 0 0 20px; font-size: 16px; line-height: 1.6; color: #44403C;">${paragraph.replace(/\n/g, "<br>")}</p>`)
+      .map((paragraph) => {
+        // Handle bullet points
+        if (paragraph.includes("•")) {
+          const lines = paragraph.split("\n");
+          const listItems = lines
+            .filter(line => line.trim().startsWith("•"))
+            .map(line => `<li style="margin: 8px 0; color: #44403C;">${line.replace("•", "").trim()}</li>`)
+            .join("");
+          return `<ul style="margin: 0 0 20px; padding-left: 20px; list-style-type: none;">${listItems}</ul>`;
+        }
+        return `<p style="margin: 0 0 20px; font-size: 16px; line-height: 1.6; color: #44403C;">${paragraph.replace(/\n/g, "<br>")}</p>`;
+      })
       .join("");
 
     const contentHtml = `
       <div style="padding: 40px;">
+        <!-- Celebration header -->
+        <div style="text-align: center; margin-bottom: 30px;">
+          <div style="font-size: 48px; margin-bottom: 10px;">🎉</div>
+          <h1 style="font-family: Georgia, serif; font-size: 24px; color: #1a1a1a; margin: 0;">
+            ${language === "nl" ? "Je bent lid!" : "You're a member!"}
+          </h1>
+        </div>
+        
         ${messageHtml}
-        <table role="presentation" style="width: 100%; border-collapse: collapse;">
+        
+        <table role="presentation" style="width: 100%; border-collapse: collapse; margin-top: 30px;">
           <tr>
             <td align="center">
-              <a href="${verificationUrl}" style="display: inline-block; padding: 14px 32px; background-color: #1a1a1a; color: #ffffff; text-decoration: none; font-size: 14px; letter-spacing: 1px; border: none;">
-                ${language === "nl" ? "BEVESTIG E-MAIL" : "VERIFY EMAIL"}
+              <a href="${dashboardUrl}" style="display: inline-block; padding: 14px 32px; background-color: #1a1a1a; color: #ffffff; text-decoration: none; font-size: 14px; letter-spacing: 1px; border: none;">
+                ${language === "nl" ? "GA NAAR DASHBOARD" : "GO TO DASHBOARD"}
               </a>
             </td>
           </tr>
         </table>
-        <p style="margin: 30px 0 0; font-size: 14px; line-height: 1.6; color: #78716C;">
-          ${language === "nl" 
-            ? "Deze link verloopt over 24 uur. Als je geen account hebt aangemaakt bij The Rare Goods Club, kun je deze e-mail negeren."
-            : "This link will expire in 24 hours. If you didn't create an account with The Rare Goods Club, you can safely ignore this email."}
-        </p>
       </div>
     `;
 
@@ -279,14 +278,14 @@ const handler = async (req: Request): Promise<Response> => {
     }
 
     const emailResult = await emailResponse.json();
-    console.log("Email sent successfully:", emailResult);
+    console.log("Welcome email sent successfully:", emailResult);
 
     return new Response(JSON.stringify({ success: true }), {
       status: 200,
       headers: { "Content-Type": "application/json", ...corsHeaders },
     });
   } catch (error: any) {
-    console.error("Error in send-verification-email function:", error);
+    console.error("Error in send-welcome-email function:", error);
     return new Response(
       JSON.stringify({ error: error.message }),
       {
