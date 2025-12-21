@@ -340,6 +340,7 @@ export type Database = {
           email: string | null
           email_verified: boolean | null
           first_name: string | null
+          has_seen_tour: boolean | null
           house_number: string | null
           id: string
           last_name: string | null
@@ -358,6 +359,7 @@ export type Database = {
           email?: string | null
           email_verified?: boolean | null
           first_name?: string | null
+          has_seen_tour?: boolean | null
           house_number?: string | null
           id: string
           last_name?: string | null
@@ -376,6 +378,7 @@ export type Database = {
           email?: string | null
           email_verified?: boolean | null
           first_name?: string | null
+          has_seen_tour?: boolean | null
           house_number?: string | null
           id?: string
           last_name?: string | null
