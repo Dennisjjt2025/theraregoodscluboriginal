@@ -8,6 +8,7 @@ import { toast } from 'sonner';
 import { Wine, Copy, Check, AlertTriangle, User, Shield, ShoppingBag, MessageSquare, Share2, Trash2 } from 'lucide-react';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { DropsTab } from '@/components/dashboard/DropsTab';
+import { OnboardingTour, TourButton } from '@/components/dashboard/OnboardingTour';
 
 interface Member {
   id: string;
@@ -67,6 +68,7 @@ interface Profile {
   country: string | null;
   preferences: string[];
   email_verified: boolean | null;
+  has_seen_tour: boolean | null;
 }
 
 interface PreferenceCategory {
@@ -98,6 +100,7 @@ export default function Dashboard() {
     country: 'Nederland',
     preferences: [],
     email_verified: null,
+    has_seen_tour: null,
   });
   const [loading, setLoading] = useState(true);
   const [savingProfile, setSavingProfile] = useState(false);
@@ -105,6 +108,7 @@ export default function Dashboard() {
   const [generatingInvite, setGeneratingInvite] = useState(false);
   const [isAdmin, setIsAdmin] = useState(false);
   const [preferenceCategories, setPreferenceCategories] = useState<PreferenceCategory[]>([]);
+  const [runTour, setRunTour] = useState(false);
 
   useEffect(() => {
     if (!authLoading && !user) {
@@ -175,6 +179,7 @@ export default function Dashboard() {
           country: profileResult.data.country || 'Nederland',
           preferences: profileResult.data.preferences || [],
           email_verified: profileResult.data.email_verified ?? null,
+          has_seen_tour: (profileResult.data as any).has_seen_tour ?? false,
         });
       }
 
@@ -364,6 +369,35 @@ export default function Dashboard() {
     }
   };
 
+  // Start tour for new members
+  useEffect(() => {
+    if (member && profile.has_seen_tour === false && !loading) {
+      // Small delay to ensure DOM is ready
+      const timer = setTimeout(() => setRunTour(true), 500);
+      return () => clearTimeout(timer);
+    }
+  }, [member, profile.has_seen_tour, loading]);
+
+  const handleTourComplete = async () => {
+    setRunTour(false);
+    if (!user) return;
+    
+    try {
+      await supabase
+        .from('profiles')
+        .update({ has_seen_tour: true } as any)
+        .eq('id', user.id);
+      
+      setProfile(prev => ({ ...prev, has_seen_tour: true }));
+    } catch (error) {
+      console.error('Error updating tour status:', error);
+    }
+  };
+
+  const restartTour = () => {
+    setRunTour(true);
+  };
+
   if (authLoading || loading) {
     return (
       <div className="min-h-screen bg-background flex items-center justify-center">
@@ -413,41 +447,48 @@ export default function Dashboard() {
   return (
     <div className="min-h-screen bg-background">
       <Header />
+      <OnboardingTour run={runTour} onComplete={handleTourComplete} isAdmin={isAdmin} />
       <main className="pt-24 pb-12 px-4">
         <div className="container mx-auto max-w-4xl">
           {/* Welcome Header */}
           <div className="mb-8 flex flex-col sm:flex-row sm:items-start sm:justify-between gap-4">
-            <div>
-              <h1 className="font-serif text-3xl md:text-4xl mb-2">{t.dashboard.title}</h1>
-              <p className="text-muted-foreground">
-                {t.dashboard.welcome}, {profile.first_name || user?.email?.split('@')[0]}
-              </p>
+            <div className="flex items-center gap-4">
+              <div>
+                <h1 className="font-serif text-3xl md:text-4xl mb-2">{t.dashboard.title}</h1>
+                <p className="text-muted-foreground">
+                  {t.dashboard.welcome}, {profile.first_name || user?.email?.split('@')[0]}
+                </p>
+              </div>
             </div>
-            {isAdmin && (
-              <Link
-                to="/admin"
-                className="btn-outline-luxury flex items-center gap-2 text-sm w-fit"
-              >
-                <Shield className="w-4 h-4" />
-                {t.nav.admin}
-              </Link>
-            )}
+            <div className="flex items-center gap-4">
+              <TourButton onClick={restartTour} />
+              {isAdmin && (
+                <Link
+                  to="/admin"
+                  data-tour="admin-button"
+                  className="btn-outline-luxury flex items-center gap-2 text-sm w-fit"
+                >
+                  <Shield className="w-4 h-4" />
+                  {t.nav.admin}
+                </Link>
+              )}
+            </div>
           </div>
 
           <Tabs defaultValue="drops" className="space-y-6">
             <TabsList className="grid w-full grid-cols-2 sm:grid-cols-4 max-w-xl h-auto">
-              <TabsTrigger value="drops" className="flex items-center gap-2 py-3">
+              <TabsTrigger value="drops" data-tour="drops-tab" className="flex items-center gap-2 py-3">
                 <Wine className="w-4 h-4" />
                 <span className="hidden sm:inline">Drops</span>
                 <span className="sm:hidden">Drops</span>
               </TabsTrigger>
-              <TabsTrigger value="overview" className="py-3">Overview</TabsTrigger>
-              <TabsTrigger value="orders" className="flex items-center gap-2 py-3">
+              <TabsTrigger value="overview" data-tour="overview-tab" className="py-3">Overview</TabsTrigger>
+              <TabsTrigger value="orders" data-tour="orders-tab" className="flex items-center gap-2 py-3">
                 <ShoppingBag className="w-4 h-4" />
                 <span className="hidden sm:inline">{language === 'nl' ? 'Bestellingen' : 'Orders'}</span>
                 <span className="sm:hidden">{language === 'nl' ? 'Orders' : 'Orders'}</span>
               </TabsTrigger>
-              <TabsTrigger value="profile" className="flex items-center gap-2 py-3">
+              <TabsTrigger value="profile" data-tour="profile-tab" className="flex items-center gap-2 py-3">
                 <User className="w-4 h-4" />
                 <span className="hidden sm:inline">{t.dashboard.myProfile}</span>
                 <span className="sm:hidden">Profiel</span>

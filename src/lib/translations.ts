@@ -245,6 +245,25 @@ type TranslationContent = {
     back: string;
     confirm: string;
   };
+  tour: {
+    welcome: string;
+    welcomeDesc: string;
+    dropsTab: string;
+    dropsTabDesc: string;
+    overviewTab: string;
+    overviewTabDesc: string;
+    ordersTab: string;
+    ordersTabDesc: string;
+    profileTab: string;
+    profileTabDesc: string;
+    adminButton: string;
+    adminButtonDesc: string;
+    next: string;
+    back: string;
+    skip: string;
+    finish: string;
+    restartTour: string;
+  };
 };
 
 export const translations: Record<Language, TranslationContent> = {
@@ -493,6 +512,25 @@ export const translations: Record<Language, TranslationContent> = {
       back: 'Back',
       confirm: 'Confirm',
     },
+    tour: {
+      welcome: 'Welcome to The Rare Goods Club!',
+      welcomeDesc: 'Let us show you around your member dashboard.',
+      dropsTab: 'Drops',
+      dropsTabDesc: 'View current and upcoming exclusive drops here.',
+      overviewTab: 'Overview',
+      overviewTabDesc: 'Check your member status, strikes, and invite codes.',
+      ordersTab: 'Orders',
+      ordersTabDesc: 'View your purchase history.',
+      profileTab: 'Profile',
+      profileTabDesc: 'Complete your profile for smooth deliveries.',
+      adminButton: 'Admin Panel',
+      adminButtonDesc: 'Access the admin dashboard to manage drops and members.',
+      next: 'Next',
+      back: 'Back',
+      skip: 'Skip tour',
+      finish: 'Start exploring!',
+      restartTour: 'Restart tour',
+    },
   },
   nl: {
     nav: {
@@ -738,6 +776,25 @@ export const translations: Record<Language, TranslationContent> = {
       edit: 'Bewerken',
       back: 'Terug',
       confirm: 'Bevestigen',
+    },
+    tour: {
+      welcome: 'Welkom bij The Rare Goods Club!',
+      welcomeDesc: 'Laat ons je rondleiden in je ledendashboard.',
+      dropsTab: 'Drops',
+      dropsTabDesc: 'Bekijk hier de huidige en aankomende exclusieve drops.',
+      overviewTab: 'Overzicht',
+      overviewTabDesc: 'Bekijk je lidstatus, strikes en uitnodigingscodes.',
+      ordersTab: 'Bestellingen',
+      ordersTabDesc: 'Bekijk je aankoopgeschiedenis.',
+      profileTab: 'Profiel',
+      profileTabDesc: 'Vul je profiel in voor snelle leveringen.',
+      adminButton: 'Admin Paneel',
+      adminButtonDesc: 'Toegang tot het admin dashboard om drops en leden te beheren.',
+      next: 'Volgende',
+      back: 'Terug',
+      skip: 'Tour overslaan',
+      finish: 'Start met ontdekken!',
+      restartTour: 'Tour herstarten',
     },
   },
 };
