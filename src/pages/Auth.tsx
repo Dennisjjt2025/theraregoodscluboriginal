@@ -48,83 +48,19 @@ export default function Auth() {
   const verifyEmailToken = async (token: string) => {
     setLoading(true);
     try {
-      // Find profile with this token
-      const { data: profile, error } = await supabase
-        .from('profiles')
-        .select('id, first_name, verification_token_expires_at')
-        .eq('verification_token', token)
-        .maybeSingle();
-
-      if (error || !profile) {
-        console.error('Verification token not found or error:', error, 'token:', token);
-        toast.error(t.auth.invalidVerificationToken);
-        setAuthMode('choose');
-        return;
-      }
-
-      // Check if token expired
-      if (new Date(profile.verification_token_expires_at!) < new Date()) {
-        console.error('Verification token expired:', profile.verification_token_expires_at);
-        toast.error(t.auth.invalidVerificationToken);
-        setAuthMode('choose');
-        return;
-      }
-
-      // Mark email as verified
-      const { error: updateError } = await supabase
-        .from('profiles')
-        .update({
-          email_verified: true,
-          verification_token: null,
-          verification_token_expires_at: null,
-        })
-        .eq('id', profile.id);
-
-      if (updateError) throw updateError;
-
-      // Now create the members record - the invite code was already marked as used during signup
-      // Find the invite code that was used by this user
-      const { data: inviteCode } = await supabase
-        .from('invite_codes')
-        .select('member_id')
-        .eq('used_by', profile.id)
-        .maybeSingle();
-
-      // Create members record for the verified user
-      const { error: memberError } = await supabase
-        .from('members')
-        .insert({
-          user_id: profile.id,
-          status: 'active',
-          invited_by: inviteCode?.member_id || null,
-          invites_remaining: 3,
-        });
-
-      if (memberError) {
-        console.error('Error creating member record after verification:', memberError);
-        // Don't fail the whole flow, user can still log in and admin can fix
-      }
-
-      // Send welcome email after successful verification
-      try {
-        const { data: authUser } = await supabase.auth.admin?.getUserById?.(profile.id) || {};
-        // Use a database function to get the email since we can't access auth.users directly
-        const { data: memberEmails } = await supabase.rpc('get_member_emails');
-        const userEmail = memberEmails?.find((m: any) => m.user_id === profile.id)?.email;
-        
-        if (userEmail) {
-          await supabase.functions.invoke('send-welcome-email', {
-            body: {
-              userId: profile.id,
-              email: userEmail,
-              firstName: profile.first_name || 'Member',
-              language: localStorage.getItem('language') || 'en',
-            },
-          });
+      // Call edge function that handles all verification with service role
+      const { data, error } = await supabase.functions.invoke('verify-email', {
+        body: { 
+          token, 
+          language: localStorage.getItem('language') || 'en' 
         }
-      } catch (welcomeError) {
-        // Don't fail the verification if welcome email fails
-        console.error('Error sending welcome email:', welcomeError);
+      });
+
+      if (error || !data?.success) {
+        console.error('Verification failed:', error || data?.error);
+        toast.error(t.auth.invalidVerificationToken);
+        setAuthMode('choose');
+        return;
       }
 
       setAuthMode('verified');
@@ -132,6 +68,7 @@ export default function Auth() {
     } catch (error) {
       console.error('Verification error:', error);
       toast.error(t.common.error);
+      setAuthMode('choose');
     } finally {
       setLoading(false);
     }
