@@ -24,6 +24,7 @@ const ArchiveDropDetail = lazy(() => import("./pages/ArchiveDropDetail"));
 const Admin = lazy(() => import("./pages/Admin"));
 const NotFound = lazy(() => import("./pages/NotFound"));
 const Unsubscribe = lazy(() => import("./pages/Unsubscribe"));
+const ThankYou = lazy(() => import("./pages/ThankYou"));
 
 const queryClient = new QueryClient({
   defaultOptions: {
@@ -93,6 +94,11 @@ const App = () => (
                 <Route path="/unsubscribe" element={
                   <Suspense fallback={<PageLoader />}>
                     <Unsubscribe />
+                  </Suspense>
+                } />
+                <Route path="/thank-you" element={
+                  <Suspense fallback={<PageLoader />}>
+                    <ThankYou />
                   </Suspense>
                 } />
                 {/* ADD ALL CUSTOM ROUTES ABOVE THE CATCH-ALL "*" ROUTE */}

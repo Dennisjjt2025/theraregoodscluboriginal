@@ -41,6 +41,7 @@ async function verifyShopifyWebhook(rawBody: string, hmacHeader: string): Promis
 
 interface ShopifyLineItem {
   product_id: number;
+  variant_id: number;
   quantity: number;
   title: string;
 }
@@ -48,6 +49,7 @@ interface ShopifyLineItem {
 interface ShopifyOrder {
   id: number;
   order_number: number;
+  email: string;
   line_items: ShopifyLineItem[];
   financial_status: string;
   created_at: string;
@@ -89,6 +91,7 @@ serve(async (req) => {
     console.log('Processing order:', { 
       orderId: order.id, 
       orderNumber: order.order_number,
+      email: order.email,
       lineItemsCount: order.line_items.length 
     });
 
@@ -97,32 +100,86 @@ serve(async (req) => {
     const supabaseServiceKey = Deno.env.get('SUPABASE_SERVICE_ROLE_KEY')!;
     const supabase = createClient(supabaseUrl, supabaseServiceKey);
 
+    // Find member by order email
+    let memberId: string | null = null;
+    
+    if (order.email) {
+      // First find profile by email
+      const { data: profile, error: profileError } = await supabase
+        .from('profiles')
+        .select('id')
+        .eq('email', order.email)
+        .maybeSingle();
+
+      if (profileError) {
+        console.warn('Error finding profile:', profileError.message);
+      } else if (profile) {
+        // Then find member by user_id
+        const { data: member, error: memberError } = await supabase
+          .from('members')
+          .select('id')
+          .eq('user_id', profile.id)
+          .maybeSingle();
+
+        if (memberError) {
+          console.warn('Error finding member:', memberError.message);
+        } else if (member) {
+          memberId = member.id;
+          console.log('Found member for order:', { email: order.email, memberId });
+        }
+      }
+    }
+
     // Process each line item and update quantity_sold
     const updateResults = [];
     
     for (const lineItem of order.line_items) {
       const shopifyProductId = lineItem.product_id.toString();
+      const shopifyVariantId = lineItem.variant_id.toString();
+      const shopifyVariantGid = `gid://shopify/ProductVariant/${shopifyVariantId}`;
       const quantity = lineItem.quantity;
 
-      console.log(`Updating drop for Shopify product ${shopifyProductId}, quantity: ${quantity}`);
+      console.log(`Processing line item: product=${shopifyProductId}, variant=${shopifyVariantId}, quantity=${quantity}`);
 
-      // Find the drop by shopify_product_id and update quantity_sold
-      const { data: drop, error: findError } = await supabase
+      // Find the drop by shopify_product_id (try both product ID and variant GID)
+      let drop = null;
+      
+      // First try with product ID
+      const { data: dropByProduct, error: findError1 } = await supabase
         .from('drops')
         .select('id, quantity_sold, quantity_available, title_en')
         .eq('shopify_product_id', shopifyProductId)
-        .single();
+        .maybeSingle();
 
-      if (findError || !drop) {
-        console.warn(`Drop not found for Shopify product ${shopifyProductId}:`, findError?.message);
+      if (dropByProduct) {
+        drop = dropByProduct;
+        console.log('Found drop by product ID');
+      } else {
+        // Try with variant GID (current format in database)
+        const { data: dropByVariant, error: findError2 } = await supabase
+          .from('drops')
+          .select('id, quantity_sold, quantity_available, title_en')
+          .eq('shopify_product_id', shopifyVariantGid)
+          .maybeSingle();
+
+        if (dropByVariant) {
+          drop = dropByVariant;
+          console.log('Found drop by variant GID');
+        }
+      }
+
+      if (!drop) {
+        console.warn(`Drop not found for Shopify product ${shopifyProductId} or variant ${shopifyVariantGid}`);
         updateResults.push({ 
           productId: shopifyProductId, 
+          variantId: shopifyVariantId,
           status: 'not_found',
           title: lineItem.title 
         });
         continue;
       }
 
+      // Update quantity_sold
       const newQuantitySold = (drop.quantity_sold || 0) + quantity;
       
       const { error: updateError } = await supabase
@@ -137,17 +194,52 @@ serve(async (req) => {
           status: 'update_failed',
           error: updateError.message 
         });
-      } else {
-        console.log(`Successfully updated drop ${drop.id}: quantity_sold ${drop.quantity_sold} -> ${newQuantitySold}`);
-        updateResults.push({ 
-          dropId: drop.id, 
-          title: drop.title_en,
-          status: 'updated',
-          previousQuantity: drop.quantity_sold,
-          newQuantity: newQuantitySold,
-          remaining: drop.quantity_available - newQuantitySold
-        });
+        continue;
       }
+
+      console.log(`Updated drop ${drop.id}: quantity_sold ${drop.quantity_sold} -> ${newQuantitySold}`);
+
+      // Create drop_participation record if we found a member
+      if (memberId) {
+        // Check if participation already exists for this order
+        const { data: existingParticipation } = await supabase
+          .from('drop_participation')
+          .select('id')
+          .eq('member_id', memberId)
+          .eq('drop_id', drop.id)
+          .eq('shopify_order_id', order.id.toString())
+          .maybeSingle();
+
+        if (!existingParticipation) {
+          const { error: participationError } = await supabase
+            .from('drop_participation')
+            .insert({
+              member_id: memberId,
+              drop_id: drop.id,
+              purchased: true,
+              quantity: quantity,
+              shopify_order_id: order.id.toString(),
+            });
+
+          if (participationError) {
+            console.error('Failed to create participation:', participationError);
+          } else {
+            console.log('Created drop_participation record for member:', memberId);
+          }
+        } else {
+          console.log('Participation already exists for this order');
+        }
+      }
+
+      updateResults.push({ 
+        dropId: drop.id, 
+        title: drop.title_en,
+        status: 'updated',
+        previousQuantity: drop.quantity_sold,
+        newQuantity: newQuantitySold,
+        remaining: drop.quantity_available - newQuantitySold,
+        participationCreated: !!memberId
+      });
     }
 
     console.log('Order processing complete:', updateResults);
@@ -156,6 +248,7 @@ serve(async (req) => {
       success: true, 
       orderId: order.id,
       orderNumber: order.order_number,
+      memberFound: !!memberId,
       updates: updateResults 
     }), {
       status: 200,

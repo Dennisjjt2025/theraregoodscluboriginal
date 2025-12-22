@@ -97,6 +97,35 @@ export default function Drop() {
     fetchDrop();
   }, []);
 
+  // Subscribe to realtime stock updates
+  useEffect(() => {
+    if (!drop?.id) return;
+
+    const channel = supabase
+      .channel(`drops-stock-${drop.id}`)
+      .on(
+        'postgres_changes',
+        {
+          event: 'UPDATE',
+          schema: 'public',
+          table: 'drops',
+          filter: `id=eq.${drop.id}`,
+        },
+        (payload) => {
+          console.log('Realtime stock update:', payload);
+          setDrop((prev) => prev ? { 
+            ...prev, 
+            quantity_sold: payload.new.quantity_sold 
+          } : null);
+        }
+      )
+      .subscribe();
+
+    return () => {
+      supabase.removeChannel(channel);
+    };
+  }, [drop?.id]);
+
   // Check if user is interested in this drop
   useEffect(() => {
     if (drop && user) {
