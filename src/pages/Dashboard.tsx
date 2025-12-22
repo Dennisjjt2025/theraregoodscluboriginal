@@ -9,6 +9,7 @@ import { Wine, Copy, Check, AlertTriangle, User, Shield, ShoppingBag, MessageSqu
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { DropsTab } from '@/components/dashboard/DropsTab';
 import { OnboardingTour, TourButton } from '@/components/dashboard/OnboardingTour';
+import { OrdersList } from '@/components/dashboard/OrdersList';
 
 interface Member {
   id: string;
@@ -49,11 +50,20 @@ interface OrderHistory {
   purchased: boolean;
   quantity: number;
   created_at: string;
+  shopify_order_id: string | null;
   drop?: {
     title_en: string;
     title_nl: string;
     price: number;
     image_url: string | null;
+  };
+  shopifyDetails?: {
+    orderNumber: string;
+    fulfillmentStatus: string;
+    financialStatus: string;
+    trackingInfo?: Array<{ number: string; url: string }>;
+    deliveredAt?: string | null;
+    estimatedDeliveryAt?: string | null;
   };
 }
 
@@ -109,6 +119,7 @@ export default function Dashboard() {
   const [isAdmin, setIsAdmin] = useState(false);
   const [preferenceCategories, setPreferenceCategories] = useState<PreferenceCategory[]>([]);
   const [runTour, setRunTour] = useState(false);
+  const [ordersLoading, setOrdersLoading] = useState(false);
 
   useEffect(() => {
     if (!authLoading && !user) {
@@ -223,6 +234,7 @@ export default function Dashboard() {
               purchased,
               quantity,
               created_at,
+              shopify_order_id,
               drops (
                 title_en,
                 title_nl,
@@ -243,15 +255,53 @@ export default function Dashboard() {
         
         setUpcomingDrop(upcomingDropResult.data);
         
-        setOrders((ordersResult.data || []).map((o: any) => ({
+        const ordersData = (ordersResult.data || []).map((o: any) => ({
           ...o,
-          drop: o.drops
-        })));
+          drop: o.drops,
+          shopify_order_id: o.shopify_order_id,
+        }));
+        setOrders(ordersData);
+
+        // Fetch Shopify order details if we have order IDs
+        const shopifyOrderIds = ordersData
+          .filter((o: any) => o.shopify_order_id)
+          .map((o: any) => o.shopify_order_id);
+
+        if (shopifyOrderIds.length > 0) {
+          fetchShopifyOrderDetails(shopifyOrderIds, ordersData);
+        }
       }
     } catch (error) {
       console.error('Error fetching data:', error);
     } finally {
       setLoading(false);
+    }
+  };
+
+  const fetchShopifyOrderDetails = async (orderIds: string[], ordersData: OrderHistory[]) => {
+    setOrdersLoading(true);
+    try {
+      const { data, error } = await supabase.functions.invoke('get-order-details', {
+        body: { shopify_order_ids: orderIds },
+      });
+
+      if (error) {
+        console.error('Error fetching Shopify order details:', error);
+        return;
+      }
+
+      if (data?.orders) {
+        // Merge Shopify details into orders
+        const enrichedOrders = ordersData.map((order) => ({
+          ...order,
+          shopifyDetails: order.shopify_order_id ? data.orders[order.shopify_order_id] : undefined,
+        }));
+        setOrders(enrichedOrders);
+      }
+    } catch (error) {
+      console.error('Error fetching Shopify order details:', error);
+    } finally {
+      setOrdersLoading(false);
     }
   };
 
@@ -793,46 +843,7 @@ export default function Dashboard() {
 
             {/* Orders Tab */}
             <TabsContent value="orders" className="space-y-6">
-              <div className="bg-card border border-border p-6">
-                <h2 className="font-serif text-xl mb-6">{t.dashboard.purchaseHistory}</h2>
-                
-                {orders.length > 0 ? (
-                  <div className="space-y-4">
-                    {orders.map((order) => (
-                      <div
-                        key={order.id}
-                        className="flex items-center gap-4 p-4 bg-muted/30 border border-border"
-                      >
-                        {order.drop?.image_url && (
-                          <img
-                            src={order.drop.image_url}
-                            alt={language === 'nl' ? order.drop.title_nl : order.drop.title_en}
-                            className="w-20 h-20 object-cover"
-                          />
-                        )}
-                        <div className="flex-1">
-                          <h3 className="font-serif text-lg">
-                            {language === 'nl' ? order.drop?.title_nl : order.drop?.title_en}
-                          </h3>
-                          <p className="text-sm text-muted-foreground">
-                            {order.quantity > 1 ? `${order.quantity}x ` : ''}€{order.drop?.price}
-                          </p>
-                          <p className="text-xs text-muted-foreground mt-1">
-                            {new Date(order.created_at).toLocaleDateString()}
-                          </p>
-                        </div>
-                        <div className="text-right">
-                          <span className="px-2 py-1 text-xs bg-secondary text-secondary-foreground">
-                            {t.admin.purchased}
-                          </span>
-                        </div>
-                      </div>
-                    ))}
-                  </div>
-                ) : (
-                  <p className="text-muted-foreground text-center py-8">{t.dashboard.noPurchases}</p>
-                )}
-              </div>
+              <OrdersList orders={orders} loading={ordersLoading} />
             </TabsContent>
           </Tabs>
         </div>
