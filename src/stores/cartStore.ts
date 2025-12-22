@@ -131,13 +131,19 @@ export const useCartStore = create<CartStore>()(
           // Fetch user profile for pre-filling checkout
           const buyerIdentity = await getUserBuyerIdentity();
           
-          const checkoutUrl = await createStorefrontCheckout(
+          let checkoutUrl = await createStorefrontCheckout(
             items.map((item) => ({
               variantId: item.variantId,
               quantity: item.quantity,
             })),
             buyerIdentity
           );
+
+          // Add return URL to redirect back to thank you page after checkout
+          const returnUrl = `${window.location.origin}/thank-you`;
+          const urlObj = new URL(checkoutUrl);
+          // Shopify doesn't support return URLs via query params, but we set a flag
+          localStorage.setItem('checkout_started', 'true');
 
           set({ checkoutUrl, isLoading: false });
           return checkoutUrl;
