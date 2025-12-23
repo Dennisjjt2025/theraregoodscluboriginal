@@ -1,10 +1,68 @@
 import { createClient } from 'https://esm.sh/@supabase/supabase-js@2';
 import { serve } from 'https://deno.land/std@0.177.0/http/server.ts';
+import { Resend } from 'https://esm.sh/resend@2.0.0';
 
 const corsHeaders = {
   'Access-Control-Allow-Origin': '*',
   'Access-Control-Allow-Headers': 'authorization, x-client-info, apikey, content-type, x-shopify-topic, x-shopify-hmac-sha256, x-shopify-shop-domain',
 };
+
+const resend = new Resend(Deno.env.get('RESEND_API_KEY'));
+
+// Send admin notification email
+async function sendAdminNotification(order: ShopifyOrder, updateResults: any[]) {
+  const adminEmail = 'hello@theraregoodsclub.com'; // Admin email
+  
+  const itemsList = order.line_items.map(item => 
+    `• ${item.title} (x${item.quantity})`
+  ).join('\n');
+
+  const resultsHtml = updateResults.map(result => {
+    if (result.status === 'updated') {
+      return `<li style="color: #22c55e;">✓ ${result.title}: ${result.previousQuantity} → ${result.newQuantity} verkocht (${result.remaining} over)</li>`;
+    } else if (result.status === 'not_found') {
+      return `<li style="color: #f59e0b;">⚠ ${result.title}: Drop niet gevonden in database</li>`;
+    } else {
+      return `<li style="color: #ef4444;">✗ Update mislukt: ${result.error}</li>`;
+    }
+  }).join('');
+
+  try {
+    await resend.emails.send({
+      from: 'The Rare Goods Club <noreply@theraregoodsclub.com>',
+      to: [adminEmail],
+      subject: `🛒 Nieuwe bestelling #${order.order_number}`,
+      html: `
+        <div style="font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif; max-width: 600px; margin: 0 auto; padding: 20px;">
+          <h1 style="color: #1a1a1a; border-bottom: 2px solid #d4af37; padding-bottom: 10px;">Nieuwe Bestelling</h1>
+          
+          <div style="background: #f8f8f8; padding: 20px; border-radius: 8px; margin: 20px 0;">
+            <p><strong>Order nummer:</strong> #${order.order_number}</p>
+            <p><strong>Klant email:</strong> ${order.email || 'Onbekend'}</p>
+            <p><strong>Datum:</strong> ${new Date(order.created_at).toLocaleString('nl-NL')}</p>
+          </div>
+
+          <h2 style="color: #1a1a1a;">Bestelde items:</h2>
+          <ul style="background: #fff; padding: 15px 30px; border: 1px solid #e5e5e5; border-radius: 8px;">
+            ${order.line_items.map(item => `<li>${item.title} × ${item.quantity}</li>`).join('')}
+          </ul>
+
+          <h2 style="color: #1a1a1a;">Database updates:</h2>
+          <ul style="background: #fff; padding: 15px 30px; border: 1px solid #e5e5e5; border-radius: 8px; list-style: none;">
+            ${resultsHtml}
+          </ul>
+
+          <p style="color: #666; font-size: 12px; margin-top: 30px; text-align: center;">
+            The Rare Goods Club - Admin Notificatie
+          </p>
+        </div>
+      `,
+    });
+    console.log('Admin notification email sent successfully');
+  } catch (error) {
+    console.error('Failed to send admin notification:', error);
+  }
+}
 
 // Verify Shopify webhook HMAC signature
 async function verifyShopifyWebhook(rawBody: string, hmacHeader: string): Promise<boolean> {
@@ -12,7 +70,7 @@ async function verifyShopifyWebhook(rawBody: string, hmacHeader: string): Promis
   
   if (!webhookSecret) {
     console.warn('SHOPIFY_WEBHOOK_SECRET not set - skipping verification in development');
-    return true; // Allow in development without secret
+    return true;
   }
 
   try {
@@ -243,6 +301,9 @@ serve(async (req) => {
     }
 
     console.log('Order processing complete:', updateResults);
+
+    // Send admin notification email
+    await sendAdminNotification(order, updateResults);
 
     return new Response(JSON.stringify({ 
       success: true, 
