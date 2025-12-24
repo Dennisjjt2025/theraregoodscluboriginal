@@ -2,7 +2,7 @@ import { Link } from 'react-router-dom';
 import { useLanguage } from '@/contexts/LanguageContext';
 import { CountdownTimer } from '@/components/CountdownTimer';
 import { StockIndicator } from '@/components/drop/StockIndicator';
-import { Wine, ArrowRight, Archive, Eye } from 'lucide-react';
+import { Wine, ArrowRight, Archive, Eye, Clock } from 'lucide-react';
 import { getOptimizedImageUrl } from '@/lib/imageUtils';
 
 interface Drop {
@@ -25,12 +25,12 @@ interface SiteSetting {
 }
 
 interface DropsTabProps {
-  activeDrop: Drop | null;
+  activeDrops: Drop[];
   upcomingDrop: Drop | null;
   settings: SiteSetting[];
 }
 
-export function DropsTab({ activeDrop, upcomingDrop, settings }: DropsTabProps) {
+export function DropsTab({ activeDrops, upcomingDrop, settings }: DropsTabProps) {
   const { language } = useLanguage();
 
   const getSetting = (key: string): string => {
@@ -39,8 +39,33 @@ export function DropsTab({ activeDrop, upcomingDrop, settings }: DropsTabProps) 
     return (language === 'nl' ? setting.value_nl : setting.value_en) || '';
   };
 
-  // State 1: Active/Live Drop
-  if (activeDrop) {
+  // State 1: Multiple Active Drops
+  if (activeDrops.length > 1) {
+    return (
+      <div className="space-y-6">
+        <div className="flex items-center gap-3 mb-4">
+          <span className="bg-secondary text-secondary-foreground px-3 py-1 text-sm font-sans uppercase tracking-wider">
+            {language === 'nl' ? 'Nu Live' : 'Live Now'}
+          </span>
+          <h2 className="font-serif text-xl">
+            {language === 'nl' 
+              ? `${activeDrops.length} drops beschikbaar` 
+              : `${activeDrops.length} drops available`}
+          </h2>
+        </div>
+
+        <div className="grid gap-4 sm:grid-cols-2">
+          {activeDrops.map((drop) => (
+            <DropCard key={drop.id} drop={drop} isLive={true} />
+          ))}
+        </div>
+      </div>
+    );
+  }
+
+  // State 2: Single Active Drop
+  if (activeDrops.length === 1) {
+    const activeDrop = activeDrops[0];
     const dropTitle = language === 'nl' ? activeDrop.title_nl : activeDrop.title_en;
 
     return (
@@ -94,7 +119,7 @@ export function DropsTab({ activeDrop, upcomingDrop, settings }: DropsTabProps) 
                   </p>
                 )}
                 
-                <Link to="/drop" className="btn-luxury w-full flex items-center justify-center gap-2">
+                <Link to={`/drop/${activeDrop.id}`} className="btn-luxury w-full flex items-center justify-center gap-2">
                   {language === 'nl' ? 'Bekijk Drop' : 'View Drop'}
                   <ArrowRight className="w-4 h-4" />
                 </Link>
@@ -106,7 +131,7 @@ export function DropsTab({ activeDrop, upcomingDrop, settings }: DropsTabProps) 
     );
   }
 
-  // State 2: Upcoming Drop
+  // State 3: Upcoming Drop
   if (upcomingDrop) {
     const teaserTitle = getSetting('drop_teaser_title');
     const teaserMessage = getSetting('drop_teaser_message');
@@ -157,7 +182,7 @@ export function DropsTab({ activeDrop, upcomingDrop, settings }: DropsTabProps) 
               </div>
 
               <div className="flex flex-col sm:flex-row gap-3 justify-center">
-                <Link to="/drop" className="btn-luxury inline-flex items-center justify-center gap-2">
+                <Link to={`/drop/${upcomingDrop.id}`} className="btn-luxury inline-flex items-center justify-center gap-2">
                   <Eye className="w-4 h-4" />
                   {language === 'nl' ? 'Bekijk Preview' : 'View Preview'}
                 </Link>
@@ -173,7 +198,7 @@ export function DropsTab({ activeDrop, upcomingDrop, settings }: DropsTabProps) 
     );
   }
 
-  // State 3: No Drops
+  // State 4: No Drops
   const noDropsTitle = getSetting('no_drops_title');
   const noDropsMessage = getSetting('no_drops_message');
 
@@ -200,5 +225,74 @@ export function DropsTab({ activeDrop, upcomingDrop, settings }: DropsTabProps) 
         </div>
       </div>
     </div>
+  );
+}
+
+// Drop Card Component for multiple drops view
+function DropCard({ drop, isLive }: { drop: Drop; isLive: boolean }) {
+  const { t, language } = useLanguage();
+  const title = language === 'nl' ? drop.title_nl : drop.title_en;
+  const remaining = drop.quantity_available - (drop.quantity_sold || 0);
+
+  return (
+    <Link
+      to={`/drop/${drop.id}`}
+      className="group bg-card border border-border overflow-hidden hover:border-secondary/50 transition-colors"
+    >
+      {/* Image */}
+      <div className="relative aspect-video bg-muted">
+        {drop.image_url ? (
+          <img
+            src={getOptimizedImageUrl(drop.image_url, { width: 600, quality: 80 })}
+            alt={title}
+            className="w-full h-full object-cover group-hover:scale-105 transition-transform duration-500"
+          />
+        ) : (
+          <div className="w-full h-full flex items-center justify-center">
+            <Wine className="w-10 h-10 text-muted-foreground" />
+          </div>
+        )}
+
+        {/* Badge */}
+        <div className="absolute top-3 left-3">
+          <span className="bg-secondary/90 backdrop-blur-sm text-secondary-foreground px-2 py-1 text-xs font-sans uppercase tracking-wider">
+            Live
+          </span>
+        </div>
+      </div>
+
+      {/* Content */}
+      <div className="p-4 space-y-2">
+        <h3 className="font-serif text-lg line-clamp-1 group-hover:text-secondary transition-colors">
+          {title}
+        </h3>
+
+        <div className="flex items-center justify-between">
+          <p className="font-serif text-lg">€{drop.price.toFixed(2)}</p>
+          <p className="text-sm text-muted-foreground">
+            {remaining} {t.drop.remaining}
+          </p>
+        </div>
+
+        {/* Countdown if ending */}
+        {drop.ends_at && (
+          <div className="pt-2 border-t border-border">
+            <div className="flex items-center gap-2 text-xs text-muted-foreground mb-1">
+              <Clock className="w-3 h-3" />
+              <span>{language === 'nl' ? 'Eindigt over' : 'Ends in'}</span>
+            </div>
+            <CountdownTimer targetDate={new Date(drop.ends_at)} isLive={true} />
+          </div>
+        )}
+
+        {/* CTA */}
+        <div className="pt-2">
+          <span className="inline-flex items-center gap-2 text-sm font-medium text-secondary group-hover:gap-3 transition-all">
+            {language === 'nl' ? 'Bekijk Drop' : 'View Drop'}
+            <ArrowRight className="w-4 h-4" />
+          </span>
+        </div>
+      </div>
+    </Link>
   );
 }

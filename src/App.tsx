@@ -17,6 +17,7 @@ const Auth = lazy(() => import("./pages/Auth"));
 const Dashboard = lazy(() => import("./pages/Dashboard"));
 const Membership = lazy(() => import("./pages/Membership"));
 const Drop = lazy(() => import("./pages/Drop"));
+const DropsOverview = lazy(() => import("./pages/DropsOverview"));
 const DropPreview = lazy(() => import("./pages/DropPreview"));
 const Manifesto = lazy(() => import("./pages/Manifesto"));
 const Archive = lazy(() => import("./pages/Archive"));
@@ -67,6 +68,11 @@ const App = () => (
                   </Suspense>
                 } />
                 <Route path="/drop" element={
+                  <Suspense fallback={<DropSkeleton />}>
+                    <DropsOverview />
+                  </Suspense>
+                } />
+                <Route path="/drop/:id" element={
                   <Suspense fallback={<DropSkeleton />}>
                     <Drop />
                   </Suspense>

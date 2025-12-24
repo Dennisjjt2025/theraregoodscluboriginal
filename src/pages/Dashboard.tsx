@@ -95,7 +95,7 @@ export default function Dashboard() {
 
   const [member, setMember] = useState<Member | null>(null);
   const [inviteCodes, setInviteCodes] = useState<InviteCode[]>([]);
-  const [activeDrop, setActiveDrop] = useState<Drop | null>(null);
+  const [activeDrops, setActiveDrops] = useState<Drop[]>([]);
   const [upcomingDrop, setUpcomingDrop] = useState<Drop | null>(null);
   const [siteSettings, setSiteSettings] = useState<SiteSetting[]>([]);
   const [orders, setOrders] = useState<OrderHistory[]>([]);
@@ -215,8 +215,7 @@ export default function Dashboard() {
             .eq('is_active', true)
             .eq('is_draft', false)
             .lt('starts_at', now)
-            .order('starts_at', { ascending: false })
-            .limit(1),
+            .order('starts_at', { ascending: false }),
           supabase
             .from('drops')
             .select('*')
@@ -249,9 +248,9 @@ export default function Dashboard() {
 
         setInviteCodes(codesResult.data || []);
         
-        // Filter to find truly active drop (either no end date or end date in future)
-        const activeDrop = activeDropResult.data?.find(d => !d.ends_at || new Date(d.ends_at) > new Date());
-        setActiveDrop(activeDrop || null);
+        // Filter to find truly active drops (either no end date or end date in future)
+        const activeDropsFiltered = (activeDropResult.data || []).filter(d => !d.ends_at || new Date(d.ends_at) > new Date());
+        setActiveDrops(activeDropsFiltered);
         
         setUpcomingDrop(upcomingDropResult.data);
         
@@ -551,7 +550,7 @@ export default function Dashboard() {
             {/* Drops Tab - Default landing */}
             <TabsContent value="drops">
               <DropsTab
-                activeDrop={activeDrop}
+                activeDrops={activeDrops}
                 upcomingDrop={upcomingDrop}
                 settings={siteSettings}
               />
