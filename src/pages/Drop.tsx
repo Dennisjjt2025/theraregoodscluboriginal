@@ -1,5 +1,5 @@
 import { useEffect, useState } from 'react';
-import { Link } from 'react-router-dom';
+import { Link, useParams, useNavigate } from 'react-router-dom';
 import { useLanguage } from '@/contexts/LanguageContext';
 import { useAuth } from '@/contexts/AuthContext';
 import { supabase } from '@/integrations/supabase/client';
@@ -42,6 +42,8 @@ interface GalleryImage {
 }
 
 export default function Drop() {
+  const { id } = useParams<{ id: string }>();
+  const navigate = useNavigate();
   const { t, language } = useLanguage();
   const { user, loading: authLoading } = useAuth();
 
@@ -94,8 +96,13 @@ export default function Drop() {
 
   // Fetch drop for everyone
   useEffect(() => {
-    fetchDrop();
-  }, []);
+    if (id) {
+      fetchDropById(id);
+    } else {
+      // If no ID, redirect to overview
+      navigate('/drop');
+    }
+  }, [id, navigate]);
 
   // Subscribe to realtime stock updates
   useEffect(() => {
@@ -133,51 +140,50 @@ export default function Drop() {
     }
   }, [drop, user]);
 
-  const fetchDrop = async () => {
+  const fetchDropById = async (dropId: string) => {
     try {
       const now = new Date().toISOString();
       
-      // First try to get active/live drop
-      let { data: activeDrop } = await supabase
+      // Fetch specific drop by ID
+      const { data: dropData, error: dropError } = await supabase
         .from('drops')
         .select('*')
+        .eq('id', dropId)
         .eq('is_active', true)
-        .lt('starts_at', now)
-        .or(`ends_at.is.null,ends_at.gt.${now}`)
         .maybeSingle();
 
-      // If no active drop, try to get upcoming drop
-      if (!activeDrop) {
-        const { data: upcomingDrop } = await supabase
-          .from('drops')
-          .select('*')
-          .eq('is_active', true)
-          .gt('starts_at', now)
-          .order('starts_at', { ascending: true })
-          .limit(1)
-          .maybeSingle();
-        
-        if (upcomingDrop) {
-          activeDrop = upcomingDrop;
-          setIsUpcoming(true);
-        }
-      } else {
-        setIsUpcoming(false);
+      if (dropError) throw dropError;
+
+      if (!dropData) {
+        setDrop(null);
+        setLoading(false);
+        return;
       }
 
-      setDrop(activeDrop);
+      // Check if upcoming or live
+      const startsAt = new Date(dropData.starts_at);
+      const endsAt = dropData.ends_at ? new Date(dropData.ends_at) : null;
+      const isDropUpcoming = startsAt > new Date();
+      const isDropEnded = endsAt && endsAt < new Date();
 
-      // Fetch gallery images if drop exists
-      if (activeDrop) {
-        const { data: images, error: imagesError } = await supabase
-          .from('drop_images')
-          .select('id, image_url, alt_text, sort_order')
-          .eq('drop_id', activeDrop.id)
-          .order('sort_order', { ascending: true });
-
-        if (imagesError) throw imagesError;
-        setGalleryImages(images || []);
+      if (isDropEnded) {
+        // Drop has ended, redirect to archive
+        navigate(`/archive/${dropId}`);
+        return;
       }
+
+      setIsUpcoming(isDropUpcoming);
+      setDrop(dropData);
+
+      // Fetch gallery images
+      const { data: images, error: imagesError } = await supabase
+        .from('drop_images')
+        .select('id, image_url, alt_text, sort_order')
+        .eq('drop_id', dropId)
+        .order('sort_order', { ascending: true });
+
+      if (imagesError) throw imagesError;
+      setGalleryImages(images || []);
     } catch (error) {
       console.error('Error fetching drop:', error);
     } finally {
