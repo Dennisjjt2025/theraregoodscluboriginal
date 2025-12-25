@@ -3,7 +3,9 @@ import { useLanguage } from '@/contexts/LanguageContext';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { MediaUpload } from './MediaUpload';
 import { DropGalleryManager } from './DropGalleryManager';
-import { FileText, Image, Settings, Package } from 'lucide-react';
+import { FileText, Image, Settings, Package, Sparkles, Loader2 } from 'lucide-react';
+import { supabase } from '@/integrations/supabase/client';
+import { toast } from 'sonner';
 
 export interface DropFormData {
   title_en: string;
@@ -35,14 +37,17 @@ interface DropEditorFormProps {
   dropId?: string;
 }
 
-// Form field component with label
+// Form field component with label and optional AI translate button
 function FormField({ 
   label, 
   required = false, 
   children, 
   hint,
   charCount,
-  maxChars 
+  maxChars,
+  onTranslate,
+  isTranslating,
+  showTranslate = false,
 }: { 
   label: string; 
   required?: boolean; 
@@ -50,19 +55,42 @@ function FormField({
   hint?: string;
   charCount?: number;
   maxChars?: number;
+  onTranslate?: () => void;
+  isTranslating?: boolean;
+  showTranslate?: boolean;
 }) {
+  const { language } = useLanguage();
+  
   return (
     <div className="space-y-1.5">
-      <div className="flex items-center justify-between">
+      <div className="flex items-center justify-between gap-2">
         <label className="text-sm font-medium text-foreground">
           {label}
           {required && <span className="text-destructive ml-1">*</span>}
         </label>
-        {charCount !== undefined && maxChars && (
-          <span className={`text-xs ${charCount > maxChars ? 'text-destructive' : 'text-muted-foreground'}`}>
-            {charCount}/{maxChars}
-          </span>
-        )}
+        <div className="flex items-center gap-2">
+          {showTranslate && onTranslate && (
+            <button
+              type="button"
+              onClick={onTranslate}
+              disabled={isTranslating}
+              className="text-xs flex items-center gap-1 text-primary hover:text-primary/80 transition-colors disabled:opacity-50"
+              title={language === 'nl' ? 'Vertaal met AI' : 'Translate with AI'}
+            >
+              {isTranslating ? (
+                <Loader2 className="w-3 h-3 animate-spin" />
+              ) : (
+                <Sparkles className="w-3 h-3" />
+              )}
+              <span className="hidden sm:inline">AI</span>
+            </button>
+          )}
+          {charCount !== undefined && maxChars && (
+            <span className={`text-xs ${charCount > maxChars ? 'text-destructive' : 'text-muted-foreground'}`}>
+              {charCount}/{maxChars}
+            </span>
+          )}
+        </div>
       </div>
       {children}
       {hint && <p className="text-xs text-muted-foreground">{hint}</p>}
@@ -71,11 +99,54 @@ function FormField({
 }
 
 export function DropEditorForm({ form, setForm, mode, dropId }: DropEditorFormProps) {
-  const { t } = useLanguage();
+  const { t, language } = useLanguage();
   const [activeTab, setActiveTab] = useState('basic');
+  const [translating, setTranslating] = useState<string | null>(null);
 
   const updateForm = (field: keyof DropFormData, value: any) => {
     setForm(prev => ({ ...prev, [field]: value }));
+  };
+
+  // AI Translation function
+  const translateField = async (
+    field: 'title' | 'description' | 'story' | 'details',
+    sourceField: keyof DropFormData,
+    targetField: keyof DropFormData,
+    sourceLang: 'en' | 'nl'
+  ) => {
+    const sourceValue = form[sourceField];
+    if (!sourceValue || typeof sourceValue !== 'string' || !sourceValue.trim()) {
+      toast.error(language === 'nl' ? 'Vul eerst het bronveld in' : 'Fill in the source field first');
+      return;
+    }
+
+    setTranslating(field);
+
+    try {
+      const { data, error } = await supabase.functions.invoke('translate-drop-content', {
+        body: {
+          text: sourceValue,
+          field,
+          sourceLanguage: sourceLang,
+          generateBoth: false,
+        },
+      });
+
+      if (error) throw error;
+
+      const targetLang = sourceLang === 'en' ? 'nl' : 'en';
+      const translatedValue = data[`${field}_${targetLang}`];
+      
+      if (translatedValue) {
+        updateForm(targetField, translatedValue);
+        toast.success(language === 'nl' ? 'Vertaling voltooid' : 'Translation complete');
+      }
+    } catch (error: any) {
+      console.error('Translation error:', error);
+      toast.error(error.message || 'Translation failed');
+    } finally {
+      setTranslating(null);
+    }
   };
 
   return (
@@ -104,7 +175,13 @@ export function DropEditorForm({ form, setForm, mode, dropId }: DropEditorFormPr
           {/* Basic Tab */}
           <TabsContent value="basic" className="mt-0 space-y-4">
             <div className="grid gap-4">
-              <FormField label="Title (English)" required>
+              <FormField 
+                label="Title (English)" 
+                required
+                showTranslate={!!form.title_en}
+                onTranslate={() => translateField('title', 'title_en', 'title_nl', 'en')}
+                isTranslating={translating === 'title'}
+              >
                 <input
                   type="text"
                   value={form.title_en}
@@ -114,7 +191,13 @@ export function DropEditorForm({ form, setForm, mode, dropId }: DropEditorFormPr
                 />
               </FormField>
 
-              <FormField label="Title (Dutch)" required>
+              <FormField 
+                label="Title (Dutch)" 
+                required
+                showTranslate={!!form.title_nl}
+                onTranslate={() => translateField('title', 'title_nl', 'title_en', 'nl')}
+                isTranslating={translating === 'title'}
+              >
                 <input
                   type="text"
                   value={form.title_nl}
@@ -130,6 +213,9 @@ export function DropEditorForm({ form, setForm, mode, dropId }: DropEditorFormPr
                 label="Description (English)" 
                 charCount={form.description_en.length}
                 maxChars={300}
+                showTranslate={!!form.description_en}
+                onTranslate={() => translateField('description', 'description_en', 'description_nl', 'en')}
+                isTranslating={translating === 'description'}
               >
                 <textarea
                   value={form.description_en}
@@ -144,6 +230,9 @@ export function DropEditorForm({ form, setForm, mode, dropId }: DropEditorFormPr
                 label="Description (Dutch)"
                 charCount={form.description_nl.length}
                 maxChars={300}
+                showTranslate={!!form.description_nl}
+                onTranslate={() => translateField('description', 'description_nl', 'description_en', 'nl')}
+                isTranslating={translating === 'description'}
               >
                 <textarea
                   value={form.description_nl}
@@ -205,7 +294,12 @@ export function DropEditorForm({ form, setForm, mode, dropId }: DropEditorFormPr
 
           {/* Content Tab */}
           <TabsContent value="content" className="mt-0 space-y-4">
-            <FormField label="Story (English)">
+            <FormField 
+              label="Story (English)"
+              showTranslate={!!form.story_en}
+              onTranslate={() => translateField('story', 'story_en', 'story_nl', 'en')}
+              isTranslating={translating === 'story'}
+            >
               <textarea
                 value={form.story_en}
                 onChange={(e) => updateForm('story_en', e.target.value)}
@@ -215,7 +309,12 @@ export function DropEditorForm({ form, setForm, mode, dropId }: DropEditorFormPr
               />
             </FormField>
 
-            <FormField label="Story (Dutch)">
+            <FormField 
+              label="Story (Dutch)"
+              showTranslate={!!form.story_nl}
+              onTranslate={() => translateField('story', 'story_nl', 'story_en', 'nl')}
+              isTranslating={translating === 'story'}
+            >
               <textarea
                 value={form.story_nl}
                 onChange={(e) => updateForm('story_nl', e.target.value)}
@@ -225,7 +324,13 @@ export function DropEditorForm({ form, setForm, mode, dropId }: DropEditorFormPr
               />
             </FormField>
 
-            <FormField label="Details (English)" hint="Previously 'Tasting Notes' - can be used for any product type">
+            <FormField 
+              label="Details (English)" 
+              hint="Previously 'Tasting Notes' - can be used for any product type"
+              showTranslate={!!form.tasting_notes_en}
+              onTranslate={() => translateField('details', 'tasting_notes_en', 'tasting_notes_nl', 'en')}
+              isTranslating={translating === 'details'}
+            >
               <textarea
                 value={form.tasting_notes_en}
                 onChange={(e) => updateForm('tasting_notes_en', e.target.value)}
@@ -235,7 +340,12 @@ export function DropEditorForm({ form, setForm, mode, dropId }: DropEditorFormPr
               />
             </FormField>
 
-            <FormField label="Details (Dutch)">
+            <FormField 
+              label="Details (Dutch)"
+              showTranslate={!!form.tasting_notes_nl}
+              onTranslate={() => translateField('details', 'tasting_notes_nl', 'tasting_notes_en', 'nl')}
+              isTranslating={translating === 'details'}
+            >
               <textarea
                 value={form.tasting_notes_nl}
                 onChange={(e) => updateForm('tasting_notes_nl', e.target.value)}
