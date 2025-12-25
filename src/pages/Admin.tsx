@@ -9,11 +9,12 @@ import { EmailComposer } from '@/components/admin/EmailComposer';
 import { DropEditor } from '@/components/admin/DropEditor';
 import { toast } from 'sonner';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
-import { Plus, Users, Wine, Clock, Check, X, RotateCcw, Minus, FileText, Save, Eye, Mail, MailCheck, Gift, Send, Globe, Lock, Trash2, Pencil, Copy, MessageSquare, Heart, Bell } from 'lucide-react';
+import { Plus, Users, Wine, Clock, Check, X, RotateCcw, Minus, FileText, Save, Eye, Mail, MailCheck, Gift, Send, Globe, Lock, Trash2, Pencil, Copy, MessageSquare, Heart, Bell, Sparkles } from 'lucide-react';
 import { SiteSettingsEditor } from '@/components/admin/SiteSettingsEditor';
 import { PreferencesOverview } from '@/components/admin/PreferencesOverview';
 import { PreferenceCategoriesManager } from '@/components/admin/PreferenceCategoriesManager';
 import { IncompleteAccountsManager } from '@/components/admin/IncompleteAccountsManager';
+import { DropQuickCreate } from '@/components/admin/DropQuickCreate';
 
 interface Drop {
   id: string;
@@ -115,6 +116,7 @@ export default function Admin() {
   const [dropInterestCounts, setDropInterestCounts] = useState<Record<string, number>>({});
   const [notifyingDropId, setNotifyingDropId] = useState<string | null>(null);
   const [dropModalMode, setDropModalMode] = useState<'create' | 'edit' | 'duplicate'>('create');
+  const [showQuickCreate, setShowQuickCreate] = useState(false);
 
   useEffect(() => {
     if (!authLoading && !user) {
@@ -649,6 +651,39 @@ export default function Admin() {
           mode={dropModalMode}
         />
       )}
+
+      {/* Quick Create */}
+      {showQuickCreate && (
+        <DropQuickCreate
+          onClose={() => setShowQuickCreate(false)}
+          onSave={fetchData}
+          onSwitchToFull={(formData) => {
+            setShowQuickCreate(false);
+            // Open full editor with pre-filled data
+            setSelectedDropForEdit({
+              id: '',
+              title_en: formData.title_en,
+              title_nl: formData.title_nl,
+              description_en: formData.description_en,
+              description_nl: formData.description_nl,
+              story_en: formData.story_en,
+              story_nl: formData.story_nl,
+              tasting_notes_en: formData.details_en,
+              tasting_notes_nl: formData.details_nl,
+              origin: formData.origin,
+              vintage: formData.vintage,
+              price: parseFloat(formData.price) || 0,
+              quantity_available: parseInt(formData.quantity_available) || 0,
+              starts_at: new Date().toISOString(),
+              is_active: false,
+              is_public: false,
+              is_draft: true,
+            } as Drop);
+            setDropModalMode('create');
+            setShowDropModal(true);
+          }}
+        />
+      )}
       
       <main className="pt-24 pb-12 px-4">
         <div className="container mx-auto max-w-6xl">
@@ -691,16 +726,26 @@ export default function Admin() {
 
             {/* Drops Tab */}
             <TabsContent value="drops" className="space-y-6">
-              {/* Header with Create Button */}
-              <div className="flex items-center justify-between">
+              {/* Header with Create Buttons */}
+              <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-3">
                 <h2 className="font-serif text-xl">{t.admin.manageDrop}</h2>
-                <button
-                  onClick={() => openDropModal('create')}
-                  className="btn-luxury flex items-center gap-2"
-                >
-                  <Plus className="w-4 h-4" />
-                  {t.admin.createDrop}
-                </button>
+                <div className="flex items-center gap-2 w-full sm:w-auto">
+                  <button
+                    onClick={() => setShowQuickCreate(true)}
+                    className="btn-outline-luxury flex items-center gap-2 flex-1 sm:flex-initial justify-center"
+                  >
+                    <Sparkles className="w-4 h-4" />
+                    <span className="hidden sm:inline">{language === 'nl' ? 'Snel aanmaken' : 'Quick Create'}</span>
+                    <span className="sm:hidden">Quick</span>
+                  </button>
+                  <button
+                    onClick={() => openDropModal('create')}
+                    className="btn-luxury flex items-center gap-2 flex-1 sm:flex-initial justify-center"
+                  >
+                    <Plus className="w-4 h-4" />
+                    {t.admin.createDrop}
+                  </button>
+                </div>
               </div>
 
               {/* Drops List */}
