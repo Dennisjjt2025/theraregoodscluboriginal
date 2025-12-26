@@ -2,6 +2,7 @@ import { useState } from 'react';
 import { supabase } from '@/integrations/supabase/client';
 import { useLanguage } from '@/contexts/LanguageContext';
 import { toast } from 'sonner';
+import { Skeleton } from '@/components/ui/skeleton';
 import { 
   Sparkles, 
   Loader2, 
@@ -331,18 +332,70 @@ export function DropQuickCreate({ onClose, onSave, onSwitchToFull }: DropQuickCr
           </div>
         )}
 
-        {/* Step 2: Generating */}
+        {/* Step 2: Generating - Skeleton UI */}
         {step === 'generating' && (
-          <div className="flex flex-col items-center justify-center min-h-[300px] space-y-4">
-            <Loader2 className="w-12 h-12 animate-spin text-primary" />
-            <p className="text-lg font-medium">
-              {language === 'nl' ? 'Content wordt gegenereerd...' : 'Generating content...'}
-            </p>
-            <p className="text-sm text-muted-foreground">
-              {language === 'nl' 
-                ? 'AI schrijft je drop in Engels en Nederlands' 
-                : 'AI is writing your drop in English and Dutch'}
-            </p>
+          <div className="max-w-3xl mx-auto space-y-6">
+            <div className="text-center space-y-2 mb-6">
+              <div className="flex items-center justify-center gap-2">
+                <Loader2 className="w-5 h-5 animate-spin text-primary" />
+                <p className="text-lg font-medium">
+                  {language === 'nl' ? 'Content wordt gegenereerd...' : 'Generating content...'}
+                </p>
+              </div>
+              <p className="text-sm text-muted-foreground">
+                {language === 'nl' 
+                  ? 'AI schrijft je drop in Engels en Nederlands' 
+                  : 'AI is writing your drop in English and Dutch'}
+              </p>
+            </div>
+
+            {/* Skeleton for Title */}
+            <div className="bg-card rounded-lg border border-border p-4 space-y-3">
+              <div className="flex items-center justify-between">
+                <Skeleton className="h-4 w-16" />
+                <Skeleton className="h-8 w-8 rounded-full" />
+              </div>
+              <div className="grid sm:grid-cols-2 gap-3">
+                <Skeleton className="h-10 w-full" />
+                <Skeleton className="h-10 w-full" />
+              </div>
+            </div>
+
+            {/* Skeleton for Description */}
+            <div className="bg-card rounded-lg border border-border p-4 space-y-3">
+              <div className="flex items-center justify-between">
+                <Skeleton className="h-4 w-24" />
+                <Skeleton className="h-8 w-8 rounded-full" />
+              </div>
+              <div className="grid sm:grid-cols-2 gap-3">
+                <Skeleton className="h-20 w-full" />
+                <Skeleton className="h-20 w-full" />
+              </div>
+            </div>
+
+            {/* Skeleton for Story */}
+            <div className="bg-card rounded-lg border border-border p-4 space-y-3">
+              <div className="flex items-center justify-between">
+                <Skeleton className="h-4 w-20" />
+                <Skeleton className="h-8 w-8 rounded-full" />
+              </div>
+              <div className="grid sm:grid-cols-2 gap-3">
+                <Skeleton className="h-32 w-full" />
+                <Skeleton className="h-32 w-full" />
+              </div>
+            </div>
+
+            {/* Skeleton for Details */}
+            <div className="bg-card rounded-lg border border-border p-4 space-y-3">
+              <div className="flex items-center justify-between">
+                <Skeleton className="h-4 w-20" />
+                <Skeleton className="h-8 w-8 rounded-full" />
+              </div>
+              <div className="grid sm:grid-cols-2 gap-3">
+                <Skeleton className="h-24 w-full" />
+                <Skeleton className="h-24 w-full" />
+              </div>
+            </div>
           </div>
         )}
 
