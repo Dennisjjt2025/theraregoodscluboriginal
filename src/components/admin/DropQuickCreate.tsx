@@ -347,10 +347,17 @@ export function DropQuickCreate({ onClose, onSave, onSwitchToFull }: DropQuickCr
                   ? 'AI schrijft je drop in Engels en Nederlands' 
                   : 'AI is writing your drop in English and Dutch'}
               </p>
+              
+              {/* Animated Progress Bar */}
+              <div className="w-full max-w-md mx-auto mt-4">
+                <div className="h-1.5 bg-muted rounded-full overflow-hidden">
+                  <div className="h-full bg-primary rounded-full animate-progress" />
+                </div>
+              </div>
             </div>
 
             {/* Skeleton for Title */}
-            <div className="bg-card rounded-lg border border-border p-4 space-y-3">
+            <div className="bg-card rounded-lg border border-border p-4 space-y-3 animate-fade-in" style={{ animationDelay: '0ms' }}>
               <div className="flex items-center justify-between">
                 <Skeleton className="h-4 w-16" />
                 <Skeleton className="h-8 w-8 rounded-full" />
@@ -362,7 +369,7 @@ export function DropQuickCreate({ onClose, onSave, onSwitchToFull }: DropQuickCr
             </div>
 
             {/* Skeleton for Description */}
-            <div className="bg-card rounded-lg border border-border p-4 space-y-3">
+            <div className="bg-card rounded-lg border border-border p-4 space-y-3 animate-fade-in" style={{ animationDelay: '100ms' }}>
               <div className="flex items-center justify-between">
                 <Skeleton className="h-4 w-24" />
                 <Skeleton className="h-8 w-8 rounded-full" />
@@ -374,7 +381,7 @@ export function DropQuickCreate({ onClose, onSave, onSwitchToFull }: DropQuickCr
             </div>
 
             {/* Skeleton for Story */}
-            <div className="bg-card rounded-lg border border-border p-4 space-y-3">
+            <div className="bg-card rounded-lg border border-border p-4 space-y-3 animate-fade-in" style={{ animationDelay: '200ms' }}>
               <div className="flex items-center justify-between">
                 <Skeleton className="h-4 w-20" />
                 <Skeleton className="h-8 w-8 rounded-full" />
@@ -386,7 +393,7 @@ export function DropQuickCreate({ onClose, onSave, onSwitchToFull }: DropQuickCr
             </div>
 
             {/* Skeleton for Details */}
-            <div className="bg-card rounded-lg border border-border p-4 space-y-3">
+            <div className="bg-card rounded-lg border border-border p-4 space-y-3 animate-fade-in" style={{ animationDelay: '300ms' }}>
               <div className="flex items-center justify-between">
                 <Skeleton className="h-4 w-20" />
                 <Skeleton className="h-8 w-8 rounded-full" />
