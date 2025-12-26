@@ -77,9 +77,9 @@ export function DropEditor({ drop, onClose, onSave, mode }: DropEditorProps) {
     return date.toISOString().slice(0, 16);
   };
 
-  // Load drop data when editing/duplicating
+  // Load drop data when editing/duplicating OR when pre-filled from Quick Create
   useEffect(() => {
-    if (drop && (mode === 'edit' || mode === 'duplicate')) {
+    if (drop && (mode === 'edit' || mode === 'duplicate' || (mode === 'create' && drop.title_en))) {
       setForm({
         title_en: drop.title_en || '',
         title_nl: drop.title_nl || '',
